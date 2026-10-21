@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "routines": [
+    {
+      "id": "personal-care",
+      "name": "Personal Care",
+      "description": "A simple example to start the day.",
+      "groups": [
+        {
+          "id": "care",
+          "title": "Morning reset",
+          "optional": false,
+          "items": [
+            {
+              "id": "item-1",
+              "label": "Wash your face"
+            },
+            {
+              "id": "item-2",
+              "label": "Brush your teeth"
+            },
+            {
+              "id": "item-3",
+              "label": "Get a fresh towel"
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "title": "Extra care",
+          "optional": true,
+          "items": [
+            {
+              "id": "item-1",
+              "label": "Tidy your grooming kit"
+            },
+            {
+              "id": "item-2",
+              "label": "Put away toiletries"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "getting-ready",
+      "name": "Getting Ready",
+      "description": "A few example essentials for heading out.",
+      "groups": [
+        {
+          "id": "essentials",
+          "title": "Out the door",
+          "optional": false,
+          "items": [
+            {
+              "id": "item-1",
+              "label": "Check the weather"
+            },
+            {
+              "id": "item-2",
+              "label": "Choose a jacket"
+            },
+            {
+              "id": "item-3",
+              "label": "Pick up your bag"
+            },
+            {
+              "id": "item-4",
+              "label": "Check you have your keys"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "workday",
+      "name": "Workday",
+      "description": "An example checklist for a clear start.",
+      "groups": [
+        {
+          "id": "work",
+          "title": "Work bag",
+          "optional": false,
+          "items": [
+            {
+              "id": "item-1",
+              "label": "Pack a notebook"
+            },
+            {
+              "id": "item-2",
+              "label": "Pack a pen"
+            },
+            {
+              "id": "item-3",
+              "label": "Fill a water bottle"
+            },
+            {
+              "id": "item-4",
+              "label": "Check your travel plans"
+            }
+          ]
+        },
+        {
+          "id": "after-work",
+          "title": "After-work activity",
+          "optional": true,
+          "items": [
+            {
+              "id": "item-1",
+              "label": "Pack a spare top"
+            },
+            {
+              "id": "item-2",
+              "label": "Bring a snack"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "training",
+      "name": "Training",
+      "description": "A sample checklist for your next session.",
+      "groups": [
+        {
+          "id": "training",
+          "title": "Ready to move",
+          "optional": false,
+          "items": [
+            {
+              "id": "item-1",
+              "label": "Pack training clothes"
+            },
+            {
+              "id": "item-2",
+              "label": "Bring a towel"
+            },
+            {
+              "id": "item-3",
+              "label": "Fill your water bottle"
+            },
+            {
+              "id": "item-4",
+              "label": "Check the session time"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wind-down",
+      "name": "Wind Down",
+      "description": "A sample checklist to close the day.",
+      "groups": [
+        {
+          "id": "evening",
+          "title": "Evening reset",
+          "optional": false,
+          "items": [
+            {
+              "id": "item-1",
+              "label": "Put your bag away"
+            },
+            {
+              "id": "item-2",
+              "label": "Prepare a glass of water"
+            },
+            {
+              "id": "item-3",
+              "label": "Charge your devices"
+            },
+            {
+              "id": "item-4",
+              "label": "Choose something to read"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

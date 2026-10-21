@@ -43,5 +43,16 @@ async function testHub() {
     assert(!dialog.open, 'App did not close.');
     assert(document.activeElement === app, 'Focus did not return to the app icon.');
   }
-  return { passed: true, apps: apps.length, viewport: `${innerWidth}x${innerHeight}` };
+  const routines = document.getElementById('routines-dialog');
+  for (let attempt = 0; routines.dataset.ready !== 'true' && attempt < 40; attempt++) await new Promise(resolve => setTimeout(resolve, 100));
+  assert(routines.dataset.ready === 'true', 'Routines did not load.');
+  assert(routines.querySelectorAll('.routine-card').length === 5, 'Five checklist cards should be available.');
+  const routinesLauncher = document.getElementById('routines-launch');
+  routinesLauncher.focus();
+  routinesLauncher.click();
+  assert(routines.open, 'Routines did not open.');
+  routines.querySelector('.routine-exit').click();
+  assert(!routines.open, 'Routines did not close.');
+  assert(document.activeElement === routinesLauncher, 'Focus did not return to Routines.');
+  return { passed: true, apps: apps.length + 1, checklists: 5, source: routines.dataset.source, viewport: `${innerWidth}x${innerHeight}` };
 }
