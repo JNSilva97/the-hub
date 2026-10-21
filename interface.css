@@ -1,4 +1,6 @@
-:root { color-scheme: dark; font-family: "Segoe UI", system-ui, sans-serif; color: #e9f6ff; background: #010205; --cyan: #79e5ff; --muted: #9cb6ca; }
+@font-face { font-family: Orbitron; src: url('./assets/fonts/orbitron-latin.woff2') format('woff2'); font-style: normal; font-weight: 400 900; font-display: swap; }
+@font-face { font-family: Rajdhani; src: url('./assets/fonts/rajdhani-latin-600.woff2') format('woff2'); font-style: normal; font-weight: 600; font-display: swap; }
+:root { color-scheme: dark; font-family: "Segoe UI", system-ui, sans-serif; color: #e9f6ff; background: #010205; --cyan: #79e5ff; --muted: #9cb6ca; --font-display: Orbitron, "Segoe UI", sans-serif; --font-interface: Rajdhani, "Segoe UI", sans-serif; }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100svh; background: radial-gradient(ellipse at 50% 45%, #00296438, transparent 55%), #010205; }
     body::before { content: ""; position: fixed; inset: 0; pointer-events: none; background-image: radial-gradient(#82caff80 .6px, transparent .8px), radial-gradient(#598ca955 .6px, transparent .8px); background-size: 123px 137px, 197px 181px; background-position: 32px 24px, 90px 70px; mask-image: radial-gradient(ellipse at center, #000, transparent 90%); }
@@ -200,3 +202,41 @@
       body:not(.motion-paused) .app:nth-child(n+5):hover { transform: perspective(700px) rotateY(-4deg) translateX(-3px); }
     }
     @media (prefers-reduced-motion: reduce) { .access-sequence { display: none; } }
+
+    .brand, .core h1, .access-title, .clock, dialog h2 { font-family: var(--font-display); font-weight: 500; }
+    .brand { font-size: 14px; letter-spacing: .2em; }
+    .core h1 { font-size: 36px; letter-spacing: .15em; text-indent: .15em; }
+    .access-title { font-size: 25px; letter-spacing: .22em; text-indent: .22em; }
+    .clock { font-size: 22px; letter-spacing: .08em; font-variant-numeric: tabular-nums lining-nums; text-shadow: 0 0 18px #238dff55; }
+    .brand small, .header-path, .date, .timezone, .intro, .core-label, .core-coordinate, .app-name, .app-meta, .access-status, .access-note, .panel-eyebrow, .motion-toggle, footer, .close { font-family: var(--font-interface); font-weight: 600; }
+    .brand small { font-size: 10px; letter-spacing: .2em; }
+    .header-path, .intro { font-size: 12px; letter-spacing: .17em; }
+    .date { font-size: 13px; }
+    .timezone { font-size: 10px; }
+    .core-label { font-size: 11px; letter-spacing: .2em; }
+    .core-coordinate { font-size: 10px; letter-spacing: .17em; }
+    .app-name { font-size: 19px; letter-spacing: .07em; text-transform: uppercase; line-height: 1.15; }
+    .app-meta { font-size: 10px; letter-spacing: .14em; }
+    .module-number { font-family: var(--font-display); font-size: 9px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: .08em; color: #82c3ff; }
+    .access-status { font-size: 12px; letter-spacing: .2em; }
+    .access-note { font-size: 10px; letter-spacing: .17em; }
+    .panel-eyebrow { font-size: 11px; }
+    .motion-toggle, footer { font-size: 11px; }
+    .close { font-size: 16px; letter-spacing: .06em; }
+    @media (max-width: 1050px) and (min-width: 701px) { .app-name { font-size: 16px; letter-spacing: .025em; } .core h1 { font-size: 28px; } }
+    @media (max-width: 700px) {
+      .brand { font-size: 12px; letter-spacing: .14em; }
+      .brand small { font-size: 8px; letter-spacing: .12em; }
+      .clock { font-size: 19px; }
+      .timezone { font-size: 8px; }
+      .intro { font-size: 10px; letter-spacing: .11em; }
+      .core h1 { font-size: 26px; letter-spacing: .12em; text-indent: .12em; }
+      .core-label { font-size: 9px; letter-spacing: .14em; }
+      .core-coordinate { font-size: 8px; letter-spacing: .12em; }
+      .app-name { font-size: 16px; letter-spacing: .015em; }
+      .app-meta { font-size: 9px; letter-spacing: .08em; }
+      .module-number { font-size: 8px; }
+      .panel-eyebrow { font-size: 9px; }
+      .motion-toggle, footer { font-size: 9px; }
+    }
+    @media (max-width: 355px) { .app-name { font-size: 14px; letter-spacing: 0; } .app-meta { font-size: 8px; } .module-number { font-size: 7px; } }

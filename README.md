@@ -10,6 +10,8 @@ The intro is visual only and does not authenticate users. Any click or keypress 
 
 Built with HTML, CSS and JavaScript. No dependencies or build step.
 
+Display typography uses self-hosted Orbitron and Rajdhani fonts. Their SIL Open Font License notices are included in `assets/fonts/`. Checklist text keeps the system font for readability.
+
 ## Preview locally
 
 Serve this folder using a loopback address. Routines needs a local server to load its data:
