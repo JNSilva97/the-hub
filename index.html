@@ -96,9 +96,80 @@
     }
     @media (max-width: 355px) { .app { gap: 7px; padding: 11px 8px; } .app-name { font-size: 11px; } .tile { width: 28px; } .app-meta { font-size: 6px; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+    /* The access sequence is decorative and never blocks the interface. */
+    .access-sequence { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; pointer-events: none; opacity: 0; visibility: hidden; background: radial-gradient(ellipse at center, #0c2b41f5, #020711fc 65%); animation: access-reveal 1900ms cubic-bezier(.22,1,.36,1) both; }
+    .access-content { position: relative; width: min(320px, 80vw); text-align: center; }
+    .access-ring { position: relative; width: 160px; height: 160px; margin: 0 auto 32px; border: 1px solid #76dfff40; border-radius: 50%; background: radial-gradient(circle, #010b16 0 13%, #71e5ff 14%, #0c3453 15% 22%, transparent 23%); box-shadow: 0 0 70px #25b8ff1c, inset 0 0 35px #35b8ff18; animation: iris-acquire 1500ms cubic-bezier(.16,1,.3,1) both; }
+    .access-ring::before, .access-ring::after { content: ""; position: absolute; inset: 12px; border: 2px solid transparent; border-top-color: #a5efff; border-bottom-color: #64c7e8; border-radius: 50%; animation: orbit 1700ms cubic-bezier(.22,1,.36,1) both; }
+    .access-ring::after { inset: -12px; border-width: 1px; border-color: #6cb7d140 transparent; transform: rotate(45deg); animation-direction: reverse; }
+    .access-crosshair { position: absolute; inset: 48px; border: 1px solid #9cecff; clip-path: polygon(0 0, 22% 0, 22% 8%, 8% 8%, 8% 22%, 0 22%, 0 0, 100% 0, 100% 22%, 92% 22%, 92% 8%, 78% 8%, 78% 0, 100% 0, 100% 100%, 78% 100%, 78% 92%, 92% 92%, 92% 78%, 100% 78%, 100% 100%, 0 100%, 0 78%, 8% 78%, 8% 92%, 22% 92%, 22% 100%, 0 100%); }
+    .access-title { margin: 0; font-size: 23px; font-weight: 300; letter-spacing: .35em; text-indent: .35em; color: #ddf7ff; }
+    .access-status { margin: 15px 0 22px; color: #9ac7dc; font: 9px Consolas, monospace; letter-spacing: .19em; }
+    .access-progress { height: 1px; background: #73c9e927; overflow: hidden; }
+    .access-progress::after { content: ""; display: block; height: 100%; background: #93eaff; box-shadow: 0 0 12px #83e7ff; transform-origin: left; animation: interface-progress 1300ms cubic-bezier(.22,1,.36,1) both; }
+    .access-note { margin: 16px 0 0; color: #7da8be; font: 7px Consolas, monospace; letter-spacing: .18em; }
+    .core-art { filter: drop-shadow(0 0 24px #1b83bd14); }
+    .orbit-slow { animation-duration: 36s; }
+    .orbit-reverse { animation-duration: 58s; }
+    .iris-blades { transform-origin: 300px 270px; animation: iris-breathe 9s ease-in-out infinite; }
+    .scanner-sweep { transform-origin: 300px 270px; animation: orbit 12s linear infinite; }
+    .core-label { color: #a4cddd; letter-spacing: .2em; }
+    .core-coordinate { color: #8fc9df; }
+    .connections .signal { stroke: #9be5ff; stroke-opacity: .65; stroke-dasharray: 3 160; stroke-dashoffset: 0; animation: signal-flow 9s linear infinite; }
+    .app { overflow: hidden; animation: module-reveal 700ms cubic-bezier(.16,1,.3,1) backwards; animation-delay: 400ms; transition: border-color 220ms, background 220ms, transform 300ms cubic-bezier(.16,1,.3,1), box-shadow 220ms; }
+    .app:nth-child(2) { animation-delay: 445ms; } .app:nth-child(3) { animation-delay: 490ms; } .app:nth-child(4) { animation-delay: 535ms; }
+    .app:nth-child(5) { animation-delay: 580ms; } .app:nth-child(6) { animation-delay: 625ms; } .app:nth-child(7) { animation-delay: 670ms; } .app:nth-child(8) { animation-delay: 715ms; }
+    .app::before, .app::after { z-index: 1; transition: width 250ms cubic-bezier(.16,1,.3,1); }
+    .app::before { top: 0; left: 0; } .app::after { bottom: 0; right: 0; }
+    .app:hover::before, .app:focus-visible::before, .app:hover::after, .app:focus-visible::after { width: 58px; }
+    .app:hover, .app:focus-visible { border-color: #80dcff; background: linear-gradient(110deg, #164b6eaa, #0b243cdd); box-shadow: 0 0 32px #3bb8f024, inset 0 0 24px #2c8dc415; transform: translateY(-3px); }
+    .app .tile { transition: transform 300ms cubic-bezier(.16,1,.3,1), background 250ms; }
+    .app:hover .tile, .app:focus-visible .tile { transform: scale(1.08); background: #53ceff18; }
+    .module-scan { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 25%, #94e9ff13 50%, transparent 75%); transform: translateX(-120%); }
+    .app:hover .module-scan, .app:focus-visible .module-scan { animation: module-scan 650ms cubic-bezier(.16,1,.3,1) both; }
+    .interface-ready .app { animation: none; }
+    .motion-toggle { display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 10px 12px; border: 1px solid #6ebddd35; background: #0a203233; color: #a8d1e4; font: 9px Consolas, monospace; letter-spacing: .08em; }
+    .motion-toggle::before { content: ""; width: 5px; height: 7px; border-left: 1px solid #8fdef5; border-right: 1px solid #8fdef5; }
+    .motion-toggle[aria-pressed="true"]::before { height: 0; border: 4px solid transparent; border-left-color: #8fdef5; border-right: 0; }
+    .motion-toggle:hover { border-color: #83d5ef80; }
+    dialog[open] { animation: panel-materialise 380ms cubic-bezier(.16,1,.3,1) both; }
+    dialog[open]::backdrop { animation: backdrop-in 220ms ease both; }
+    .panel-eyebrow { color: #8dcee5; font: 8px Consolas, monospace; letter-spacing: .2em; margin: 0 0 20px; }
+    body.motion-paused *, body.motion-paused *::before, body.motion-paused *::after { animation: none !important; transition: none !important; }
+    body.motion-paused .access-sequence { display: none; }
+    @keyframes access-reveal {
+      0%, 40% { opacity: 1; visibility: visible; clip-path: inset(0); }
+      65% { opacity: .98; visibility: visible; clip-path: inset(0); }
+      99% { visibility: visible; }
+      100% { opacity: 0; visibility: hidden; clip-path: inset(0 0 100%); }
+    }
+    @keyframes iris-acquire { from { transform: scale(.65) rotate(-55deg); opacity: 0; } 45% { opacity: 1; } to { transform: scale(1) rotate(0); opacity: 1; } }
+    @keyframes interface-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes iris-breathe { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(12deg); } }
+    @keyframes signal-flow { to { stroke-dashoffset: -326; } }
+    @keyframes module-reveal { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+    @keyframes module-scan { to { transform: translateX(120%); } }
+    @keyframes panel-materialise { from { opacity: 0; transform: translateY(12px) scale(.96); clip-path: inset(45% 0); } 65% { opacity: 1; clip-path: inset(0); } to { opacity: 1; transform: none; clip-path: inset(0); } }
+    @keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+    @media (max-width: 700px) { .motion-toggle { font-size: 7px; padding: 8px; gap: 6px; } .panel-eyebrow { font-size: 7px; } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .access-sequence, .motion-toggle { display: none; }
+      .app:hover, .app:focus-visible, .app:hover .tile, .app:focus-visible .tile { transform: none; }
+    }
   </style>
 </head>
 <body>
+  <div class="access-sequence" aria-hidden="true">
+    <div class="access-content">
+      <div class="access-ring"><span class="access-crosshair"></span></div>
+      <p class="access-title">THE HUB</p>
+      <p class="access-status">INITIALISING WORKSPACE</p>
+      <div class="access-progress"></div>
+      <p class="access-note">FIELD INTERFACE / VISUAL ACCESS SEQUENCE</p>
+    </div>
+  </div>
   <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <symbol id="projects" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z"/><path d="M3 11h18"/></symbol>
     <symbol id="goals" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m12 12 8-8m-4 0h4v4"/></symbol>
@@ -110,24 +181,24 @@
     <symbol id="settings" viewBox="0 0 24 24"><path d="m9 3-.7 3-2 .9-2.7-.8-2 3.4 2.1 2.1v2.3l-2.1 2.1 2 3.5 2.8-.8 1.9 1 .7 2.8h4l.7-2.8 2-1 2.7.8 2-3.5-2.1-2.1v-2.3l2.1-2.1-2-3.4-2.8.8-1.9-.9L13 3Z"/><circle cx="11" cy="12.5" r="3"/></symbol>
   </svg>
   <header>
-    <div class="brand"><svg class="brand-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="m14 2 11 6v12l-11 6L3 20V8Z" stroke="currentColor" stroke-width="1.3"/><path d="m3 8 11 6 11-6M14 14v12M8 5l12 7v6" stroke="currentColor" stroke-width="1.3"/></svg><div>THE HUB<small>PERSONAL OPERATING SPACE</small></div></div>
-    <div class="header-path" aria-hidden="true">WORKSPACE &nbsp; / &nbsp; <span>MAIN INTERFACE</span></div>
+    <div class="brand"><svg class="brand-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="m14 2 11 6v12l-11 6L3 20V8Z" stroke="currentColor" stroke-width="1.3"/><path d="m3 8 11 6 11-6M14 14v12M8 5l12 7v6" stroke="currentColor" stroke-width="1.3"/></svg><div>THE HUB<small>PERSONAL FIELD TERMINAL</small></div></div>
+    <div class="header-path" aria-hidden="true">WORKSPACE &nbsp; / &nbsp; <span>FIELD INTERFACE</span></div>
     <div class="time-block"><p class="date" id="date"></p><div><time class="clock" id="clock" aria-label="Current time"></time><span class="timezone">LISBON / LOCAL TIME</span></div></div>
   </header>
   <main>
-    <div class="intro">YOUR WORLD, CONNECTED</div>
+    <div class="intro">PERSONAL TERMINAL / INTERFACE ONLINE</div>
     <div class="workspace">
       <svg class="connections" viewBox="0 0 1200 570" preserveAspectRatio="none" aria-hidden="true">
         <path d="M270 120h42l96 90h48M270 230h65l65 25h35M270 340h65l65-25h35M270 450h42l96-90h48M930 120h-42l-96 90h-48M930 230h-65l-65 25h-35M930 340h-65l-65-25h-35M930 450h-42l-96-90h-48"/>
+        <path class="signal" d="M270 120h42l96 90h48M270 230h65l65 25h35M270 340h65l65-25h35M270 450h42l96-90h48M930 120h-42l-96 90h-48M930 230h-65l-65 25h-35M930 340h-65l-65-25h-35M930 450h-42l-96-90h-48"/>
         <g fill="#91dcf5" stroke="none"><circle cx="456" cy="210" r="2"/><circle cx="435" cy="255" r="2"/><circle cx="435" cy="315" r="2"/><circle cx="456" cy="360" r="2"/><circle cx="744" cy="210" r="2"/><circle cx="765" cy="255" r="2"/><circle cx="765" cy="315" r="2"/><circle cx="744" cy="360" r="2"/></g>
       </svg>
       <div class="core">
         <svg class="core-art" viewBox="0 0 600 600" fill="none" aria-hidden="true">
           <defs>
             <radialGradient id="aura"><stop stop-color="#4bcfff" stop-opacity=".2"/><stop offset=".55" stop-color="#1781be" stop-opacity=".09"/><stop offset="1" stop-color="#1781be" stop-opacity="0"/></radialGradient>
-            <radialGradient id="sphere" cx=".32" cy=".25" r=".8"><stop stop-color="#abf2ff"/><stop offset=".18" stop-color="#48c9f5"/><stop offset=".5" stop-color="#137bab"/><stop offset=".82" stop-color="#072b54"/><stop offset="1" stop-color="#06162f"/></radialGradient>
+            <radialGradient id="sphere"><stop stop-color="#020711"/><stop offset=".3" stop-color="#061427"/><stop offset=".58" stop-color="#196c92"/><stop offset=".76" stop-color="#0a3455"/><stop offset="1" stop-color="#030e21"/></radialGradient>
             <radialGradient id="sphere-light" cx=".25" cy=".2" r=".65"><stop stop-color="#c7fbff" stop-opacity=".65"/><stop offset="1" stop-color="#7cddff" stop-opacity="0"/></radialGradient>
-            <linearGradient id="orbit-light"><stop stop-color="#4cb8f5" stop-opacity="0"/><stop offset=".5" stop-color="#a9f1ff"/><stop offset="1" stop-color="#4cb8f5" stop-opacity=".1"/></linearGradient>
             <filter id="soft-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
             <clipPath id="sphere-mask"><circle cx="300" cy="270" r="78"/></clipPath>
           </defs>
@@ -138,48 +209,76 @@
           <circle cx="300" cy="300" r="220" stroke="#529ac6" stroke-opacity=".22"/>
           <g class="orbit-reverse"><circle cx="300" cy="300" r="211" stroke="#4eacd6" stroke-opacity=".3" stroke-dasharray="85 35 85 155" pathLength="360"/><path d="M81 300h18m402 0h18M300 81v18m0 402v18" stroke="#89e4ff" stroke-opacity=".65"/></g>
           <path d="M42 300H13m574 0h-29M300 42V13m0 574v-29" stroke="#8de5ff" stroke-opacity=".5"/>
-          <circle cx="300" cy="270" r="104" stroke="#77ddff" stroke-opacity=".12"/>
-          <ellipse cx="300" cy="270" rx="143" ry="45" transform="rotate(-31 300 270)" stroke="#52d4ff" stroke-width="3" filter="url(#soft-glow)" opacity=".6"/>
-          <circle cx="300" cy="270" r="78" fill="url(#sphere)" stroke="#72d6fb" stroke-opacity=".6"/>
-          <g clip-path="url(#sphere-mask)" stroke="#b6f4ff" stroke-opacity=".22" stroke-width=".8">
-            <ellipse cx="300" cy="270" rx="34" ry="78" transform="rotate(-23 300 270)"/>
-            <ellipse cx="300" cy="270" rx="61" ry="78" transform="rotate(-23 300 270)"/>
-            <ellipse cx="300" cy="249" rx="80" ry="24" transform="rotate(-23 300 270)"/>
-            <ellipse cx="300" cy="288" rx="80" ry="24" transform="rotate(-23 300 270)"/>
-            <circle cx="300" cy="270" r="78" fill="url(#sphere-light)" stroke="none"/>
+          <circle cx="300" cy="270" r="126" stroke="#70d8ff" stroke-opacity=".1"/>
+          <circle cx="300" cy="270" r="113" stroke="#70d8ff" stroke-opacity=".2" stroke-dasharray="1 10" pathLength="360"/>
+          <g class="scanner-sweep">
+            <circle cx="300" cy="270" r="105" stroke="#8ce9ff" stroke-width="2" stroke-dasharray="60 300" pathLength="360"/>
+            <circle cx="300" cy="165" r="3" fill="#c0f5ff"/>
+            <path d="M300 165v24" stroke="#85e7ff" stroke-opacity=".4"/>
           </g>
-          <ellipse cx="300" cy="270" rx="143" ry="45" transform="rotate(-31 300 270)" stroke="url(#orbit-light)" stroke-width="1.5"/>
-          <ellipse cx="300" cy="270" rx="117" ry="101" transform="rotate(27 300 270)" stroke="#61d8fc" stroke-opacity=".3" stroke-width=".8" stroke-dasharray="220 400"/>
-          <circle cx="420" cy="199" r="3" fill="#c4f6ff"/><circle cx="420" cy="199" r="7" stroke="#8ce5ff" stroke-opacity=".35"/>
+          <circle cx="300" cy="270" r="96" stroke="#49b8eb" stroke-width="7" stroke-opacity=".15"/>
+          <circle cx="300" cy="270" r="92" stroke="#83def8" stroke-opacity=".6"/>
+          <circle cx="300" cy="270" r="78" fill="url(#sphere)" stroke="#90e8ff" stroke-opacity=".5"/>
+          <g clip-path="url(#sphere-mask)">
+            <g class="iris-blades" fill="#1d7b9a40" stroke="#83ddf5" stroke-opacity=".5" stroke-width=".7">
+              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(0 300 270)"/>
+              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(60 300 270)"/>
+              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(120 300 270)"/>
+              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(180 300 270)"/>
+              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(240 300 270)"/>
+              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(300 300 270)"/>
+            </g>
+            <circle cx="300" cy="270" r="78" fill="url(#sphere-light)"/>
+          </g>
+          <circle cx="300" cy="270" r="35" stroke="#8de7ff" stroke-opacity=".75" stroke-width=".8"/>
+          <circle cx="300" cy="270" r="26" fill="#041023" stroke="#73d7f7" stroke-width="1.5"/>
+          <circle cx="300" cy="270" r="12" fill="#42c8f5" filter="url(#soft-glow)" opacity=".5"/>
+          <circle cx="300" cy="270" r="4" fill="#d0f8ff"/>
+          <path d="M300 216v12m0 84v12m-54-54h12m84 0h12" stroke="#a3edff" stroke-width="1"/>
+          <path d="M199 251v-24h24m154 0h24v24m0 38v24h-24m-154 0h-24v-24" stroke="#72cfeb" stroke-opacity=".6"/>
           <path d="M280 479h40m-28 6h16" stroke="#9ce6ff" stroke-opacity=".55"/>
           <g stroke="#5ca8cf" stroke-opacity=".35"><path d="m126 126 12 12m324 324 12 12m0-348-12 12M138 462l-12 12"/></g>
         </svg>
-        <div class="core-label">ONE SPACE. ALL OF YOU.</div>
+        <div class="core-label">FIELD INTERFACE / THE HUB</div>
         <h1>THE HUB</h1>
         <p class="core-hint">Select a module to enter</p>
-        <div class="core-coordinate" aria-hidden="true">PERSONAL INTERFACE / 001</div>
+        <div class="core-coordinate" aria-hidden="true">SELECT A MODULE / ENTER WORKSPACE</div>
       </div>
       <nav class="apps" aria-label="Apps">
-      <button class="app" type="button" data-icon="projects" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#projects"/></svg></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 01</span><span class="app-name">Projects</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="goals" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#goals"/></svg></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 02</span><span class="app-name">Goals</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="health" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#health"/></svg></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 03</span><span class="app-name">Health</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="finance" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#finance"/></svg></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 04</span><span class="app-name">Finance</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="calendar" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#calendar"/></svg></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 05</span><span class="app-name">Calendar</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="people" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#people"/></svg></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 06</span><span class="app-name">Relationships</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="notes" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#notes"/></svg></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 07</span><span class="app-name">Notes</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="settings" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#settings"/></svg></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 08</span><span class="app-name">Settings</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="projects" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#projects"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 01</span><span class="app-name">Projects</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="goals" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#goals"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 02</span><span class="app-name">Goals</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="health" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#health"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 03</span><span class="app-name">Health</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="finance" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#finance"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 04</span><span class="app-name">Finance</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="calendar" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#calendar"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 05</span><span class="app-name">Calendar</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="people" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#people"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 06</span><span class="app-name">Relationships</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="notes" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#notes"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 07</span><span class="app-name">Notes</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="settings" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#settings"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / 08</span><span class="app-name">Settings</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       </nav>
     </div>
     <p class="workspace-caption">Your life. <span>/</span> Your direction. <span>/</span> Your space.</p>
   </main>
-  <footer><span><span class="footer-mark">◇</span> &nbsp; LOCAL WORKSPACE</span><div class="footer-track" aria-hidden="true"></div><span>08 MODULES &nbsp; / &nbsp; THE HUB</span></footer>
+  <footer><span><span class="footer-mark">◇</span> &nbsp; PERSONAL TERMINAL</span><button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>08 MODULES &nbsp; / &nbsp; THE HUB</span></footer>
   <dialog id="app-dialog" aria-labelledby="app-title" aria-describedby="app-description">
+    <div class="panel-eyebrow" aria-hidden="true">THE HUB / MODULE INTERFACE</div>
     <div id="app-icon" aria-hidden="true"></div>
     <h2 id="app-title"></h2>
     <p id="app-description">This app is yet to be built.</p>
     <form method="dialog"><button class="close" type="submit">Back to the Hub</button></form>
   </dialog>
   <script>
+    function dismissAccess() {
+      document.querySelector('.access-sequence')?.remove();
+      document.body.classList.add('interface-ready');
+    }
+    document.addEventListener('pointerdown', dismissAccess, { once: true });
+    document.addEventListener('keydown', dismissAccess, { once: true });
+    const motionToggle = document.querySelector('.motion-toggle');
+    motionToggle.addEventListener('click', () => {
+      dismissAccess();
+      const paused = document.body.classList.toggle('motion-paused');
+      motionToggle.setAttribute('aria-pressed', String(paused));
+      motionToggle.textContent = paused ? 'Resume motion' : 'Pause motion';
+    });
     const clock = document.getElementById('clock');
     const date = document.getElementById('date');
     const dialog = document.getElementById('app-dialog');

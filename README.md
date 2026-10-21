@@ -4,7 +4,9 @@ A personal space with a dark blue, futuristic interface.
 
 ## Current version
 
-An animated orbital home screen with eight module launchers. The modules currently open placeholder panels; their features are not implemented yet.
+A cinematic access sequence, animated optical core and eight module launchers. The modules currently open placeholder panels; their features are not implemented yet.
+
+The intro is visual only and does not authenticate users. Any click or keypress skips it. Use **Pause motion** to stop interface animations; the system's reduced-motion preference is also respected.
 
 Built with HTML, CSS and JavaScript. No dependencies or build step.
 
@@ -30,4 +32,4 @@ The published site is public. Keep personal records, credentials and private dat
 
 With the page open, paste `smoke-test.js` into the browser developer console, then run `testHub()`.
 
-The check covers all eight launchers, dialog titles, closing, focus restoration, touch target sizes, label fit and horizontal overflow. Repeat at desktop and mobile widths.
+The check covers intro dismissal, pause/resume, reduced motion, all eight launchers, dialog titles, closing, focus restoration, touch target sizes, label fit and horizontal overflow. Repeat at desktop and mobile widths.

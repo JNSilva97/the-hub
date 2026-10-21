@@ -5,6 +5,25 @@ async function testHub() {
   }
   const apps = [...document.querySelectorAll('.app')];
   const dialog = document.getElementById('app-dialog');
+  const access = document.querySelector('.access-sequence');
+  if (access) {
+    assert(getComputedStyle(access).pointerEvents === 'none', 'Intro blocks interaction.');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+    assert(!access.isConnected, 'Keyboard input did not dismiss the intro.');
+    assert(getComputedStyle(apps[0]).opacity === '1', 'Intro animation still hides keyboard controls.');
+  }
+  const motionToggle = document.querySelector('.motion-toggle');
+  const ring = document.querySelector('.orbit-slow');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    assert(getComputedStyle(ring).animationName === 'none', 'Reduced motion was ignored.');
+  } else {
+    motionToggle.click();
+    assert(motionToggle.getAttribute('aria-pressed') === 'true', 'Pause state is incorrect.');
+    assert(getComputedStyle(ring).animationName === 'none', 'Ambient motion did not stop.');
+    motionToggle.click();
+    assert(motionToggle.getAttribute('aria-pressed') === 'false', 'Resume state is incorrect.');
+    assert(getComputedStyle(ring).animationName === 'orbit', 'Ambient motion did not resume.');
+  }
   assert(apps.length === 8, 'The home screen must show eight apps.');
   assert(/^\d{2}:\d{2}$/.test(document.getElementById('clock').textContent), 'Clock is missing.');
   assert(document.documentElement.scrollWidth <= innerWidth, 'Horizontal overflow.');
