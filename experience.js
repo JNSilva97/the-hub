@@ -1,0 +1,173 @@
+// Decorative effects and quick access. Checklist data stays in routines.js.
+(() => {
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const motionAllowed = () => !reducedMotion.matches && !document.body.classList.contains('motion-paused');
+  const introTemplate = document.querySelector('.access-sequence').cloneNode(true);
+  const replay = document.getElementById('replay-intro');
+  const settingsMotion = document.getElementById('settings-motion');
+  const settingsSound = document.getElementById('settings-sound');
+  let audioContext;
+  let soundEnabled = false;
+  async function playTone() {
+    if (!soundEnabled || document.hidden) return;
+    try {
+      audioContext ??= new AudioContext();
+      if (audioContext.state === 'suspended') await audioContext.resume();
+      if (!soundEnabled) return;
+      const tone = audioContext.createOscillator();
+      const volume = audioContext.createGain();
+      tone.type = 'sine';
+      tone.frequency.setValueAtTime(740, audioContext.currentTime);
+      tone.frequency.exponentialRampToValueAtTime(1100, audioContext.currentTime + .07);
+      volume.gain.setValueAtTime(0, audioContext.currentTime);
+      volume.gain.linearRampToValueAtTime(.025, audioContext.currentTime + .008);
+      volume.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + .09);
+      tone.connect(volume).connect(audioContext.destination);
+      tone.start();
+      tone.stop(audioContext.currentTime + .1);
+      tone.onended = () => { tone.disconnect(); volume.disconnect(); };
+    } catch {
+      soundEnabled = false;
+      settingsSound.setAttribute('aria-pressed', 'false');
+      settingsSound.textContent = 'Unavailable';
+    }
+  }
+  settingsSound.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    settingsSound.setAttribute('aria-pressed', String(soundEnabled));
+    settingsSound.textContent = soundEnabled ? 'On' : 'Off';
+  });
+  document.addEventListener('click', event => {
+    if (event.isTrusted && event.target.closest('button, input[type="checkbox"]')) playTone();
+  });
+  settingsMotion.addEventListener('click', () => document.querySelector('.motion-toggle').click());
+  let bootTimers = [];
+
+  function stageIntro() {
+    bootTimers.forEach(clearTimeout);
+    const intro = document.querySelector('.access-sequence');
+    if (!intro || !motionAllowed()) return;
+    const status = intro.querySelector('.access-status');
+    bootTimers = ['ASSEMBLING WORKSPACE', 'CALIBRATING OPTICS', 'YOUR INTERFACE IS READY'].map((text, index) => setTimeout(() => {
+      if (intro.isConnected) status.textContent = text;
+    }, 650 + index * 650));
+  }
+  function updateMotionControls() {
+    settingsMotion.disabled = reducedMotion.matches;
+    settingsMotion.setAttribute('aria-pressed', String(motionAllowed()));
+    settingsMotion.textContent = motionAllowed() ? 'On' : 'Off';
+    document.getElementById('settings-motion-note').textContent = reducedMotion.matches ? 'Reduced motion is enabled on your device.' : 'Optical rings and interface transitions.';
+    replay.disabled = !motionAllowed();
+    replay.title = replay.disabled ? 'Enable motion to replay the intro' : 'Replay the opening sequence';
+    if (!motionAllowed()) document.querySelectorAll('.app').forEach(app => {
+      app.style.removeProperty('--spot-x');
+      app.style.removeProperty('--spot-y');
+    });
+  }
+  replay.addEventListener('click', () => {
+    if (!motionAllowed()) return;
+    document.querySelector('.access-sequence')?.remove();
+    document.body.prepend(introTemplate.cloneNode(true));
+    document.body.classList.remove('interface-ready');
+    stageIntro();
+  });
+  reducedMotion.addEventListener('change', updateMotionControls);
+  document.querySelector('.motion-toggle').addEventListener('click', updateMotionControls);
+  stageIntro();
+  updateMotionControls();
+
+  const skyline = document.querySelector('.city-buildings');
+  [28, 46, 33, 72, 49, 100, 65, 38, 58, 80, 43, 67, 93, 51, 76, 36, 60, 85, 47, 32].forEach((height, index) => {
+    const tower = document.createElement('span');
+    tower.style.setProperty('--height', `${height}%`);
+    tower.style.setProperty('--offset', `${index % 3 * 5}px`);
+    skyline.append(tower);
+  });
+
+  // One render per pointer frame; no continuous JavaScript animation loop.
+  for (const app of document.querySelectorAll('.app')) {
+    app.addEventListener('click', () => {
+      const settings = app.dataset.icon === 'settings';
+      document.getElementById('interface-settings').hidden = !settings;
+      document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : 'This module is coming later. Your checklists are ready in Routines.';
+    });
+    let frame;
+    app.addEventListener('pointermove', event => {
+      if (!motionAllowed() || event.pointerType !== 'mouse') return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const rect = app.getBoundingClientRect();
+        app.style.setProperty('--spot-x', `${event.clientX - rect.left}px`);
+        app.style.setProperty('--spot-y', `${event.clientY - rect.top}px`);
+      });
+    });
+    app.addEventListener('pointerleave', () => {
+      cancelAnimationFrame(frame);
+      app.style.removeProperty('--spot-x');
+      app.style.removeProperty('--spot-y');
+    });
+  }
+
+  const palette = document.getElementById('command-dialog');
+  const search = document.getElementById('command-search');
+  const results = document.getElementById('command-results');
+  let commands = [];
+  function renderResults() {
+    results.replaceChildren();
+    const query = search.value.trim().toLocaleLowerCase();
+    for (const command of commands.filter(item => `${item.name} ${item.kind}`.toLocaleLowerCase().includes(query))) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      const label = document.createElement('span');
+      label.textContent = command.name;
+      const kind = document.createElement('small');
+      kind.textContent = command.kind;
+      button.append(label, kind);
+      button.addEventListener('click', () => {
+        palette.close();
+        command.run();
+      });
+      results.append(button);
+    }
+    document.getElementById('command-empty').hidden = results.children.length > 0;
+  }
+  function openPalette() {
+    if (palette.open) { palette.close(); return; }
+    for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
+    const launch = target => { target.focus(); target.click(); };
+    const routines = document.getElementById('routines-launch');
+    commands = [{ name: 'Routines', kind: 'Checklists', run: () => launch(routines) }];
+    for (const card of document.querySelectorAll('.routine-card')) commands.push({
+      name: card.querySelector('.routine-card-name').textContent,
+      kind: 'Checklist', run: () => { launch(routines); card.click(); }
+    });
+    for (const app of document.querySelectorAll('.app')) commands.push({
+      name: app.querySelector('.app-name').textContent, kind: app.dataset.icon === 'settings' ? 'Interface' : 'Coming soon', run: () => launch(app)
+    });
+    search.value = '';
+    renderResults();
+    palette.showModal();
+    search.focus();
+  }
+  document.getElementById('command-launch').addEventListener('click', openPalette);
+  search.addEventListener('input', renderResults);
+  document.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && !event.altKey) {
+      event.preventDefault();
+      openPalette();
+    }
+  });
+  palette.addEventListener('keydown', event => {
+    const buttons = [...results.children];
+    if (['ArrowDown', 'ArrowUp'].includes(event.key) && buttons.length) {
+      event.preventDefault();
+      const index = buttons.indexOf(document.activeElement);
+      const next = index === -1 ? (event.key === 'ArrowDown' ? 0 : buttons.length - 1) : (index + (event.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length;
+      buttons[next].focus();
+    } else if (event.key === 'Enter' && event.target === search) {
+      event.preventDefault();
+      buttons[0]?.click();
+    }
+  });
+  document.addEventListener('visibilitychange', () => document.body.classList.toggle('window-hidden', document.hidden));
+})();

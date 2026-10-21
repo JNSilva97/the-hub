@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
-const publicFiles = ['index.html', 'interface.css', 'routines.css', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
+const publicFiles = ['index.html', 'interface.css', 'routines.css', 'cyberpunk.css', 'experience.js', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ viewport: { width: options.width || 1024, height: 900 }, reducedMotion: options.motion || 'no-preference' });
@@ -103,6 +103,85 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       assert.equal(await page.locator('[data-group="workday/after-work"]').isChecked(), true);
       await page.locator('[data-routine="training"]').click();
       assert.equal(await page.locator('.check-row input').first().isChecked(), true);
+    } finally { await context.close(); }
+  });
+
+  await t.test('quick access filters checklists, supports keyboard and handles no matches', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 390 });
+    try {
+      await ready(page);
+      await page.keyboard.press('Control+k');
+      assert.equal(await page.locator('#command-search').evaluate(el => el === document.activeElement), true);
+      await page.locator('#command-search').fill('workday');
+      assert.equal(await page.locator('#command-results button').count(), 1);
+      await page.keyboard.press('Enter');
+      assert.equal(await page.locator('#routines-dialog').evaluate(el => el.open), true);
+      assert.equal(await page.locator('#routine-name').textContent(), 'Workday');
+      await page.keyboard.press('Escape');
+      await page.locator('#command-launch').click();
+      await page.locator('#command-search').fill('zzzz-no-match');
+      assert.equal(await page.locator('#command-empty').isVisible(), true);
+      await page.keyboard.press('Enter');
+      assert.equal(await page.locator('#command-dialog').evaluate(el => el.open), true);
+      await page.locator('#command-search').fill('');
+      await page.keyboard.press('ArrowUp');
+      assert.equal(await page.locator('#command-results button').last().evaluate(el => el === document.activeElement), true);
+      await page.keyboard.press('ArrowDown');
+      assert.equal(await page.locator('#command-results button').first().evaluate(el => el === document.activeElement), true);
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#command-launch').evaluate(el => el === document.activeElement), true);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('replay can be skipped again and Settings controls motion and opt-in sound', async () => {
+    const { context, page, errors } = await fixture(browser);
+    try {
+      await context.addInitScript(() => {
+        window.toneCount = 0;
+        const NativeAudioContext = window.AudioContext;
+        window.AudioContext = class extends NativeAudioContext {
+          createOscillator() { window.toneCount++; return super.createOscillator(); }
+        };
+      });
+      await ready(page);
+      await page.keyboard.press('Shift');
+      await page.locator('#replay-intro').click();
+      assert.equal(await page.locator('.access-sequence').count(), 1);
+      await page.keyboard.press('Shift');
+      assert.equal(await page.locator('.access-sequence').count(), 0);
+      await page.locator('[data-icon="settings"]').click();
+      assert.equal(await page.locator('#interface-settings').isVisible(), true);
+      assert.equal(await page.evaluate(() => window.toneCount), 0);
+      await page.locator('#settings-motion').click();
+      assert.equal(await page.locator('.motion-toggle').getAttribute('aria-pressed'), 'true');
+      assert.equal(await page.locator('#replay-intro').isDisabled(), true);
+      await page.locator('#settings-motion').click();
+      await page.locator('#settings-sound').click();
+      await page.waitForFunction(() => window.toneCount > 0);
+      const tones = await page.evaluate(() => window.toneCount);
+      await page.locator('#settings-sound').click();
+      assert.equal(await page.evaluate(() => window.toneCount), tones);
+      await page.keyboard.press('Escape');
+      await page.locator('[data-icon="projects"]').click();
+      assert.equal(await page.locator('#interface-settings').isVisible(), false);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('completion feedback follows actual ticks and reduced motion disables replay', async () => {
+    const { context, page } = await fixture(browser, { motion: 'reduce' });
+    try {
+      await ready(page);
+      assert.equal(await page.locator('#replay-intro').isDisabled(), true);
+      await openRoutines(page);
+      for (const checkbox of await page.locator('.check-row input:visible').all()) await checkbox.check();
+      assert.equal(await page.locator('.routine-detail').getAttribute('data-complete'), 'true');
+      await page.locator('.check-row input').first().uncheck();
+      assert.equal(await page.locator('.routine-detail').getAttribute('data-complete'), 'false');
+      await page.keyboard.press('Escape');
+      await page.locator('[data-icon="settings"]').click();
+      assert.equal(await page.locator('#settings-motion').isDisabled(), true);
     } finally { await context.close(); }
   });
 

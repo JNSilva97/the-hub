@@ -13,8 +13,8 @@ function dismissAccess() {
   document.body.classList.add('interface-ready');
 }
 
-document.addEventListener('pointerdown', dismissAccess, { once: true });
-document.addEventListener('keydown', dismissAccess, { once: true });
+document.addEventListener('pointerdown', dismissAccess);
+document.addEventListener('keydown', dismissAccess);
 
 const motionToggle = document.querySelector('.motion-toggle');
 motionToggle.addEventListener('click', () => {
@@ -49,7 +49,7 @@ for (const button of document.querySelectorAll('.app')) {
 routinesLauncher.addEventListener('click', () => {
   routinesDialog.showModal();
 });
-for (const panel of [dialog, routinesDialog]) {
+for (const panel of [dialog, routinesDialog, document.getElementById('command-dialog')]) {
   panel.addEventListener('click', event => {
     if (event.target !== panel) return;
     const bounds = panel.getBoundingClientRect();

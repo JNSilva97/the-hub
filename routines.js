@@ -68,6 +68,7 @@ function updateProgress() {
     card.querySelector('.routine-mini-fill').style.transform = `scaleX(${progress.percent / 100})`;
   }
   const progress = getProgress(selected, state);
+  content.closest('.routine-detail').dataset.complete = String(progress.total > 0 && progress.done === progress.total);
   document.getElementById('routine-progress-label').textContent = progress.done === progress.total && progress.total ? 'All set. You’re ready.' : `${progress.done} of ${progress.total} ready`;
   const bar = document.getElementById('routine-progress');
   bar.setAttribute('aria-valuenow', progress.percent);

@@ -6,18 +6,21 @@
   <meta name="theme-color" content="#010205">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="interface.css?v=repair-1">
-  <link rel="stylesheet" href="routines.css?v=repair-1">
+  <link rel="stylesheet" href="interface.css?v=neon-1">
+  <link rel="stylesheet" href="routines.css?v=neon-1">
+  <link rel="stylesheet" href="cyberpunk.css?v=neon-1">
 </head>
 <body>
+  <div class="cityscape" aria-hidden="true"><div class="city-buildings"></div><div class="city-horizon"></div></div>
+  <div class="ambient-beam" aria-hidden="true"></div>
   <div class="access-sequence" aria-hidden="true">
     <div class="blast-door blast-door-left"></div><div class="blast-door blast-door-right"></div><div class="access-seam"></div>
     <div class="access-content">
       <div class="access-ring"><span class="access-crosshair"></span></div>
       <p class="access-title">THE HUB</p>
-      <p class="access-status">STAGING PERSONAL INTERFACE</p>
+      <p class="access-status">INITIALISING INTERFACE</p>
       <div class="access-progress"></div>
-      <p class="access-note">FIELD INTERFACE / VISUAL ACCESS SEQUENCE</p>
+      <p class="access-note">NIGHTFALL EDITION / PRESS ANY KEY TO ENTER</p>
     </div>
   </div>
   <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -36,7 +39,7 @@
     <div class="time-block"><p class="date" id="date"></p><div><time class="clock" id="clock" aria-label="Current time"></time><span class="timezone">LISBON / LOCAL TIME</span></div></div>
   </header>
   <main>
-    <div class="intro">PERSONAL TERMINAL / INTERFACE ONLINE</div>
+    <div class="intro">NIGHTFALL / PERSONAL TERMINAL <button id="command-launch" class="command-launch" type="button" aria-haspopup="dialog">Find anything <kbd>Ctrl K</kbd></button></div>
     <div class="workspace">
       <svg class="connections" viewBox="0 0 1200 570" preserveAspectRatio="none" aria-hidden="true">
         <path d="M270 120h42l96 90h48M270 230h65l65 25h35M270 340h65l65-25h35M270 450h42l96-90h48M930 120h-42l-96 90h-48M930 230h-65l-65 25h-35M930 340h-65l-65-25h-35M930 450h-42l-96-90h-48"/>
@@ -44,6 +47,7 @@
         <g fill="#91dcf5" stroke="none"><circle cx="456" cy="210" r="2"/><circle cx="435" cy="255" r="2"/><circle cx="435" cy="315" r="2"/><circle cx="456" cy="360" r="2"/><circle cx="744" cy="210" r="2"/><circle cx="765" cy="255" r="2"/><circle cx="765" cy="315" r="2"/><circle cx="744" cy="360" r="2"/></g>
       </svg>
       <div class="core">
+        <div class="core-reticle" aria-hidden="true"><span>01 / NIGHTFALL</span><span>PERSONAL SYSTEM</span></div>
         <div class="gyro" aria-hidden="true"></div><div class="gyro gyro-secondary" aria-hidden="true"></div>
         <svg class="core-art" viewBox="0 0 600 600" fill="none" aria-hidden="true">
           <defs>
@@ -106,7 +110,7 @@
       <button class="app" type="button" data-icon="settings" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#settings"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">08</span></span><span class="app-name">Settings</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       </nav>
     </div>
-    <p class="workspace-caption">Choose your next move.</p>
+    <div class="workspace-caption"><span class="live-dot" aria-hidden="true"></span> Your space. Your next move. <button id="replay-intro" type="button">Replay intro <span aria-hidden="true">↻</span></button></div>
   </main>
   <footer><span><span class="footer-mark">◇</span> &nbsp; PERSONAL TERMINAL</span><button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>09 MODULES &nbsp; / &nbsp; THE HUB</span></footer>
   <dialog id="app-dialog" aria-labelledby="app-title" aria-describedby="app-description">
@@ -114,6 +118,11 @@
     <div id="app-icon" aria-hidden="true"></div>
     <h2 id="app-title"></h2>
     <p id="app-description">This app is yet to be built.</p>
+    <div id="interface-settings" hidden>
+      <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
+      <div class="setting-row"><div><strong>Interface sound</strong><small>Quiet tones when you open and select.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
+      <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
+    </div>
     <form method="dialog"><button class="close" type="submit">Back to the Hub</button></form>
   </dialog>
   <dialog id="routines-dialog" class="routines-dialog" aria-labelledby="routines-title">
@@ -133,6 +142,15 @@
     </div>
     <div class="routine-feedback"><p id="routine-notice" class="routine-notice" role="status">Loading checklists…</p><button id="routine-retry" class="routine-retry" type="button" hidden>Try again</button></div>
   </dialog>
-  <script defer src="interface.js?v=repair-1"></script>
+  <dialog id="command-dialog" class="command-dialog" aria-labelledby="command-title">
+    <div class="command-heading"><h2 id="command-title">Quick access</h2><form method="dialog"><button class="routine-exit" aria-label="Close quick access">×</button></form></div>
+    <label for="command-search">Find an app or checklist</label>
+    <input id="command-search" type="search" placeholder="Where do you want to go?" autocomplete="off" autofocus>
+    <div id="command-results" class="command-results"></div>
+    <p id="command-empty" hidden>No matches. Try “Routines” or “Workday”.</p>
+    <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
+  </dialog>
+  <script defer src="interface.js?v=neon-1"></script>
+  <script defer src="experience.js?v=neon-1"></script>
 </body>
 </html>

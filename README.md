@@ -4,9 +4,13 @@ A personal space with a near-black, neon-blue interface.
 
 ## Current version
 
-A mechanical opening sequence, a three-dimensional optical core and nine module launchers. **Routines** contains five reusable checklists with saved ticks and optional sections. The other eight modules remain placeholders.
+**Nightfall edition.** A staged mechanical opening, an optical core, a distant neon skyline and nine module launchers. **Routines** contains five reusable checklists with saved ticks and optional sections. **Settings** controls motion and optional sound. The other seven modules remain placeholders.
 
 The intro is visual only and does not authenticate users. Any click or keypress skips it. Use **Pause motion** to stop interface animations; the system's reduced-motion preference is also respected.
+
+Use **Find anything** or **Ctrl/Cmd K** to search apps and checklists. Arrow keys move through results; Enter opens one and Escape closes the launcher. **Replay intro** repeats the opening when motion is enabled. Settings last for this visit; sound starts off and uses quiet, locally generated tones. There are no audio downloads or microphone permissions. Background CSS animations pause when the tab is hidden.
+
+For a plain-English tour of the files, read [START_HERE.md](START_HERE.md).
 
 Built with HTML, CSS and JavaScript. No dependencies or build step.
 
@@ -39,7 +43,7 @@ If a checklist download fails, open **Routines** and select **Try again**. A fai
 ## Code layout
 
 - `index.html` — accessible screen structure, icons and dialogs.
-- `interface.js` / `interface.css` — screen controls, clock, launchers, intro and motion settings.
+- `interface.js` / `interface.css` — screen controls, clock, launchers, intro and motion settings. `experience.js` / `cyberpunk.css` add the Nightfall theme, quick access and Settings.
 - `routines.js` / `routines.css` — checklist loading, rendering, browser storage and retry feedback.
 - `routine-model.mjs` — data validation, progress calculations and scoped reset.
 - `routines.demo.json` / ignored `private/routines.json` — public examples and local personal lists.
@@ -70,4 +74,4 @@ For the browser regression suite, make the installed `playwright` package availa
 node --test tests/browser.cjs
 ```
 
-The suite serves intercepted public fixtures without starting a server or reading personal data. It uses real pointer clicks at 320, 390, 768, 1024 and 1440 pixels, keyboard access, the smoke check, saved ticks, optional counts, scoped reset, cross-tab edits, failed-load retries, blocked/corrupt storage, reduced motion and separate demo/personal storage. Preview screenshots are ignored by Git. This verifies browser layouts; physical phones are not covered.
+The suite serves intercepted public fixtures without starting a server or reading personal data. It uses real pointer clicks at 320, 390, 768, 1024 and 1440 pixels, keyboard access, the smoke check, quick-access search, replay, Settings, sound opt-in, completion feedback, saved ticks, optional counts, scoped reset, cross-tab edits, failed-load retries, blocked/corrupt storage, reduced motion and separate demo/personal storage. Preview screenshots are ignored by Git. This verifies browser layouts and sound generation; physical phones and speaker volume are not covered.
