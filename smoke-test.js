@@ -48,6 +48,10 @@ async function testHub() {
   assert(routines.dataset.ready === 'true', 'Routines did not load.');
   assert(routines.querySelectorAll('.routine-card').length === 5, 'Five checklist cards should be available.');
   const routinesLauncher = document.getElementById('routines-launch');
+  routinesLauncher.scrollIntoView({ block: 'center' });
+  const launcherBounds = routinesLauncher.getBoundingClientRect();
+  const hit = document.elementFromPoint(launcherBounds.left + launcherBounds.width / 2, launcherBounds.top + launcherBounds.height / 2);
+  assert(hit && routinesLauncher.contains(hit), 'Another layer blocks the Routines button.');
   routinesLauncher.focus();
   routinesLauncher.click();
   assert(routines.open, 'Routines did not open.');

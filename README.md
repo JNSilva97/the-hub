@@ -30,6 +30,20 @@ On `127.0.0.1`, `localhost` or `[::1]`, the app first checks for `private/routin
 
 Keep the local server bound to loopback. Do not force-add the `private/` directory or copy personal data into public assets. Personal and demo ticks have separate browser-storage keys. Ticks are saved only in that browser and do not sync between devices. Clearing browser data clears the ticks; the original checklist file stays on disk.
 
+## Recovery and saved progress
+
+Open tabs in the same browser update their ticks when another tab saves progress. If browser storage is blocked or unreadable, ticks last for the current visit and the app shows a notice. Unreadable saved data is preserved. Browser storage does not support atomic updates across tabs; simultaneous edits can still conflict.
+
+If a checklist download fails, open **Routines** and select **Try again**. A failed script download requires a page reload, which the retry button handles. Saved ticks are kept.
+
+## Code layout
+
+- `index.html` — accessible screen structure, icons and dialogs.
+- `interface.js` / `interface.css` — screen controls, clock, launchers, intro and motion settings.
+- `routines.js` / `routines.css` — checklist loading, rendering, browser storage and retry feedback.
+- `routine-model.mjs` — data validation, progress calculations and scoped reset.
+- `routines.demo.json` / ignored `private/routines.json` — public examples and local personal lists.
+
 ## Publish with GitHub Pages
 
 In the repository settings, open **Pages**, choose **Deploy from a branch**, then select **main** and **/ (root)**.
@@ -49,3 +63,11 @@ Run the data-model tests with Node.js:
 ```sh
 node --test tests/routine-model.test.mjs
 ```
+
+For the browser regression suite, make the installed `playwright` package available to Node.js and use a system Chrome installation:
+
+```sh
+node --test tests/browser.cjs
+```
+
+The suite serves intercepted public fixtures without starting a server or reading personal data. It uses real pointer clicks at 320, 390, 768, 1024 and 1440 pixels, keyboard access, the smoke check, saved ticks, optional counts, scoped reset, cross-tab edits, failed-load retries, blocked/corrupt storage, reduced motion and separate demo/personal storage. Preview screenshots are ignored by Git. This verifies browser layouts; physical phones are not covered.
