@@ -25,6 +25,7 @@ async function fixture(browser, options = {}) {
     if (filename === 'core-transition.js' && options.noTransition) return route.abort();
     if (filename === 'routines.demo.json' && options.dataDelay) await new Promise(resolve => setTimeout(resolve, options.dataDelay));
     if (filename === 'routines.demo.json' && failures.data) return route.fulfill({ status: 503, body: 'Unavailable' });
+    if (filename === 'routines.demo.json' && options.data) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(options.data) });
     if (filename === 'routines.js' && failures.module) return route.abort();
     if (filename === 'routine-model.mjs' && failures.dependency) return route.abort();
     if (url.pathname === '/private/routines.json' && options.private) return route.fulfill({ contentType: 'application/json', body: demo });
@@ -44,6 +45,10 @@ async function ready(page, url = origin) {
 async function openRoutines(page) {
   await page.locator('#routines-launch').click({ timeout: 5000 });
   assert.equal(await page.locator('#routines-dialog').evaluate(element => element.open), true);
+}
+
+async function reviewChecklist(page) {
+  if (!await page.locator('#routine-review').evaluate(element => element.open)) await page.locator('#routine-review > summary').click();
 }
 
 test('The Hub browser regressions', { timeout: 180000 }, async t => {
@@ -87,6 +92,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
     try {
       await ready(page);
       await openRoutines(page);
+      await reviewChecklist(page);
       await page.locator('[data-routine="workday"]').click();
       await page.locator('[data-check="workday/work/item-1"]').check();
       await page.locator('[data-group="workday/after-work"]').check();
@@ -95,6 +101,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await page.locator('.check-row input').first().check();
       await ready(page);
       await openRoutines(page);
+      await reviewChecklist(page);
       await page.locator('[data-routine="workday"]').click();
       assert.equal(await page.locator('[data-check="workday/work/item-1"]').isChecked(), true);
       assert.equal(await page.locator('[data-group="workday/after-work"]').isChecked(), true);
@@ -175,6 +182,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       page.on('dialog', dialog => { errors.push('Unexpected browser confirmation'); dialog.dismiss(); });
       await ready(page);
       await openRoutines(page);
+      await reviewChecklist(page);
       const check = page.locator('.check-row input').first();
       await check.check();
       const saved = await page.evaluate(key => localStorage.getItem(key), storageKey);
@@ -234,6 +242,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await page.waitForSelector('#routines-dialog[data-ready="true"]', { state: 'attached' });
       await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
       assert.equal(await page.locator('.core-flight').count(), 0);
+      await reviewChecklist(page);
       await page.locator('.check-row input').first().check();
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
@@ -332,6 +341,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await ready(page);
       assert.equal(await page.locator('#replay-intro').isDisabled(), true);
       await openRoutines(page);
+      await reviewChecklist(page);
       for (const checkbox of await page.locator('.check-row input:visible').all()) await checkbox.check();
       assert.equal(await page.locator('.routine-detail').getAttribute('data-complete'), 'true');
       await page.locator('.check-row input').first().uncheck();
@@ -340,6 +350,87 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       await page.locator('[data-icon="settings"]').click();
       assert.equal(await page.locator('#settings-motion').isDisabled(), true);
+    } finally { await context.close(); }
+  });
+
+  for (const width of [320, 1440]) {
+    await t.test(`Field Mode advances, undoes, resumes and includes optional items at ${width}px`, async () => {
+      const { context, page, errors } = await fixture(browser, { width, motion: width === 320 ? 'reduce' : 'no-preference' });
+      try {
+        await ready(page);
+        await openRoutines(page);
+        assert.equal(await page.locator('#routine-review').evaluate(el => el.open), false);
+        assert.equal(await page.locator('#field-title').textContent(), 'Wash your face');
+        await page.locator('#field-complete').focus();
+        await page.keyboard.press('Enter');
+        assert.equal(await page.locator('#field-title').textContent(), 'Brush your teeth');
+        assert.equal(await page.locator('#field-complete').evaluate(el => el === document.activeElement), true);
+        await page.locator('#field-undo').click();
+        assert.equal(await page.locator('#field-title').textContent(), 'Wash your face');
+        assert.equal(await page.locator('[data-check="personal-care/care/item-1"]').isChecked(), false);
+        for (let i = 0; i < 3; i++) await page.locator('#field-complete').click();
+        assert.equal(await page.locator('.routine-detail').getAttribute('data-complete'), 'true');
+        assert.equal(await page.locator('#field-title').textContent(), 'All set. You’re ready.');
+        assert.equal(await page.locator('#field-complete').evaluate(el => el === document.activeElement), true);
+        if (width === 320) {
+          assert.equal(await page.locator('.field-mark').evaluate(el => getComputedStyle(el).animationName), 'none');
+          assert.equal(await page.locator('.field-copy').evaluate(el => el.getAnimations().length), 0);
+        }
+        await page.locator('#field-complete').click();
+        assert.equal(await page.locator('#routine-review').evaluate(el => el.open), true);
+        await page.locator('#field-undo').click();
+        assert.equal(await page.locator('#field-title').textContent(), 'Get a fresh towel');
+        await ready(page);
+        await openRoutines(page);
+        assert.equal(await page.locator('#field-title').textContent(), 'Get a fresh towel');
+        assert.equal(await page.locator('#field-undo').isVisible(), false);
+        await reviewChecklist(page);
+        await page.locator('[data-group="personal-care/extras"]').check();
+        await page.locator('#routine-review > summary').click();
+        await page.locator('#field-complete').click();
+        assert.equal(await page.locator('#field-title').textContent(), 'Tidy your grooming kit');
+        await page.locator('#field-complete').click();
+        assert.equal(await page.locator('#field-title').textContent(), 'Put away toiletries');
+        await reviewChecklist(page);
+        await page.locator('[data-group="personal-care/extras"]').uncheck();
+        assert.equal(await page.locator('.routine-detail').getAttribute('data-complete'), 'true');
+        await page.locator('[data-group="personal-care/extras"]').check();
+        assert.equal(await page.locator('#field-title').textContent(), 'Put away toiletries');
+        await page.locator('[data-routine="training"]').click();
+        assert.equal(await page.locator('#field-title').textContent(), 'Pack training clothes');
+        assert.equal(await page.locator('#field-undo').isVisible(), false);
+        await page.locator('#field-complete').click();
+        await page.locator('[data-routine="personal-care"]').click();
+        await page.locator('#routine-review > summary').click();
+        await page.locator('#routine-restart').click();
+        await page.locator('#restart-confirm').click();
+        assert.equal(await page.locator('#field-title').textContent(), 'Wash your face');
+        assert.equal(await page.locator('#field-complete').evaluate(el => el === document.activeElement), true);
+        assert.equal(await page.locator('#routine-progress-label').textContent(), '0 of 5 ready');
+        assert.equal(await page.locator('[data-routine="training"] .routine-count').textContent(), '1 / 4');
+        assert.equal(await page.locator('#routines-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    });
+  }
+
+  await t.test('Field Mode handles long labels and a checklist with only optional sections', async () => {
+    const data = JSON.parse(demo);
+    data.routines = [data.routines[0]];
+    data.routines[0].groups = [data.routines[0].groups[1]];
+    data.routines[0].groups[0].items[0].label = 'Prepare your equipment and check everything you need before leaving '.repeat(3).trim();
+    const { context, page } = await fixture(browser, { width: 320, data, motion: 'reduce' });
+    try {
+      await ready(page);
+      await openRoutines(page);
+      assert.equal(await page.locator('#field-group').textContent(), 'NO ACTIVE ITEMS');
+      assert.equal(await page.locator('.routine-detail').getAttribute('data-complete'), 'false');
+      await page.locator('#field-complete').click();
+      await page.locator('[data-group="personal-care/extras"]').check();
+      assert.equal(await page.locator('#field-title').textContent(), data.routines[0].groups[0].items[0].label);
+      assert.equal(await page.locator('#routines-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+      await page.locator('#field-complete').click();
+      assert.equal(await page.locator('#field-title').textContent(), 'Put away toiletries');
     } finally { await context.close(); }
   });
 
@@ -394,10 +485,14 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await ready(other);
       await openRoutines(page);
       await openRoutines(other);
+      await reviewChecklist(page);
+      await reviewChecklist(other);
       await page.locator('.check-row input').nth(0).check();
       await other.waitForFunction(() => document.querySelectorAll('.check-row input')[0].checked);
+      assert.equal(await other.locator('#field-title').textContent(), 'Brush your teeth');
       await other.locator('.check-row input').nth(1).check();
       await page.waitForFunction(() => document.querySelectorAll('.check-row input')[1].checked);
+      assert.equal(await page.locator('#field-title').textContent(), 'Get a fresh towel');
       const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey);
       assert.equal(Object.values(saved.checks).filter(Boolean).length, 2);
       await other.evaluate(key => localStorage.removeItem(key), storageKey);
@@ -437,11 +532,12 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
         }, { storage, key: storageKey });
         await ready(page);
         await openRoutines(page);
+        await reviewChecklist(page);
         if (storage === 'corrupted after loading') {
           await page.evaluate(key => localStorage.setItem(key, '{broken'), storageKey);
         }
-        await page.locator('.check-row input').nth(0).check();
-        await page.locator('.check-row input').nth(1).check();
+        await page.locator('#field-complete').click();
+        await page.locator('#field-complete').click();
         assert.equal(await page.locator('.check-row input:checked').count(), 2);
         assert.match(await page.locator('#routine-notice').textContent(), /this visit only/);
         if (storage !== 'blocked') assert.equal(await page.evaluate(key => localStorage.getItem(key), storageKey), '{broken');
@@ -457,6 +553,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await openRoutines(page);
       assert.equal(await page.locator('#routines-dialog').getAttribute('data-source'), 'private');
       assert.equal(await page.locator('.gyro').first().evaluate(element => getComputedStyle(element).animationName), 'none');
+      await reviewChecklist(page);
       await page.locator('.check-row input').first().check();
       assert.equal(await page.evaluate(() => localStorage.getItem('thehub:routines:demo:v1')), null);
       assert.notEqual(await page.evaluate(() => localStorage.getItem('thehub:routines:private:v1')), null);

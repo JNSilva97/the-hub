@@ -310,6 +310,11 @@ body.window-hidden ::after {
   }
 }
 
+@keyframes field-lock {
+  0% { transform: scale(.8) rotate(-30deg); opacity: .3; }
+  100% { transform: none; opacity: 1; }
+}
+
 @keyframes section-arrive {
   0% {
     opacity: 0;

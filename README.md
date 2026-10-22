@@ -10,6 +10,8 @@ The intro is visual only and does not authenticate users. Any click or keypress 
 
 Use **Find anything** or **Ctrl/Cmd K** to search apps and checklists. Arrow keys move through results; Enter opens one and Escape closes the launcher. **Replay intro** repeats the opening when motion is enabled. Settings last for this visit; sound starts off and uses quiet, locally generated tones. There are no audio downloads or microphone permissions. Background CSS animations pause when the tab is hidden.
 
+**Field Mode** opens with the first unchecked item in checklist order. Choose **Mark done** to save that tick and advance, or **Undo last tick** to reverse the last Field Mode action. **Review checklist** expands the full list and optional section switches; only enabled sections enter the sequence. Finishing shows a short visual confirmation. Existing ticks are reused, including after a reload; no daily setup or new storage is needed.
+
 Optional sound uses three short digital textures: a rising scanner sweep for opening, a falling sweep for closing and a brief signal for selection. Frequency modulation adds metallic sidebands over band-passed data noise, with soft attacks and no bass impact or continuous drone. Turning sound off fades any remaining tail; hidden tabs are silenced. The synthesis and levels live in `interface-sound.js`.
 
 Opening **Routines** unfolds the workspace from the optical core and docks its artwork in the header. Closing it reverses the journey. The opening takes 880 ms and the return 520 ms. Reduced or paused motion opens and closes immediately. Escape during opening reverses the journey; pressing Escape again completes closing immediately. Resizing or hiding the tab finishes the current transition safely.

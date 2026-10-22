@@ -6,6 +6,8 @@ The app has three parts: HTML puts things on the screen, CSS makes them look and
 
 Open the homepage and choose **Routines** beneath the optical core. Pick a checklist and tick its items. **Find anything** opens a search box that can take you straight to a checklist. **Settings** controls animation and optional sound.
 
+Routines starts in **Field Mode**: one item, a **Mark done** button and a preview of what comes next. **Undo last tick** reverses your last Field Mode tick. Open **Review checklist** to change any tick or include optional sections. Your saved progress is shared between both views.
+
 The online version uses example checklists. Your real lists load from the PC version at `http://127.0.0.1:8765/` while the local server is running. Ticks stay in the browser you use. They are not synced to your phone.
 
 ## 2. Find the right file
