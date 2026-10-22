@@ -126,7 +126,7 @@
 }
 
 .core-reticle span:last-child {
-  inset: auto 0 -10px auto;
+  inset: auto -16px -10px auto;
   font-size: 12px;
   color: #a4e4ff;
 }
