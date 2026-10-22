@@ -74,4 +74,6 @@ Notes saves each note separately. If two tabs edit the same text, it preserves l
 4. Update asset version strings in `index.html` when publishing changed scripts or styles.
 5. Commit and push the public files; GitHub Pages publishes them.
 
-Projects, Goals, Health, Finance, Calendar, Relationships and Notes are still marked as coming later. Routines and Settings work now.
+Projects, Goals, Health, Finance, Calendar and Relationships are still marked as coming later. Routines, Notes and Settings work now.
+
+Private login and cross-device synchronization are not active. The database preparation, access rules and remaining connection steps live in [supabase/README.md](supabase/README.md). This preparation does not upload your local checklists or notes.

@@ -30,6 +30,8 @@ For a plain-English tour of the files, read [START_HERE.md](START_HERE.md).
 
 Built with HTML, CSS and JavaScript. No dependencies or build step.
 
+Private account access and cross-device synchronization are being prepared in [supabase/README.md](supabase/README.md). The database migration and isolation checks are ready; they are not connected to the website yet. Current storage behavior is unchanged.
+
 Display typography uses self-hosted Orbitron and Rajdhani fonts. Their SIL Open Font License notices are included in `assets/fonts/`. Checklist text keeps the system font for readability.
 
 ## Preview locally
