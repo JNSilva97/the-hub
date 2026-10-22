@@ -79,6 +79,7 @@
   document.addEventListener('hub:progress', event => {
     const previous = new Map(latest.map(signal => [signal.id, signal]));
     latest = event.detail;
+    if (!latest.length) { stopPulses(); render(); return; }
     let newlyComplete = false;
     for (const signal of latest) {
       if (!complete(signal)) pendingCompletions.delete(signal.id);

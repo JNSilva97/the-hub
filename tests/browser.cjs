@@ -9,19 +9,36 @@ const root = path.resolve(__dirname, '..');
 const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
-const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
+const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ viewport: { width: options.width || 1024, height: 900 }, reducedMotion: options.motion || 'no-preference' });
   const requests = [];
   const errors = [];
-  const failures = { data: false, module: false, dependency: false };
+  const failures = { data: false, module: false, dependency: false, sdk: Boolean(options.sdkFailure) };
+  if (options.firebase) await context.addInitScript(({ documents, signedIn, fromCache }) => {
+    window.__hubFirebase = {
+      docs: documents,
+      user: signedIn ? { uid: 'account-a', email: 'test@example.invalid' } : null,
+      writes: [], held: [], imports: 0, rejectWrites: false, holdWrites: false, fromCache,
+      publish() {
+        if (!this.listener) return;
+        const records = Object.entries(this.docs[this.listener.uid] || {});
+        this.listener.next({ empty: !records.length, metadata: { fromCache: this.fromCache }, docs: records.map(([id, data]) => ({ id, data: () => structuredClone(data) })) });
+      }
+    };
+  }, { documents: options.cloudDocuments || {}, signedIn: options.signedIn !== false, fromCache: Boolean(options.fromCache) });
   context.on('page', page => page.on('pageerror', error => errors.push(error.message)));
   await context.route('**/*', async route => {
     const request = route.request();
     const url = new URL(request.url());
     const filename = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
     requests.push({ pathname: url.pathname, method: request.method() });
+    if (options.firebase && url.hostname === 'www.gstatic.com') {
+      if (failures.sdk) return route.abort();
+      return route.fulfill({ path: path.join(root, 'tests/firebase-fixture.mjs'), contentType: 'text/javascript' });
+    }
+    if (options.firebase && filename === 'firebase-config.mjs') return route.fulfill({ contentType: 'text/javascript', body: 'export const firebaseConfig = {projectId:"fixture",apiKey:"fixture",authDomain:"fixture.firebaseapp.com",appId:"fixture"};' });
     if (filename === 'core-transition.js' && options.noTransition) return route.abort();
     if (filename === 'notes.js' && options.noNotes) return route.abort();
     if (filename === 'routines.demo.json' && options.dataDelay) await new Promise(resolve => setTimeout(resolve, options.dataDelay));
@@ -55,6 +72,194 @@ async function reviewChecklist(page) {
 test('The Hub browser regressions', { timeout: 180000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   t.after(() => browser.close());
+
+  await t.test('unconfigured private access explains setup and does not download or contact Firebase', async () => {
+    const { context, page, requests, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
+    try {
+      await ready(page);
+      await openRoutines(page);
+      await page.locator('#account-launch').click();
+      assert.equal(await page.locator('#account-dialog').evaluate(element => element.open), true);
+      assert.match(await page.locator('#account-status').textContent(), /not configured/);
+      assert.equal(await page.locator('#account-login').isDisabled(), true);
+      assert.equal(await page.locator('#account-import').isVisible(), false);
+      assert.equal(requests.some(request => request.pathname.includes('firebasejs')), false);
+      assert.equal(await page.locator('#account-dialog').evaluate(element => element.scrollWidth > element.clientWidth), false);
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#account-launch').evaluate(element => document.activeElement === element), true);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('account sync merges different ticks, keeps pending edits and clears private readouts on sign-out', async () => {
+    const privateData = JSON.parse(demo);
+    privateData.routines[0].name = 'Private fixture';
+    const { context, page, errors } = await fixture(browser, { width: 390, motion: 'reduce', firebase: true, cloudDocuments: {
+      'account-a': { routines: privateData, progress: { checks: {}, optional: {} } },
+      'account-b': { routines: privateData, progress: { checks: { 'personal-care/morning/item-1': true }, optional: {} } }
+    } });
+    try {
+      await ready(page);
+      await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account' && document.querySelector('.routine-card'));
+      await openRoutines(page);
+      assert.equal(await page.locator('#routine-name').textContent(), 'Private fixture');
+      const keys = await page.locator('#routine-content input[data-check]').evaluateAll(inputs => inputs.slice(0, 2).map(input => input.dataset.check));
+      await page.evaluate(() => { window.__hubFirebase.holdWrites = true; });
+      await page.locator('#field-complete').click();
+      await page.evaluate(keys => {
+        const test = window.__hubFirebase;
+        test.docs['account-a'].progress.checks[keys[1]] = true;
+        test.publish();
+      }, keys);
+      assert.match(await page.locator('#routine-progress-label').textContent(), /2 of 3/);
+      await page.locator('#account-launch').click();
+      assert.equal(await page.locator('#account-logout').isDisabled(), true);
+      await page.evaluate(() => { window.__hubFirebase.held.splice(0).forEach(finish => finish()); });
+      await page.waitForFunction(() => !document.getElementById('account-logout').disabled);
+      const writes = await page.evaluate(() => window.__hubFirebase.writes);
+      assert.deepEqual(writes, [{ path: ['users', 'account-a', 'hub', 'progress'], patch: { checks: { [keys[0]]: true } } }]);
+      assert.deepEqual(await page.evaluate(() => window.__hubFirebase.docs['account-a'].progress.checks), { [keys[0]]: true, [keys[1]]: true });
+      await page.locator('#account-logout').click();
+      await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'demo');
+      assert.equal(await page.locator('#routine-name').textContent(), 'Personal Care');
+      assert.equal(await page.locator('#core-signal-list').textContent().then(text => text.includes('Private fixture')), false);
+      assert.equal(await page.locator('#account-identity').textContent(), 'Your checklists, on your devices.');
+      assert.deepEqual(await page.evaluate(() => Object.keys(localStorage)), []);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('rejected cloud writes retain the draft, block sign-out and retry without overwriting other ticks', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce', firebase: true, cloudDocuments: {
+      'account-a': { routines: JSON.parse(demo), progress: { checks: {}, optional: {} } }
+    } });
+    try {
+      await ready(page);
+      await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account' && document.querySelector('.routine-card'));
+      await openRoutines(page);
+      const keys = await page.locator('#routine-content input[data-check]').evaluateAll(inputs => inputs.slice(0, 2).map(input => input.dataset.check));
+      await page.evaluate(() => { window.__hubFirebase.rejectWrites = true; });
+      await page.locator('#field-complete').click();
+      await page.waitForFunction(() => document.getElementById('account-status').textContent.includes('not synced'));
+      await page.evaluate(keys => {
+        const test = window.__hubFirebase;
+        test.docs['account-a'].progress.checks[keys[1]] = true;
+        test.publish();
+      }, keys);
+      assert.match(await page.locator('#routine-progress-label').textContent(), /2 of 3/);
+      await page.locator('#account-launch').click();
+      assert.equal(await page.locator('#account-logout').isDisabled(), true);
+      await page.evaluate(() => { window.__hubFirebase.rejectWrites = false; });
+      await page.locator('#account-retry').click();
+      await page.waitForFunction(() => !document.getElementById('account-logout').disabled);
+      assert.deepEqual(await page.evaluate(() => window.__hubFirebase.docs['account-a'].progress.checks), { [keys[1]]: true, [keys[0]]: true });
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('PC import is explicit, keeps local storage and creates definitions and progress together', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce', firebase: true, private: true });
+    try {
+      const saved = { checks: { 'personal-care/morning/item-1': true }, optional: {} };
+      await context.addInitScript(saved => {
+        localStorage.setItem('thehub:routines:private:v1', JSON.stringify(saved));
+        localStorage.setItem('thehub:routines:demo:v1', '{"checks":{},"optional":{}}');
+      }, saved);
+      await ready(page, 'http://127.0.0.1:8765/');
+      await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'private' && !document.getElementById('account-import').hidden);
+      assert.equal(await page.evaluate(() => window.__hubFirebase.imports), 0);
+      await openRoutines(page);
+      await page.locator('#account-launch').click();
+      await page.locator('#account-import').click();
+      await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
+      assert.equal(await page.locator('#account-import').isVisible(), false);
+      const result = await page.evaluate(() => ({ records: window.__hubFirebase.docs['account-a'], imports: window.__hubFirebase.imports, saved: localStorage.getItem('thehub:routines:private:v1') }));
+      assert.equal(result.imports, 1);
+      assert.deepEqual(result.records.routines, JSON.parse(demo));
+      assert.deepEqual(result.records.progress, saved);
+      assert.deepEqual(JSON.parse(result.saved), saved);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('an empty cached snapshot waits for the server and public demo lists cannot be imported', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce', firebase: true, fromCache: true });
+    try {
+      await ready(page);
+      assert.equal(await page.locator('.routine-card').count(), 0);
+      assert.equal(await page.locator('#account-import').isVisible(), false);
+      await page.evaluate(() => { window.__hubFirebase.fromCache = false; window.__hubFirebase.publish(); });
+      await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'demo');
+      await openRoutines(page);
+      await page.locator('#account-launch').click();
+      assert.equal(await page.locator('#account-import').isVisible(), false);
+      assert.match(await page.locator('#account-status').textContent(), /Open the PC version/);
+      assert.equal(await page.evaluate(() => window.__hubFirebase.imports), 0);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('Google sign-in opens the account workspace and an access failure can retry safely', async () => {
+    const privateData = JSON.parse(demo);
+    privateData.routines[0].groups[0].items[0].label = 'Private account item';
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce', firebase: true, signedIn: false, cloudDocuments: {
+      'account-a': { routines: privateData, progress: { checks: {}, optional: {} } }
+    } });
+    try {
+      await ready(page);
+      await openRoutines(page);
+      await page.locator('#account-launch').click();
+      await page.locator('#account-login').click();
+      await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
+      assert.match(await page.locator('#account-identity').textContent(), /test@example.invalid/);
+      await page.evaluate(() => window.__hubFirebase.listener.failed(new Error('Denied.')));
+      await page.waitForFunction(() => document.getElementById('account-status').textContent.includes('Account access failed'));
+      assert.equal(await page.locator('.routine-card').count(), 0);
+      assert.equal(await page.locator('#core-signal-list li').count(), 0);
+      assert.equal(await page.locator('#routines-dialog').textContent().then(text => text.includes('Private account item')), false);
+      await page.locator('#account-retry').click();
+      await page.waitForFunction(() => document.querySelectorAll('.routine-card').length === 5);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('a failed Firebase SDK leaves demo progress usable and reload retry recovers', async () => {
+    const { context, page, errors, failures } = await fixture(browser, { motion: 'reduce', firebase: true, signedIn: false, sdkFailure: true });
+    try {
+      await ready(page);
+      await openRoutines(page);
+      await page.locator('#field-complete').click();
+      const saved = await page.evaluate(key => localStorage.getItem(key), storageKey);
+      await page.locator('#account-launch').click();
+      await page.waitForFunction(() => document.getElementById('account-status').textContent.includes('Firebase could not start'));
+      assert.equal(await page.locator('#account-login').isDisabled(), true);
+      failures.sdk = false;
+      await Promise.all([page.waitForEvent('load'), page.locator('#account-retry').click()]);
+      await page.waitForSelector('#routines-dialog[data-ready="true"]', { state: 'attached' });
+      assert.equal(await page.evaluate(key => localStorage.getItem(key), storageKey), saved);
+      await openRoutines(page);
+      await page.locator('#account-launch').click();
+      await page.waitForFunction(() => !document.getElementById('account-login').disabled);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('PC import refuses to replace an account populated by another device', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce', firebase: true, private: true });
+    try {
+      await ready(page, 'http://127.0.0.1:8765/');
+      await page.waitForFunction(() => !document.getElementById('account-import').hidden);
+      await openRoutines(page);
+      await page.locator('#account-launch').click();
+      const existing = { routines: JSON.parse(demo), progress: { checks: { 'other-device/item': true }, optional: {} } };
+      await page.evaluate(existing => { window.__hubFirebase.docs['account-a'] = existing; }, existing);
+      await page.locator('#account-import').click();
+      await page.waitForFunction(() => document.getElementById('account-status').textContent.includes('PC import did not finish'));
+      assert.deepEqual(await page.evaluate(() => window.__hubFirebase.docs['account-a']), existing);
+      assert.equal(await page.evaluate(() => window.__hubFirebase.imports), 0);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
 
   for (const width of [320, 390, 768, 1024, 1440]) {
     await t.test(`real clicks, keyboard, layout and smoke check at ${width}px`, async () => {

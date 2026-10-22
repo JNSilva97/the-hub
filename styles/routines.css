@@ -98,6 +98,21 @@
   font: 600 11px var(--font-interface);
 }
 
+#account-launch {
+  margin-left: auto;
+  min-height: 44px;
+  padding: 9px 14px;
+  border: 1px solid #3476ae;
+  background: #07192e;
+  color: #c8ecff;
+  font: 600 15px var(--font-interface);
+}
+
+#account-launch:hover {
+  background: #10345a;
+  border-color: #80d5ff;
+}
+
 .routine-layout {
   display: grid;
   grid-template-columns: 235px minmax(0px, 1fr);

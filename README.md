@@ -28,7 +28,7 @@ Opening **Routines** unfolds the workspace from the optical core and docks its a
 
 For a plain-English tour of the files, read [START_HERE.md](START_HERE.md).
 
-Built with HTML, CSS and JavaScript. No dependencies or build step.
+Built with HTML, CSS and JavaScript, without a build step. Optional checklist sync uses the official Firebase Authentication and Firestore SDK from Google's CDN; it is currently disabled until a Firebase project is configured. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for activation and verification.
 
 Display typography uses self-hosted Orbitron and Rajdhani fonts. Their SIL Open Font License notices are included in `assets/fonts/`. Checklist text keeps the system font for readability.
 
@@ -48,7 +48,9 @@ The public website loads `routines.demo.json`, which contains dummy examples.
 
 On `127.0.0.1`, `localhost` or `[::1]`, the app first checks for `private/routines.json`. This file uses the same format as the demo data and is excluded from Git. If it is unavailable or invalid, the app shows the demo version with a notice.
 
-Keep the local server bound to loopback. Do not force-add the `private/` directory or copy personal data into public assets. Personal and demo ticks have separate browser-storage keys. Ticks are saved only in that browser and do not sync between devices. Clearing browser data clears the ticks; the original checklist file stays on disk.
+Keep the local server bound to loopback. Do not force-add the `private/` directory or copy personal data into public assets. Personal and demo ticks have separate browser-storage keys. Without a configured and signed-in Firebase account, ticks stay in that browser. Clearing browser data clears those local ticks; the original checklist file stays on disk.
+
+**Private access** in Routines opens the account panel. Once Firebase is activated, sign in with Google and explicitly choose **Sync PC checklists** on the loopback version to import personal definitions and progress into an empty account. The same account can then access them from the public site. Demo data and notes are not uploaded. Different ticks merge individually; a failed or pending write stays in the open tab, with a warning and retry. Wait for the synced notice before closing or reloading. This version does not persist pending cloud writes across a forced close or reload.
 
 ## Recovery and saved progress
 
@@ -69,6 +71,8 @@ If a checklist download fails, open **Routines** and select **Try again**. A fai
 `core-transition.js` owns the core-to-Routines animation. It uses native Web Animations and a decorative manual popover, with no animation library. The checklist remains a native modal dialog. When popovers are unavailable, the workspace still unfolds; if the transition script is unavailable, the dialog opens normally. The artwork copy is temporary, ignores clicks, takes no keyboard focus and is removed after each journey. SVG IDs are prefixed to avoid collisions.
 
 `core-progress.js` listens for `hub:progress` events from `routines.js`. It does not fetch or store data. It holds the departure ring values while Routines is open, then applies the latest counts after the native dialog closes, so the return artwork meets the home core before the rings fill. An undone completion is removed from the pending home pulse.
+
+`cloud.js` owns account state and synchronization. `firebase-config.mjs` is public connection configuration, while `firestore.rules` must be deployed on the service to enforce isolation. The checklist data model calculates the smallest progress patch, and the existing UI renders account, local and demo workspaces. Account changes clear the previous workspace's cards and core readout before loading the next one.
 
 ### Stylesheets
 

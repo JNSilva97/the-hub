@@ -8,7 +8,7 @@ const scriptUrl = new URL(document.currentScript.src);
 const routinesUrl = new URL('./routines.js', scriptUrl);
 routinesUrl.search = scriptUrl.search;
 let routinesModule;
-let loadingRoutines = false;
+let routinesLoadVersion = 0;
 const routineTransition = typeof createCoreTransition === 'function' ? createCoreTransition(routinesDialog) : {
   open: () => routinesDialog.showModal(), close: () => routinesDialog.close()
 };
@@ -69,8 +69,7 @@ for (const panel of [dialog, routinesDialog, notesDialog, document.getElementByI
 }
 
 async function loadRoutines() {
-  if (loadingRoutines) return;
-  loadingRoutines = true;
+  const current = ++routinesLoadVersion;
   retryButton.hidden = true;
   routinesDialog.dataset.ready = 'false';
   document.getElementById('routine-source').textContent = 'LOADING';
@@ -79,17 +78,18 @@ async function loadRoutines() {
   notice.textContent = 'Loading checklists…';
   try {
     routinesModule ??= await import(routinesUrl.href);
+    if (current !== routinesLoadVersion) return;
     await routinesModule.initialiseRoutines();
   } catch {
+    if (current !== routinesLoadVersion) return;
     document.getElementById('routine-source').textContent = 'UNAVAILABLE';
     document.getElementById('routine-data-note').textContent = 'Your saved ticks have not been changed.';
     notice.setAttribute('role', 'alert');
     notice.textContent = location.protocol === 'file:' ? 'Open the PC version at http://127.0.0.1:8765/ using the local server.' : 'Couldn’t load the checklists. Check your connection and try again.';
     retryButton.hidden = false;
-  } finally {
-    loadingRoutines = false;
   }
 }
+document.addEventListener('hub:workspacechange', loadRoutines);
 retryButton.addEventListener('click', () => {
   // Reload clears the browser's cached failures for the module and its imports.
   if (!routinesModule) location.reload();

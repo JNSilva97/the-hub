@@ -1,0 +1,49 @@
+# Checklist sync: activation
+
+The integration is implemented, but **not activated**: `firebase-config.mjs` is `null` until a project is connected. The current website does not contact Firebase or upload personal data. Notes remain browser-only.
+
+## 1. Create the free project
+
+Open [Firebase Console](https://console.firebase.google.com/) with the Google account that will own the project. Create a project on the **Spark** plan. Skip Google Analytics and keep billing disabled. Only Authentication and Firestore are needed. No Firebase CLI, emulator or desktop program is required for this setup.
+
+Register a **Web** app and copy its Firebase configuration. These web configuration values are public connection information, not administrative credentials. Never copy a service-account key, private key or Google login credential into the project or chat.
+
+## 2. Enable login
+
+In Authentication, enable the **Google** sign-in provider and select the required support email. In authorized domains, add `jnsilva97.github.io`, `127.0.0.1` and `localhost` for the live and PC versions. Use hostnames without paths or ports.
+
+The app uses the official Firebase SDK with browser-session login persistence. It does not save or handle raw tokens itself. The private-access panel displays the signed-in email so you can verify the account before importing lists.
+
+## 3. Create and protect Firestore
+
+Create the **Standard edition**, default Firestore database in **production mode**, choosing an appropriate EU location. Publish the contents of `firestore.rules` in its Rules editor before connecting the website. Keep the database on the free plan.
+
+The paths are `users/<authenticated UID>/hub/routines` and `users/<authenticated UID>/hub/progress`. Each account can read only its own documents. Definitions can be created once, not replaced. Progress accepts only bounded maps of boolean values. Deletes and other client writes are denied. Each Google account gets its own space; the rules do not restrict sign-in to one preselected email.
+
+Before activation, use the Rules Playground (or existing approved test tooling) to verify: anonymous reads and writes fail; account A can read/write its own permitted records; account B cannot access A's records; invalid progress values, definition replacement and deletions fail. Browser tests mock the transport and **do not execute deployed Firebase rules**.
+
+## 4. Connect and import from the PC
+
+Replace `null` in `firebase-config.mjs` with the web configuration object, then change that file's query version in `cloud.js` and bump `cloud.js`'s import version in `routines.js` plus the `interface.js` asset version in `index.html` before publishing. The imported module URLs must stay consistent. Leave the public config at `null` until the rules are deployed and verified.
+
+Open the existing PC version at `http://127.0.0.1:8765/`. Choose **Routines → Private access → Continue with Google**, verify the email, then choose **Sync PC checklists**. This button explicitly uploads the ignored personal checklist file and that origin's existing personal ticks. It never imports demo progress or notes.
+
+Import creates the definitions and progress together in a transaction. If either document already exists, it refuses to replace the account's data. It preserves the local file and browser storage. A blocked or unreadable local progress store aborts the import.
+
+## 5. Verify two devices
+
+Open the live site on the phone and sign into the same Google account. Confirm that a tick made on either device appears on the other, optional sections match, and resetting one checklist keeps other lists unchanged. Sign out and confirm the account's list names and ticks disappear; the app returns to the local or demo workspace.
+
+Different ticks merge individually rather than replacing the entire progress document. For the same tick changed on two devices, the last write accepted by Firestore wins. This is not a history or backup system.
+
+The app uses an in-memory Firestore cache. While the tab remains open, the SDK can queue writes during a connection loss. Pending or failed edits block normal sign-out and prompt before leaving. **Wait for “Progress synced to your account” before closing or reloading**: a forced close, crash or mobile tab eviction can lose unacknowledged edits. Persistent offline storage and offline page startup are not implemented in this version.
+
+## Code and tests
+
+- `cloud.js`: official SDK loading, login, account subscription, explicit PC import, progress patches, pending-write recovery and private-access controls.
+- `firebase-config.mjs`: public web configuration; `null` disables Firebase connections.
+- `firestore.rules`: server-enforced access and write validation; publish in Firebase Console.
+- `routines.js`: reuses the existing checklist UI for the account workspace, with local and demo fallback after sign-out.
+- `tests/browser.cjs` and `tests/firebase-fixture.mjs`: isolated transport fixtures for loading, merging, failures, import and sign-out. `tests/routine-model.test.mjs` verifies minimal progress patches and reset behavior.
+
+The SDK is pinned to version `13.1.0` on Google's CDN and loads only when configured. No Analytics library or new desktop packages were installed. See [official web setup](https://firebase.google.com/docs/web/alt-setup), [Google sign-in](https://firebase.google.com/docs/auth/web/google-signin), [Firestore rules](https://firebase.google.com/docs/firestore/security/get-started) and [offline behavior](https://firebase.google.com/docs/firestore/manage-data/enable-offline).

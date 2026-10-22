@@ -286,6 +286,61 @@ dialog::backdrop {
   background: #103458;
 }
 
+.account-dialog {
+  width: min(480px, calc(100% - 24px));
+  max-height: calc(100dvh - 32px);
+  padding: 24px;
+  text-align: left;
+}
+
+.account-dialog [hidden] {
+  display: none;
+}
+
+.account-dialog h2 {
+  font-size: clamp(16px, 4.5vw, 22px);
+}
+
+.account-dialog p {
+  overflow-wrap: anywhere;
+}
+
+.account-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.account-actions button {
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid #4d9bd4;
+  color: #e0f5ff;
+  background: #0a294a;
+  font: 600 17px var(--font-interface);
+}
+
+.account-actions button:hover:not(:disabled) {
+  background: #11416b;
+  border-color: #8de0ff;
+}
+
+.account-actions button:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.account-dialog .account-note {
+  font-size: 12px;
+  color: #a1bad1;
+  margin-bottom: 0;
+}
+
+#account-status[data-warning="true"] {
+  color: #e1edff;
+  border-left: 2px solid #84d8ff;
+  padding-left: 12px;
+}
+
 /* Responsive adjustment: (max-width: 700px). */
 @media (max-width: 700px) {
   .panel-eyebrow {

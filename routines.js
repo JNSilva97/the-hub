@@ -1,4 +1,5 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=field-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=sync-1';
+import { cloudWorkspace } from './cloud.js?v=sync-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -23,6 +24,7 @@ let selected;
 let state;
 let storageKey;
 let storageAvailable = true;
+let loadGeneration = 0;
 
 function make(tag, className, text) {
   const element = document.createElement(tag);
@@ -44,6 +46,7 @@ async function readData(path) {
 }
 
 function latestProgress() {
+  if (dialog.dataset.source === 'account') return cloudWorkspace.progress;
   // shortcut: merge before saving; simultaneous tab writes need transactional storage.
   if (!storageAvailable) return state;
   try {
@@ -55,6 +58,11 @@ function latestProgress() {
 }
 
 function save() {
+  if (dialog.dataset.source === 'account') {
+    try { cloudWorkspace.save(state); }
+    catch { notice.textContent = 'Account is not ready. Your ticks have not synced. Open Account & sync to retry.'; }
+    return;
+  }
   if (!storageAvailable) {
     notice.textContent = 'Browser storage is unavailable. Your ticks will last for this visit only.';
     return;
@@ -222,31 +230,65 @@ document.getElementById('restart-confirm').addEventListener('click', () => {
 restartDialog.addEventListener('close', () => { if (!restartDialog.open) pendingRestart = undefined; });
 
 export async function initialiseRoutines() {
+  const current = ++loadGeneration;
   routines = [];
+  selected = undefined;
+  pendingRestart = undefined;
+  restartDialog.close();
+  list.replaceChildren();
+  content.replaceChildren();
+  field.hidden = true;
+  fieldKey = undefined;
+  lastFieldCheck = undefined;
+  fieldAnimation?.cancel();
+  for (const id of ['field-group', 'field-title', 'field-next', 'field-receipt', 'field-position', 'restart-description']) document.getElementById(id).textContent = '';
+  content.closest('.routine-detail').dataset.complete = 'false';
+  document.getElementById('routine-name').textContent = 'Your next move';
+  document.getElementById('routine-description').textContent = 'Choose a checklist to begin.';
+  document.getElementById('routine-progress-label').textContent = 'Ready when you are.';
+  document.getElementById('routine-progress').setAttribute('aria-valuenow', '0');
+  document.getElementById('routine-progress').firstElementChild.style.transform = 'scaleX(0)';
+  document.getElementById('routine-restart').disabled = true;
+  document.dispatchEvent(new CustomEvent('hub:progress', { detail: [] }));
   let source = 'demo';
   let localWarning = '';
+  let loadedRoutines = [];
+  if (cloudWorkspace.user && !cloudWorkspace.ready) {
+    sourceBadge.textContent = 'ACCOUNT';
+    document.getElementById('routine-data-note').textContent = 'Private checklists are waiting for your account connection.';
+    notice.textContent = cloudWorkspace.error || 'Loading your private checklists…';
+    dialog.dataset.source = 'account';
+    dialog.dataset.ready = 'true';
+    return;
+  }
+  if (cloudWorkspace.active) {
+    loadedRoutines = cloudWorkspace.routines;
+    source = 'account';
+  }
   // Personal data is requested only from a loopback server; /private/ is excluded from Git.
-  if (['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname)) {
+  if (!loadedRoutines.length && ['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname)) {
     try {
-      routines = await readData('./private/routines.json');
+      loadedRoutines = await readData('./private/routines.json');
       source = 'private';
     } catch {
       localWarning = 'Personal checklists could not be loaded. Showing demo examples.';
     }
   }
-  if (!routines.length) routines = await readData('./routines.demo.json');
+  if (!loadedRoutines.length) loadedRoutines = await readData('./routines.demo.json');
+  if (current !== loadGeneration) return;
+  routines = loadedRoutines;
   storageKey = `thehub:routines:${source}:v1`;
   storageAvailable = true;
   try {
-    state = parseProgress(localStorage.getItem(storageKey));
+    state = source === 'account' ? cloudWorkspace.progress : parseProgress(localStorage.getItem(storageKey));
   } catch {
     storageAvailable = false;
     state = parseProgress(null);
     localWarning = 'Saved progress could not be read. You can use the checklists for this visit.';
   }
-  sourceBadge.textContent = source === 'private' ? 'PERSONAL / THIS PC' : 'DEMO / SAMPLE DATA';
-  document.getElementById('routine-data-note').textContent = source === 'private' ? 'Your real checklists. Loaded only from this PC.' : 'Example checklists. Your personal lists are not on this website.';
-  notice.textContent = localWarning || 'Ticks stay in this browser. Nothing is sent to an account.';
+  sourceBadge.textContent = source === 'account' ? 'PRIVATE / YOUR ACCOUNT' : source === 'private' ? 'PERSONAL / THIS PC' : 'DEMO / SAMPLE DATA';
+  document.getElementById('routine-data-note').textContent = source === 'account' ? 'Your personal checklists. Available on devices signed into your account.' : source === 'private' ? 'Your real checklists. Loaded only from this PC.' : 'Example checklists. Your personal lists are not on this website.';
+  notice.textContent = source === 'account' ? 'Progress synced to your account.' : localWarning || 'Ticks stay in this browser. Nothing is sent to an account.';
   list.replaceChildren();
   for (const [index, routine] of routines.entries()) {
     const card = make('button', 'routine-card');
@@ -267,6 +309,7 @@ export async function initialiseRoutines() {
 }
 
 window.addEventListener('storage', event => {
+  if (dialog.dataset.source === 'account') return;
   if (!storageAvailable || (event.key !== storageKey && event.key !== null) || !selected) return;
   try {
     state = parseProgress(localStorage.getItem(storageKey));
@@ -276,4 +319,10 @@ window.addEventListener('storage', event => {
     storageAvailable = false;
     notice.textContent = 'Progress from another tab could not be read. Your current ticks are unchanged.';
   }
+});
+
+document.addEventListener('hub:cloudprogress', () => {
+  if (dialog.dataset.source !== 'account' || !cloudWorkspace.active || !selected) return;
+  state = cloudWorkspace.progress;
+  updateProgress();
 });

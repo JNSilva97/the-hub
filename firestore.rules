@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid}/hub/{document} {
+      allow read: if owner(uid);
+
+      allow create: if owner(uid) && document == 'routines'
+        && request.resource.data.keys().hasOnly(['version', 'routines'])
+        && request.resource.data.version == 1
+        && request.resource.data.routines is list
+        && request.resource.data.routines.size() > 0
+        && request.resource.data.routines.size() <= 20;
+
+      // Definitions are imported once; no client can replace an existing account's lists.
+      allow create, update: if owner(uid) && document == 'progress'
+        && request.resource.data.keys().hasOnly(['checks', 'optional'])
+        && request.resource.data.checks is map
+        && request.resource.data.optional is map
+        && request.resource.data.checks.size() <= 24000
+        && request.resource.data.optional.size() <= 240
+        && request.resource.data.checks.values().hasOnly([true, false])
+        && request.resource.data.optional.values().hasOnly([true, false]);
+    }
+    // Unmatched paths, definition updates and all deletions are denied by default.
+  }
+}

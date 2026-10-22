@@ -49,3 +49,16 @@ export function restartRoutine(routine, state) {
   const prefix = `${routine.id}/`;
   return { checks: Object.fromEntries(Object.entries(state.checks).filter(([key]) => !key.startsWith(prefix))), optional: { ...state.optional } };
 }
+
+export function getProgressPatch(previous, next) {
+  const before = parseProgress(JSON.stringify(previous));
+  const after = parseProgress(JSON.stringify(next));
+  const patch = {};
+  for (const field of ['checks', 'optional']) {
+    for (const key of new Set([...Object.keys(before[field]), ...Object.keys(after[field])])) {
+      const value = after[field][key] === true;
+      if (value !== (before[field][key] === true)) (patch[field] ??= {})[key] = value;
+    }
+  }
+  return patch;
+}

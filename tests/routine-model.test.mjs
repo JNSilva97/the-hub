@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { validateRoutines, parseProgress, getActiveItems, getProgress, restartRoutine } from '../routine-model.mjs';
+import { validateRoutines, parseProgress, getActiveItems, getProgress, restartRoutine, getProgressPatch } from '../routine-model.mjs';
 
 const demo = JSON.parse(readFileSync(new URL('../routines.demo.json', import.meta.url), 'utf8'));
 const work = validateRoutines(demo).find(routine => routine.id === 'workday');
@@ -58,4 +58,15 @@ test('duplicate identifiers and invalid section or item data are rejected', () =
   const badSection = structuredClone(demo);
   badSection.routines[0].groups[0].optional = 'yes';
   assert.throws(() => validateRoutines(badSection));
+});
+
+test('cloud patches contain only changed ticks and preserve explicit resets', () => {
+  const previous = { checks: { 'workday/work/item-1': true, 'training/training/item-1': true }, optional: { 'workday/after-work': true } };
+  const next = restartRoutine(work, previous);
+  assert.deepEqual(getProgressPatch(previous, next), { checks: { 'workday/work/item-1': false } });
+  assert.deepEqual(getProgressPatch(previous, previous), {});
+  next.optional['workday/after-work'] = false;
+  next.checks['training/training/item-2'] = true;
+  assert.deepEqual(getProgressPatch(previous, next), { checks: { 'workday/work/item-1': false, 'training/training/item-2': true }, optional: { 'workday/after-work': false } });
+  assert.throws(() => getProgressPatch(previous, { checks: { bad: 'true' }, optional: {} }));
 });

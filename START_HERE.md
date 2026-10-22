@@ -1,6 +1,6 @@
 # The Hub, explained simply
 
-The app has three parts: HTML puts things on the screen, CSS makes them look and move the way they do, and JavaScript makes the buttons work. There is no build process and no server account to manage.
+The app has three parts: HTML puts things on the screen, CSS makes them look and move the way they do, and JavaScript makes the buttons work. There is no build process. Optional account sync needs a Firebase project; it stays disabled until configured.
 
 ## 1. Start using it
 
@@ -13,6 +13,8 @@ Choose **Notes** and start typing. Your first line becomes the title, and each e
 **Delete note** asks for confirmation inside the app. **Keep note**, Escape or clicking outside cancels. After confirming, **Undo delete** recovers the last deleted note until you reload the page or successfully delete another note. Deleting one note leaves the others untouched.
 
 The online version uses example checklists. Your real lists load from the PC version at `http://127.0.0.1:8765/` while the local server is running. Ticks stay in the browser you use. They are not synced to your phone.
+
+**Private access** inside Routines is the entry point for checklist sync. It currently explains that setup is pending. After [Firebase activation](FIREBASE_SETUP.md), sign in on the PC and explicitly choose **Sync PC checklists**, then sign into the same account on your phone. Notes remain local. A pending or failed cloud save must finish before you close the tab; normal sign-out is blocked until then.
 
 ## 2. Find the right file
 
@@ -35,6 +37,8 @@ The online version uses example checklists. Your real lists load from the PC ver
 | Note saving, search, conflict copies and dialog controls | `notes.js` |
 | Loading checklists, ticking items and saving | `routines.js` |
 | Checking data and calculating completion | `routine-model.mjs` |
+| Google login, account state and checklist synchronization | `cloud.js` |
+| Public Firebase web configuration and server access rules | `firebase-config.mjs` / `firestore.rules` |
 | Online example checklists | `routines.demo.json` |
 | Your real checklists, on this PC only | `private/routines.json` |
 
