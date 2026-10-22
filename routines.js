@@ -5,6 +5,8 @@ const list = document.getElementById('routine-list');
 const content = document.getElementById('routine-content');
 const notice = document.getElementById('routine-notice');
 const sourceBadge = document.getElementById('routine-source');
+const restartDialog = document.getElementById('restart-dialog');
+let pendingRestart;
 let routines = [];
 let selected;
 let state;
@@ -127,11 +129,23 @@ function selectRoutine(routine) {
 }
 
 document.getElementById('routine-restart').addEventListener('click', () => {
-  if (!selected || !confirm(`Start ${selected.name} again? This clears only this checklist’s ticks.`)) return;
-  state = restartRoutine(selected, latestProgress());
+  if (!selected || restartDialog.open) return;
+  pendingRestart = selected;
+  document.getElementById('restart-description').textContent = `Clear the ticks in ${selected.name}? Your other checklists and optional section choices will stay as they are.`;
+  restartDialog.showModal();
+});
+
+document.getElementById('restart-confirm').addEventListener('click', () => {
+  if (!restartDialog.open || !pendingRestart) return;
+  const routine = pendingRestart;
+  pendingRestart = undefined;
+  restartDialog.close();
+  state = restartRoutine(routine, latestProgress());
   save();
   selectRoutine(selected);
+  content.querySelector('input')?.focus();
 });
+restartDialog.addEventListener('close', () => { if (!restartDialog.open) pendingRestart = undefined; });
 
 export async function initialiseRoutines() {
   routines = [];

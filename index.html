@@ -8,11 +8,11 @@
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles/base.css?v=styles-1">
   <link rel="stylesheet" href="styles/shell.css?v=styles-1">
-  <link rel="stylesheet" href="styles/core.css?v=portal-1">
+  <link rel="stylesheet" href="styles/core.css?v=return-1">
   <link rel="stylesheet" href="styles/access.css?v=styles-1">
-  <link rel="stylesheet" href="styles/panels.css?v=styles-1">
-  <link rel="stylesheet" href="styles/routines.css?v=portal-1">
-  <link rel="stylesheet" href="styles/motion.css?v=styles-1">
+  <link rel="stylesheet" href="styles/panels.css?v=return-1">
+  <link rel="stylesheet" href="styles/routines.css?v=return-1">
+  <link rel="stylesheet" href="styles/motion.css?v=return-1">
 </head>
 <body>
   <div class="cityscape" aria-hidden="true"><div class="city-buildings"></div><div class="city-horizon"></div></div>
@@ -149,6 +149,16 @@
     </div>
     <div class="routine-feedback"><p id="routine-notice" class="routine-notice" role="status">Loading checklists…</p><button id="routine-retry" class="routine-retry" type="button" hidden>Try again</button></div>
   </dialog>
+  <dialog id="restart-dialog" class="restart-dialog" role="alertdialog" aria-labelledby="restart-title" aria-describedby="restart-description">
+    <div class="panel-eyebrow">ROUTINES / RESET CHECKLIST</div>
+    <div class="restart-mark" aria-hidden="true">↻</div>
+    <h2 id="restart-title">Start again?</h2>
+    <p id="restart-description"></p>
+    <form method="dialog" class="restart-actions">
+      <button class="restart-keep" type="submit" autofocus>Keep progress</button>
+      <button id="restart-confirm" class="restart-confirm" type="button">Clear ticks</button>
+    </form>
+  </dialog>
   <dialog id="command-dialog" class="command-dialog" aria-labelledby="command-title">
     <div class="command-heading"><h2 id="command-title">Quick access</h2><form method="dialog"><button class="routine-exit" aria-label="Close quick access">×</button></form></div>
     <label for="command-search">Find an app or checklist</label>
@@ -157,8 +167,8 @@
     <p id="command-empty" hidden>No matches. Try “Routines” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-transition.js?v=portal-1"></script>
-  <script defer src="interface.js?v=portal-1"></script>
+  <script defer src="core-transition.js?v=return-1"></script>
+  <script defer src="interface.js?v=return-1"></script>
   <script defer src="experience.js?v=neon-1"></script>
 </body>
 </html>

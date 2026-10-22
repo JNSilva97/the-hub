@@ -187,6 +187,15 @@ body.window-hidden ::after {
   }
 }
 
+@keyframes core-backdrop-out {
+  from {
+    opacity: var(--core-backdrop-opacity, 1);
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes vault-reveal {
   0%, 78% {
     opacity: 1;

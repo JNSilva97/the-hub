@@ -12,6 +12,8 @@ Use **Find anything** or **Ctrl/Cmd K** to search apps and checklists. Arrow key
 
 Opening **Routines** unfolds the workspace from the optical core and docks its artwork in the header. Closing it reverses the journey. The opening takes 880 ms and the return 520 ms. Reduced or paused motion opens and closes immediately. Escape during opening reverses the journey; pressing Escape again completes closing immediately. Resizing or hiding the tab finishes the current transition safely.
 
+**Start again** opens a styled confirmation with **Keep progress** focused by default. Escape, clicking outside or choosing Keep progress leaves saved ticks untouched. **Clear ticks** resets only that checklist and returns keyboard focus to its first input. The return animation keeps the traveling optic visible through its handoff to the home core while the modal backdrop fades out.
+
 For a plain-English tour of the files, read [START_HERE.md](START_HERE.md).
 
 Built with HTML, CSS and JavaScript. No dependencies or build step.

@@ -5,6 +5,8 @@ function createCoreTransition(panel) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const duration = { open: 880, close: 520 };
   const easing = 'cubic-bezier(.65, 0, .2, 1)';
+  const returnEasing = 'cubic-bezier(.22, 1, .36, 1)';
+  panel.style.setProperty('--core-return-duration', `${duration.close}ms`);
   let animations = [];
   let overlay;
   let phase = '';
@@ -73,6 +75,7 @@ function createCoreTransition(panel) {
     document.body.append(overlay);
     overlay.showPopover();
     const transform = `translate(${destination.left - source.left}px, ${destination.top - source.top}px) scale(${destination.width / source.width})`;
+    if (!opening) svg.style.filter = getComputedStyle(core).filter;
     animate(svg, opening ? [
       { transform: 'none', opacity: 1 },
       { transform: 'scale(1.05)', opacity: 1, offset: .18 },
@@ -80,16 +83,18 @@ function createCoreTransition(panel) {
       { transform, opacity: 0 }
     ] : [
       { transform, opacity: 0 },
-      { transform: 'none', opacity: 1, offset: .88 },
-      { transform: 'none', opacity: 0 }
-    ], { duration: opening ? duration.open : duration.close });
+      { opacity: 1, offset: .2 },
+      { transform: 'none', opacity: 1 }
+    ], { duration: opening ? duration.open : duration.close, easing: opening ? easing : returnEasing });
   }
 
   function play(opening) {
     const currentStyle = getComputedStyle(panel);
     const interrupted = { transform: currentStyle.transform, borderRadius: currentStyle.borderRadius, opacity: currentStyle.opacity };
     const childOpacity = [...panel.children].map(element => getComputedStyle(element).opacity);
+    const backdropOpacity = getComputedStyle(panel, '::backdrop').opacity;
     clear();
+    panel.style.setProperty('--core-backdrop-opacity', opening ? '1' : backdropOpacity);
     phase = opening ? 'opening' : 'closing';
     panel.dataset.transition = phase;
     document.body.dataset.corePhase = phase;
@@ -105,11 +110,12 @@ function createCoreTransition(panel) {
       ] : [
         interrupted,
         { transform: folded, borderRadius: '50%', opacity: 0 }
-      ], { duration: opening ? duration.open : duration.close });
+      ], { duration: opening ? duration.open : duration.close, easing: opening ? easing : returnEasing });
       [...panel.children].forEach((element, index) => animate(element, opening ? [
         { opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }
       ] : [{ opacity: childOpacity[index] }, { opacity: 0 }], {
-        duration: opening ? 360 : 130, delay: opening ? 330 + index * 40 : 0
+        duration: opening ? 360 : 130, delay: opening ? 330 + index * 40 : 0,
+        easing: opening ? easing : 'ease-out'
       }));
       animate(dock, opening ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], {
         duration: 180, delay: opening ? 620 : 0

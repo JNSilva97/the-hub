@@ -20,6 +20,10 @@
   animation: none;
 }
 
+.routines-dialog[data-transition="closing"]::backdrop {
+  animation: core-backdrop-out var(--core-return-duration, 520ms) cubic-bezier(.22, 1, .36, 1) both;
+}
+
 .routines-dialog[data-transition] {
   overflow: hidden;
   transform-origin: center;

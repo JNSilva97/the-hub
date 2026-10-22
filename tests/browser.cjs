@@ -98,11 +98,13 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await page.locator('[data-routine="workday"]').click();
       assert.equal(await page.locator('[data-check="workday/work/item-1"]').isChecked(), true);
       assert.equal(await page.locator('[data-group="workday/after-work"]').isChecked(), true);
-      page.once('dialog', dialog => dialog.dismiss());
       await page.locator('#routine-restart').click();
+      assert.equal(await page.locator('#restart-dialog').evaluate(el => el.open), true);
+      assert.equal(await page.locator('.restart-keep').evaluate(el => el === document.activeElement), true);
+      await page.getByRole('button', { name: 'Keep progress' }).click();
       assert.equal(await page.locator('[data-check="workday/work/item-1"]').isChecked(), true);
-      page.once('dialog', dialog => dialog.accept());
       await page.locator('#routine-restart').click();
+      await page.getByRole('button', { name: 'Clear ticks', exact: true }).click();
       assert.equal(await page.locator('[data-check="workday/work/item-1"]').isChecked(), false);
       assert.equal(await page.locator('[data-group="workday/after-work"]').isChecked(), true);
       await page.locator('[data-routine="training"]').click();
@@ -130,6 +132,68 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       assert.equal(await page.locator('.core-flight').count(), 0);
       assert.equal(await page.evaluate(() => document.body.hasAttribute('data-core-phase')), false);
       assert.equal(await page.locator('#routines-launch').evaluate(el => el === document.activeElement), true);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('return handoff keeps the optic visible while the backdrop clears', async () => {
+    const { context, page } = await fixture(browser);
+    try {
+      await ready(page);
+      await openRoutines(page);
+      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
+      await page.keyboard.press('Escape');
+      const lateFrame = await page.evaluate(() => {
+        const panel = document.getElementById('routines-dialog');
+        const artwork = document.querySelector('.core-flight > svg');
+        for (const animation of document.getAnimations()) {
+          if (animation.effect.target.closest?.('#routines-dialog, .core-flight')) {
+            animation.pause();
+            animation.currentTime = 500;
+          }
+        }
+        const returning = artwork.getBoundingClientRect();
+        const home = document.querySelector('.core-art').getBoundingClientRect();
+        return {
+          optic: Number(getComputedStyle(artwork).opacity),
+          backdrop: Number(getComputedStyle(panel, '::backdrop').opacity),
+          positionError: Math.abs(returning.left - home.left) + Math.abs(returning.top - home.top) + Math.abs(returning.width - home.width)
+        };
+      });
+      assert.equal(lateFrame.optic, 1, 'Returning optic must not fade out before the home core is revealed.');
+      assert.ok(lateFrame.backdrop < .02, 'Backdrop must clear gradually before the native dialog closes.');
+      assert.ok(lateFrame.positionError < 1, 'Returning artwork must meet the home core without a position jump.');
+      await page.evaluate(() => document.getAnimations().forEach(animation => animation.play()));
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      assert.equal(await page.locator('.core-art').evaluate(el => getComputedStyle(el).visibility), 'visible');
+    } finally { await context.close(); }
+  });
+
+  await t.test('styled restart prompt cancels safely with Escape and backdrop, then confirms by keyboard', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 320 });
+    try {
+      page.on('dialog', dialog => { errors.push('Unexpected browser confirmation'); dialog.dismiss(); });
+      await ready(page);
+      await openRoutines(page);
+      const check = page.locator('.check-row input').first();
+      await check.check();
+      const saved = await page.evaluate(key => localStorage.getItem(key), storageKey);
+      await page.locator('#routine-restart').click();
+      await page.keyboard.press('Escape');
+      assert.equal(await check.isChecked(), true);
+      assert.equal(await page.locator('#routine-restart').evaluate(el => el === document.activeElement), true);
+      await page.locator('#routine-restart').click();
+      await page.locator('#restart-dialog').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+      assert.equal(await page.locator('#restart-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+      await page.mouse.click(1, 1);
+      assert.equal(await page.locator('#restart-dialog').evaluate(el => el.open), false);
+      assert.equal(await page.evaluate(key => localStorage.getItem(key), storageKey), saved);
+      await page.locator('#routine-restart').click();
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Enter');
+      assert.equal(await check.isChecked(), false);
+      assert.equal(await page.locator('#restart-dialog').evaluate(el => el.open), false);
+      assert.equal(await check.evaluate(el => el === document.activeElement), true);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });

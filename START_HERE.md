@@ -44,6 +44,8 @@ The startup is decorative. It does not log you in, encrypt your data or perform 
 
 Checklist and item IDs connect the data to saved ticks. Changing a label is fine; changing an ID makes the browser treat it as a different item. **Start again** clears only the selected checklist, after confirmation.
 
+The confirmation is part of the app's design. **Keep progress** is selected first, and Escape cancels it. Only **Clear ticks** performs the reset. Its appearance lives in `styles/panels.css`, and its behavior lives in `routines.js`.
+
 Never add the `private` folder to GitHub. It is intentionally ignored. Public test fixtures use example data. The search launcher reads the same checklists already displayed on the current device; nothing is uploaded.
 
 If browser storage is unavailable, the app says so and keeps ticks for the current visit. Reloading then loses those temporary ticks. Simultaneous changes in two tabs can conflict, so use one tab when actively ticking a list.
