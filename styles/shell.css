@@ -265,14 +265,12 @@ main {
   position: absolute;
   width: 25px;
   height: 8px;
-  border-right: 2px solid #2876d3;
-  border-bottom: 2px solid #2876d3;
+  border-right: 2px solid #63c7ff;
+  border-bottom: 2px solid #63c7ff;
   z-index: 1;
   transition: width 250ms cubic-bezier(0.16, 1, 0.3, 1);
   bottom: 0px;
   right: 0px;
-  border-top-color: #2876d3;
-  border-left-color: #2876d3;
 }
 
 .app:hover {
@@ -287,10 +285,6 @@ main {
   border-color: #288dff;
   box-shadow: #006aff30 0px 0px 30px, #004cff18 0px 0px 32px inset;
   background: radial-gradient(220px circle at var(--spot-x, 50%) var(--spot-y, 50%), #247fff30, transparent 75%), #061225;
-}
-
-.app:nth-child(n+5)::after {
-  border-color: #63c7ff;
 }
 
 .app .tile {
