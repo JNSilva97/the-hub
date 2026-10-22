@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
-const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
+const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ viewport: { width: options.width || 1024, height: 900 }, reducedMotion: options.motion || 'no-preference' });
@@ -23,6 +23,7 @@ async function fixture(browser, options = {}) {
     const filename = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
     requests.push({ pathname: url.pathname, method: request.method() });
     if (filename === 'core-transition.js' && options.noTransition) return route.abort();
+    if (filename === 'notes.js' && options.noNotes) return route.abort();
     if (filename === 'routines.demo.json' && options.dataDelay) await new Promise(resolve => setTimeout(resolve, options.dataDelay));
     if (filename === 'routines.demo.json' && failures.data) return route.fulfill({ status: 503, body: 'Unavailable' });
     if (filename === 'routines.demo.json' && options.data) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(options.data) });
@@ -68,9 +69,10 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
         await page.getByRole('button', { name: 'Close routines' }).click();
         for (const app of await page.locator('.app').all()) {
           await app.click();
-          assert.equal(await page.locator('#app-title').textContent(), await app.locator('.app-name').textContent());
+          const notes = await app.getAttribute('data-icon') === 'notes';
+          assert.equal(await page.locator(notes ? '#notes-title' : '#app-title').textContent(), notes ? 'NOTES' : await app.locator('.app-name').textContent());
           await page.keyboard.press('Escape');
-          await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+          await page.waitForFunction(id => !document.getElementById(id).open, notes ? 'notes-dialog' : 'app-dialog');
         }
         await page.addScriptTag({ path: path.join(root, 'smoke-test.js') });
         assert.equal((await page.evaluate(() => testHub())).passed, true);
@@ -86,6 +88,118 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       } finally { await context.close(); }
     });
   }
+
+  for (const width of [320, 1440]) {
+    await t.test(`Instant Notes captures, searches and resumes text at ${width}px`, async () => {
+      const { context, page, errors, requests } = await fixture(browser, { width });
+      try {
+        await ready(page);
+        await page.locator('[data-icon="notes"]').click();
+        assert.equal(await page.locator('#notes-dialog').evaluate(el => el.open), true);
+        assert.equal(await page.locator('#note-text').evaluate(el => el === document.activeElement), true);
+        await page.locator('#note-text').fill('First idea\nA blue city after dark.');
+        assert.equal(await page.locator('#note-name').textContent(), 'First idea');
+        assert.match(await page.locator('#notes-status').textContent(), /^Saved/);
+        await page.locator('#note-new').click();
+        await page.locator('#note-text').fill('Second idea\nRemember the training bag.');
+        await page.locator('#notes-search').fill('blue city');
+        assert.equal(await page.locator('#note-list button').count(), 1);
+        await page.locator('#note-list button').click();
+        assert.equal(await page.locator('#note-text').inputValue(), 'First idea\nA blue city after dark.');
+        await page.locator('#note-text').evaluate(el => { el.setSelectionRange(0, 0); });
+        await page.keyboard.type('New ');
+        assert.equal(await page.locator('#note-text').inputValue(), 'New First idea\nA blue city after dark.');
+        assert.equal(await page.locator('#note-text').evaluate(el => el.selectionStart), 4);
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => !document.getElementById('notes-dialog').open);
+        assert.equal(await page.locator('[data-icon="notes"]').evaluate(el => el === document.activeElement), true);
+        await ready(page);
+        await page.locator('#command-launch').click();
+        await page.locator('#command-search').fill('Notes');
+        await page.keyboard.press('Enter');
+        assert.equal(await page.locator('#note-text').inputValue(), 'New First idea\nA blue city after dark.');
+        await page.locator('#notes-search').fill('no-such-note');
+        assert.equal(await page.locator('#notes-empty').isVisible(), true);
+        assert.equal(await page.locator('#note-text').inputValue(), 'New First idea\nA blue city after dark.');
+        await page.locator('#note-new').click();
+        assert.equal(await page.locator('#note-text').inputValue(), '');
+        assert.equal(await page.locator('#notes-search').inputValue(), '');
+        assert.equal(await page.locator('#notes-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+        await page.locator('#note-text').fill('<img src=x onerror="window.noteInjected=true">');
+        assert.equal(await page.evaluate(() => window.noteInjected), undefined);
+        assert.equal(requests.some(request => request.method !== 'GET' || request.pathname.includes('/private/')), false);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    });
+  }
+
+  await t.test('Instant Notes preserves separate edits to the same note in two tabs', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce' });
+    try {
+      await ready(page);
+      await page.locator('[data-icon="notes"]').click();
+      await page.locator('#note-text').fill('Shared idea\nOriginal version.');
+      const other = await context.newPage();
+      await ready(other);
+      await other.locator('[data-icon="notes"]').click();
+      assert.equal(await other.locator('#note-text').inputValue(), 'Shared idea\nOriginal version.');
+      await page.locator('#note-text').fill('Shared idea\nFirst tab edit.');
+      await other.waitForFunction(() => document.getElementById('notes-status').textContent.includes('separate note'));
+      assert.equal(await other.locator('#note-text').inputValue(), 'Shared idea\nOriginal version.');
+      await other.locator('#note-text').fill('Another idea\nSecond tab edit.');
+      const stored = await page.evaluate(() => Object.keys(localStorage).filter(key => key.startsWith('thehub:notes:demo:v1:')).map(key => JSON.parse(localStorage.getItem(key)).text));
+      assert.deepEqual(stored.sort(), ['Shared idea\nFirst tab edit.', 'Another idea\nSecond tab edit.'].sort());
+      await page.locator('#note-new').click();
+      await page.locator('#note-text').fill('Third idea\nA different note.');
+      await other.waitForFunction(() => [...document.querySelectorAll('#note-list strong')].some(el => el.textContent === 'Third idea'));
+      assert.equal(await other.locator('#note-text').inputValue(), 'Another idea\nSecond tab edit.');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('Instant Notes keeps text in memory when saving fails and preserves corrupt records', async () => {
+    const { context, page } = await fixture(browser, { motion: 'reduce' });
+    try {
+      const key = 'thehub:notes:demo:v1:11111111-1111-4111-8111-111111111111';
+      await context.addInitScript(key => localStorage.setItem(key, '{broken'), key);
+      await ready(page);
+      await page.locator('[data-icon="notes"]').click();
+      await page.locator('#note-text').fill('Keep this text');
+      assert.equal(await page.evaluate(key => localStorage.getItem(key), key), '{broken');
+      assert.match(await page.locator('#notes-status').textContent(), /stored data is unchanged/);
+      await page.evaluate(() => { Storage.prototype.setItem = () => { throw new Error('Quota exceeded'); }; });
+      await page.locator('#note-text').fill('Keep this unsaved draft');
+      assert.match(await page.locator('#notes-status').textContent(), /Not saved/);
+      await page.locator('#note-new').click();
+      await page.getByRole('button', { name: 'Keep this unsaved draft' }).click();
+      assert.equal(await page.locator('#note-text').inputValue(), 'Keep this unsaved draft');
+      assert.match(await page.locator('#notes-status').textContent(), /Not saved/);
+    } finally { await context.close(); }
+  });
+
+  await t.test('PC notes use separate storage and reduced motion; unavailable script falls back safely', async () => {
+    const { context, page } = await fixture(browser, { motion: 'reduce', private: true });
+    try {
+      await ready(page, 'http://127.0.0.1:18765');
+      await page.locator('[data-icon="notes"]').click();
+      await page.locator('#note-text').fill('Personal draft');
+      assert.equal(await page.locator('#note-list button').count(), 1);
+      const keys = await page.evaluate(() => Object.keys(localStorage));
+      assert(keys.some(key => key.startsWith('thehub:notes:private:v1:')));
+      assert.equal(keys.some(key => key.startsWith('thehub:notes:demo:v1:')), false);
+      assert.equal(await page.locator('#notes-dialog').evaluate(el => getComputedStyle(el).animationName), 'none');
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#notes-dialog').evaluate(el => el.open), false);
+    } finally { await context.close(); }
+    const fallback = await fixture(browser, { noNotes: true });
+    try {
+      await ready(fallback.page);
+      await fallback.page.locator('[data-icon="notes"]').click();
+      assert.equal(await fallback.page.locator('#app-dialog').evaluate(el => el.open), true);
+      assert.match(await fallback.page.locator('#app-description').textContent(), /Notes couldn’t load/);
+      assert.deepEqual(fallback.errors, []);
+    } finally { await fallback.context.close(); }
+  });
 
   await t.test('bright completed rings leave the summary and frame labels readable across screen sizes', async () => {
     const checks = {}, optional = {};

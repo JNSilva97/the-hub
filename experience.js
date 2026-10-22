@@ -85,7 +85,7 @@
     app.addEventListener('click', () => {
       const settings = app.dataset.icon === 'settings';
       document.getElementById('interface-settings').hidden = !settings;
-      document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : 'This module is coming later. Your checklists are ready in Routines.';
+      document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : app.dataset.icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Routines.';
     });
     let frame;
     app.addEventListener('pointermove', event => {
@@ -138,7 +138,7 @@
       kind: 'Checklist', run: () => { launch(routines); card.click(); }
     });
     for (const app of document.querySelectorAll('.app')) commands.push({
-      name: app.querySelector('.app-name').textContent, kind: app.dataset.icon === 'settings' ? 'Interface' : 'Coming soon', run: () => launch(app)
+      name: app.querySelector('.app-name').textContent, kind: app.dataset.icon === 'settings' ? 'Interface' : app.dataset.icon === 'notes' ? 'Notebook' : 'Coming soon', run: () => launch(app)
     });
     search.value = '';
     renderResults();

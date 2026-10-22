@@ -4,7 +4,7 @@ A personal space with a near-black, neon-blue and ice-cyan interface.
 
 ## Current version
 
-**Nightfall edition.** A staged mechanical opening, an optical core, a distant neon skyline and nine module launchers. **Routines** contains five reusable checklists with saved ticks and optional sections. **Settings** controls motion and optional sound. The other seven modules remain placeholders.
+**Nightfall edition.** A staged mechanical opening, an optical core, a distant neon skyline and nine module launchers. **Routines** contains five reusable checklists with saved ticks and optional sections. **Notes** captures text with automatic saving and search. **Settings** controls motion and optional sound. The other six modules remain placeholders.
 
 The intro is visual only and does not authenticate users. Any click or keypress skips it. Use **Pause motion** to stop interface animations; the system's reduced-motion preference is also respected.
 
@@ -13,6 +13,10 @@ Use **Find anything** or **Ctrl/Cmd K** to search apps and checklists. Arrow key
 **Field Mode** opens with the first unchecked item in checklist order. Choose **Mark done** to save that tick and advance, or **Undo last tick** to reverse the last Field Mode action. **Review checklist** expands the full list and optional section switches; only enabled sections enter the sequence. Finishing shows a short visual confirmation. Existing ticks are reused, including after a reload; no daily setup or new storage is needed.
 
 The home core has one progress ring per checklist, ordered from the outside in. The readout names each ring and shows its saved count. Completing a list pulses the docked core; returning home fills the rings and sends a blue pulse through the main core. Undo and reset update the same rings, while loading existing completions stays quiet. Motion controls and reduced-motion preferences also apply here.
+
+**Instant Notes** opens directly into a plain-text editor. Its first line becomes the note title, **New note** starts another, and search matches the whole text. Each input saves immediately to this browser, without a Save button or account. Notes have a 50,000-character limit. The public version starts with sample notes; the PC version starts blank. Public and loopback notes use separate storage namespaces, and no note text is sent to GitHub or a server.
+
+Each note has its own browser-storage entry. Changes from another tab update the list; conflicting local edits are kept as separate notes. Unreadable records are left untouched. If saving fails, the draft stays available for this visit with a **Not saved** warning: keep the tab open and copy the text. Clearing browser data removes saved notes, and notes do not sync between devices.
 
 Optional sound uses three short digital textures: a rising scanner sweep for opening, a falling sweep for closing and a brief signal for selection. Frequency modulation adds metallic sidebands over band-passed data noise, with soft attacks and no bass impact or continuous drone. Turning sound off fades any remaining tail; hidden tabs are silenced. The synthesis and levels live in `interface-sound.js`.
 
@@ -57,6 +61,8 @@ If a checklist download fails, open **Routines** and select **Try again**. A fai
 - `routines.js` — checklist loading, rendering and browser storage. Component styles live in `styles/`.
 - `routine-model.mjs` — data validation, progress calculations and scoped reset.
 - `routines.demo.json` / ignored `private/routines.json` — public examples and local personal lists.
+
+`notes.js` owns note loading, saving, search, conflict copies and the Notes dialog's focus and closing transition. Its layout lives in `styles/notes.css`, with the entrance keyframes in `styles/motion.css`. Notes uses the same native dialog and quick-access patterns as the rest of the app.
 
 `core-transition.js` owns the core-to-Routines animation. It uses native Web Animations and a decorative manual popover, with no animation library. The checklist remains a native modal dialog. When popovers are unavailable, the workspace still unfolds; if the transition script is unavailable, the dialog opens normally. The artwork copy is temporary, ignores clicks, takes no keyboard focus and is removed after each journey. SVG IDs are prefixed to avoid collisions.
 

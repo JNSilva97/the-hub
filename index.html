@@ -12,7 +12,8 @@
   <link rel="stylesheet" href="styles/access.css?v=ice-1">
   <link rel="stylesheet" href="styles/panels.css?v=ice-1">
   <link rel="stylesheet" href="styles/routines.css?v=field-1">
-  <link rel="stylesheet" href="styles/motion.css?v=field-1">
+  <link rel="stylesheet" href="styles/notes.css?v=notes-1">
+  <link rel="stylesheet" href="styles/motion.css?v=notes-1">
 </head>
 <body>
   <div class="cityscape" aria-hidden="true"><div class="city-buildings"></div><div class="city-horizon"></div></div>
@@ -135,6 +136,27 @@
     </div>
     <form method="dialog"><button class="close" type="submit">Back to the Hub</button></form>
   </dialog>
+  <dialog id="notes-dialog" class="notes-dialog" aria-labelledby="notes-title">
+    <div class="notes-heading">
+      <div><div class="panel-eyebrow">THE HUB / CAPTURE</div><h2 id="notes-title">NOTES</h2></div>
+      <div class="notes-actions"><button id="note-new" type="button">+ New note</button><form method="dialog"><button class="routine-exit" type="submit" aria-label="Close notes">×</button></form></div>
+    </div>
+    <div class="notes-source"><span id="notes-source"></span><p>Your notes stay in this browser. Nothing is published or synced.</p></div>
+    <div class="notes-layout">
+      <aside class="notes-sidebar">
+        <label for="notes-search">Find a note</label>
+        <input id="notes-search" type="search" placeholder="Search your notes…" autocomplete="off">
+        <nav id="note-list" class="note-list" aria-label="Notes"></nav>
+        <p id="notes-empty" hidden>No matches. Try another word or start a new note.</p>
+      </aside>
+      <section class="note-editor" aria-label="Note editor">
+        <div class="note-editor-heading"><span id="note-name">New note</span><span id="note-count">0 / 50,000</span></div>
+        <label class="note-editor-label" for="note-text">Your note · the first line becomes its title</label>
+        <textarea id="note-text" maxlength="50000" placeholder="What’s on your mind?&#10;&#10;Start typing. It saves as you write." spellcheck="true" autofocus></textarea>
+      </section>
+    </div>
+    <p id="notes-status" class="notes-status" role="status">Ready when you are.</p>
+  </dialog>
   <dialog id="routines-dialog" class="routines-dialog" aria-labelledby="routines-title">
     <div class="routines-header">
       <div class="routines-identity">
@@ -188,8 +210,9 @@
   </dialog>
   <script defer src="core-progress.js?v=readable-1"></script>
   <script defer src="core-transition.js?v=signal-1"></script>
-  <script defer src="interface.js?v=signal-1"></script>
+  <script defer src="notes.js?v=notes-1"></script>
+  <script defer src="interface.js?v=notes-1"></script>
   <script defer src="interface-sound.js?v=signal-2"></script>
-  <script defer src="experience.js?v=ice-1"></script>
+  <script defer src="experience.js?v=notes-1"></script>
 </body>
 </html>

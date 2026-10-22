@@ -35,12 +35,14 @@ async function testHub() {
     assert(document.querySelector(app.querySelector('use').getAttribute('href')), 'App icon is missing.');
     app.focus();
     app.click();
-    assert(dialog.open, 'App did not open.');
-    assert(document.getElementById('app-title').textContent === app.querySelector('.app-name').textContent, 'Wrong app title.');
-    assert(dialog.contains(document.activeElement), 'Focus did not enter the app.');
-    dialog.querySelector('form').requestSubmit();
-    await new Promise(resolve => requestAnimationFrame(resolve));
-    assert(!dialog.open, 'App did not close.');
+    const notes = app.dataset.icon === 'notes';
+    const active = notes ? document.getElementById('notes-dialog') : dialog;
+    assert(active.open, 'App did not open.');
+    assert(notes || document.getElementById('app-title').textContent === app.querySelector('.app-name').textContent, 'Wrong app title.');
+    assert(active.contains(document.activeElement), 'Focus did not enter the app.');
+    active.querySelector('form').requestSubmit();
+    for (let attempt = 0; active.open && attempt < 30; attempt++) await new Promise(resolve => setTimeout(resolve, 20));
+    assert(!active.open, 'App did not close.');
     assert(document.activeElement === app, 'Focus did not return to the app icon.');
   }
   const routines = document.getElementById('routines-dialog');

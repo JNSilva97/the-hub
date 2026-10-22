@@ -8,6 +8,8 @@ Open the homepage and choose **Routines** beneath the optical core. Pick a check
 
 Routines starts in **Field Mode**: one item, a **Mark done** button and a preview of what comes next. **Undo last tick** reverses your last Field Mode tick. Open **Review checklist** to change any tick or include optional sections. Your saved progress is shared between both views.
 
+Choose **Notes** and start typing. Your first line becomes the title, and each edit saves automatically in this browser. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Public sample notes and the PC notebook are separate. Nothing you write is published or synced.
+
 The online version uses example checklists. Your real lists load from the PC version at `http://127.0.0.1:8765/` while the local server is running. Ticks stay in the browser you use. They are not synced to your phone.
 
 ## 2. Find the right file
@@ -27,6 +29,8 @@ The online version uses example checklists. Your real lists load from the PC ver
 | Search, intro replay, pointer light and sound triggers | `experience.js` |
 | Electronic sound textures, durations and levels | `interface-sound.js` |
 | Checklist appearance | `styles/routines.css` |
+| Notes appearance and mobile writing layout | `styles/notes.css` |
+| Note saving, search, conflict copies and dialog controls | `notes.js` |
 | Loading checklists, ticking items and saving | `routines.js` |
 | Checking data and calculating completion | `routine-model.mjs` |
 | Online example checklists | `routines.demo.json` |
@@ -57,6 +61,8 @@ The confirmation is part of the app's design. **Keep progress** is selected firs
 Never add the `private` folder to GitHub. It is intentionally ignored. Public test fixtures use example data. The search launcher reads the same checklists already displayed on the current device; nothing is uploaded.
 
 If browser storage is unavailable, the app says so and keeps ticks for the current visit. Reloading then loses those temporary ticks. Simultaneous changes in two tabs can conflict, so use one tab when actively ticking a list.
+
+Notes saves each note separately. If two tabs edit the same text, it preserves local edits as another note. If you see **Not saved**, keep the tab open and copy the draft before leaving. Unreadable stored notes are preserved rather than replaced. Clearing browser data removes saved notes; there is no server backup.
 
 ## 5. Make a change safely
 

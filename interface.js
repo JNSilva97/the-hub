@@ -2,6 +2,8 @@ const dialog = document.getElementById('app-dialog');
 const routinesDialog = document.getElementById('routines-dialog');
 const routinesLauncher = document.getElementById('routines-launch');
 const retryButton = document.getElementById('routine-retry');
+const notesDialog = document.getElementById('notes-dialog');
+const instantNotes = typeof createInstantNotes === 'function' ? createInstantNotes(notesDialog) : undefined;
 const scriptUrl = new URL(document.currentScript.src);
 const routinesUrl = new URL('./routines.js', scriptUrl);
 routinesUrl.search = scriptUrl.search;
@@ -44,6 +46,7 @@ setInterval(updateClock, 1000);
 
 for (const button of document.querySelectorAll('.app')) {
   button.addEventListener('click', () => {
+    if (button.dataset.icon === 'notes' && instantNotes) { instantNotes.open(); return; }
     document.getElementById('app-title').textContent = button.querySelector('.app-name').textContent;
     document.getElementById('app-icon').replaceChildren(button.querySelector('.tile').cloneNode(true));
     dialog.showModal();
@@ -53,12 +56,13 @@ for (const button of document.querySelectorAll('.app')) {
 routinesLauncher.addEventListener('click', () => {
   routineTransition.open();
 });
-for (const panel of [dialog, routinesDialog, document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
+for (const panel of [dialog, routinesDialog, notesDialog, document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
   panel.addEventListener('click', event => {
     if (event.target !== panel) return;
     const bounds = panel.getBoundingClientRect();
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
       if (panel === routinesDialog) routineTransition.close();
+      else if (panel === notesDialog && instantNotes) instantNotes.close();
       else panel.close();
     }
   });
