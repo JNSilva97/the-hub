@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
-const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/motion.css', 'core-transition.js', 'experience.js', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
+const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/motion.css', 'core-transition.js', 'interface-sound.js', 'experience.js', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ viewport: { width: options.width || 1024, height: 900 }, reducedMotion: options.motion || 'no-preference' });
@@ -340,6 +340,36 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       await page.locator('[data-icon="settings"]').click();
       assert.equal(await page.locator('#settings-motion').isDisabled(), true);
+    } finally { await context.close(); }
+  });
+
+  await t.test('machine sounds render distinct short, quiet pulses with silent tails', async () => {
+    const { context, page } = await fixture(browser);
+    try {
+      await ready(page);
+      const rendered = await page.evaluate(async () => {
+        const results = [];
+        for (const kind of ['select', 'open', 'close']) {
+          const audio = new OfflineAudioContext(1, 17640, 44100);
+          synthesizeInterfaceSound(audio, audio.destination, kind);
+          const data = (await audio.startRendering()).getChannelData(0);
+          let peak = 0, energy = 0, last = 0, tail = 0;
+          for (let i = 0; i < data.length; i++) {
+            peak = Math.max(peak, Math.abs(data[i]));
+            energy += data[i] ** 2;
+            if (Math.abs(data[i]) > .00005) last = i / 44100;
+            if (i > 14112) tail = Math.max(tail, Math.abs(data[i]));
+          }
+          results.push({ kind, peak, rms: Math.sqrt(energy / data.length), last, tail });
+        }
+        return results;
+      });
+      for (const sound of rendered) {
+        assert.ok(sound.peak > .005 && sound.peak < .12, `${sound.kind} should be audible without clipping or a loud peak.`);
+        assert.ok(sound.rms > .0005 && sound.rms < .03);
+        assert.equal(sound.tail, 0, 'No lingering drone after the one-shot ends.');
+      }
+      assert.ok(rendered[0].last < rendered[2].last && rendered[2].last < rendered[1].last);
     } finally { await context.close(); }
   });
 

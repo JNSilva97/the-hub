@@ -277,13 +277,13 @@ dialog::backdrop {
 }
 
 .restart-confirm {
-  border: 1px solid #986aa0;
-  background: #291c35;
-  color: #f3d3ed;
+  border: 1px solid #5386b2;
+  background: #07182b;
+  color: #d3ebff;
 }
 
 .restart-confirm:hover {
-  background: #422748;
+  background: #103458;
 }
 
 /* Responsive adjustment: (max-width: 700px). */

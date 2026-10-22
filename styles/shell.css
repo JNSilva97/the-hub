@@ -55,9 +55,9 @@ header {
   display: inline-block;
   width: 5px;
   height: 5px;
-  background: var(--neon-pink);
+  background: var(--neon-cyan);
   margin-right: 13px;
-  box-shadow: #cb65bf80 0px 0px 12px;
+  box-shadow: #67d7ff80 0px 0px 12px;
 }
 
 .time-block {
@@ -290,7 +290,7 @@ main {
 }
 
 .app:nth-child(n+5)::after {
-  border-color: #c366b5;
+  border-color: #63c7ff;
 }
 
 .app .tile {
@@ -531,14 +531,14 @@ footer {
 }
 
 .city-buildings span:nth-child(4n) {
-  border-top-color: var(--neon-pink);
+  border-top-color: var(--neon-cyan);
 }
 
 .city-horizon {
   position: absolute;
   inset: auto 0px 12%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #237aff, #b74fa7, transparent);
+  background: linear-gradient(90deg, transparent, #237aff, #52c6ec, transparent);
   box-shadow: #165aff30 0px 0px 30px 4px;
 }
 

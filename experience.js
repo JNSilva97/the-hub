@@ -6,26 +6,13 @@
   const replay = document.getElementById('replay-intro');
   const settingsMotion = document.getElementById('settings-motion');
   const settingsSound = document.getElementById('settings-sound');
-  let audioContext;
+  const interfaceSound = typeof createInterfaceSound === 'function' ? createInterfaceSound() : undefined;
   let soundEnabled = false;
-  async function playTone() {
+  async function playTone(kind = 'select') {
     if (!soundEnabled || document.hidden) return;
     try {
-      audioContext ??= new AudioContext();
-      if (audioContext.state === 'suspended') await audioContext.resume();
-      if (!soundEnabled) return;
-      const tone = audioContext.createOscillator();
-      const volume = audioContext.createGain();
-      tone.type = 'sine';
-      tone.frequency.setValueAtTime(740, audioContext.currentTime);
-      tone.frequency.exponentialRampToValueAtTime(1100, audioContext.currentTime + .07);
-      volume.gain.setValueAtTime(0, audioContext.currentTime);
-      volume.gain.linearRampToValueAtTime(.025, audioContext.currentTime + .008);
-      volume.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + .09);
-      tone.connect(volume).connect(audioContext.destination);
-      tone.start();
-      tone.stop(audioContext.currentTime + .1);
-      tone.onended = () => { tone.disconnect(); volume.disconnect(); };
+      if (!interfaceSound) throw new Error('Sound unavailable');
+      await interfaceSound.play(kind);
     } catch {
       soundEnabled = false;
       settingsSound.setAttribute('aria-pressed', 'false');
@@ -36,10 +23,19 @@
     soundEnabled = !soundEnabled;
     settingsSound.setAttribute('aria-pressed', String(soundEnabled));
     settingsSound.textContent = soundEnabled ? 'On' : 'Off';
+    if (!soundEnabled) interfaceSound?.silence();
   });
   document.addEventListener('click', event => {
-    if (event.isTrusted && event.target.closest('button, input[type="checkbox"]')) playTone();
+    if (!event.isTrusted) return;
+    const target = event.target.closest('button, input[type="checkbox"]');
+    if (!target) return;
+    const kind = target.matches('.app, #routines-launch, #command-launch, #replay-intro, #settings-sound, #routine-restart') || target.closest('#command-results') ? 'open' : target.matches('.routine-exit, .close, .restart-keep') ? 'close' : 'select';
+    playTone(kind);
   });
+  document.addEventListener('keydown', event => {
+    if (event.isTrusted && event.key === 'Escape' && !event.repeat && document.querySelector('dialog[open]')) playTone('close');
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) interfaceSound?.silence(); });
   settingsMotion.addEventListener('click', () => document.querySelector('.motion-toggle').click());
   let bootTimers = [];
 

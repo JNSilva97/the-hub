@@ -38,7 +38,7 @@
 
 .core-reticle span:last-child {
   inset: auto 5% 0px auto;
-  color: var(--neon-pink);
+  color: var(--neon-cyan);
 }
 
 .core-label {
@@ -56,7 +56,7 @@
   color: #e6f3ff;
   letter-spacing: 0.15em;
   text-indent: 0.15em;
-  text-shadow: #007bff70 0px 0px 24px, #409dff28 2px 0px, #cb65bf28 -2px 0px;
+  text-shadow: #007bff70 0px 0px 24px, #409dff28 2px 0px, #67d7ff28 -2px 0px;
   font: 500 36px var(--font-display);
 }
 
@@ -143,13 +143,13 @@
 
 .gyro-secondary {
   animation: gyroscope-secondary 24s linear infinite reverse;
-  border-color: #aa53be65;
-  box-shadow: #aa53be10 0px 0px 16px;
+  border-color: #2c9cdb65;
+  box-shadow: #2c9cdb10 0px 0px 16px;
 }
 
 .gyro-secondary::after {
-  background: #f4bbeb;
-  box-shadow: #bd51b9 0px 0px 12px;
+  background: #c0f1ff;
+  box-shadow: #42a9f4 0px 0px 12px;
 }
 
 .orbit-slow {

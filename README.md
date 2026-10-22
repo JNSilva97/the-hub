@@ -1,6 +1,6 @@
 # The Hub
 
-A personal space with a near-black, neon-blue interface.
+A personal space with a near-black, neon-blue and ice-cyan interface.
 
 ## Current version
 
@@ -9,6 +9,8 @@ A personal space with a near-black, neon-blue interface.
 The intro is visual only and does not authenticate users. Any click or keypress skips it. Use **Pause motion** to stop interface animations; the system's reduced-motion preference is also respected.
 
 Use **Find anything** or **Ctrl/Cmd K** to search apps and checklists. Arrow keys move through results; Enter opens one and Escape closes the launcher. **Replay intro** repeats the opening when motion is enabled. Settings last for this visit; sound starts off and uses quiet, locally generated tones. There are no audio downloads or microphone permissions. Background CSS animations pause when the tab is hidden.
+
+Optional sound uses three short machine textures: a low servo pulse for opening, a downward filtered return for closing and a dry electronic click for selection. It combines low triangle waves and band-passed noise, with short envelopes and no continuous drone. Turning sound off fades any remaining tail; hidden tabs are silenced. The synthesis and levels live in `interface-sound.js`.
 
 Opening **Routines** unfolds the workspace from the optical core and docks its artwork in the header. Closing it reverses the journey. The opening takes 880 ms and the return 520 ms. Reduced or paused motion opens and closes immediately. Escape during opening reverses the journey; pressing Escape again completes closing immediately. Resizing or hiding the tab finishes the current transition safely.
 

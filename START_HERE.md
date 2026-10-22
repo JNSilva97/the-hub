@@ -21,7 +21,8 @@ The online version uses example checklists. Your real lists load from the PC ver
 | Keyframes, pausing and reduced motion | `styles/motion.css` |
 | Clock, opening dialogs and loading recovery | `interface.js` |
 | Core-to-Routines transformation and return | `core-transition.js` |
-| Search, intro replay, pointer light and sound | `experience.js` |
+| Search, intro replay, pointer light and sound triggers | `experience.js` |
+| Electronic sound textures, durations and levels | `interface-sound.js` |
 | Checklist appearance | `styles/routines.css` |
 | Loading checklists, ticking items and saving | `routines.js` |
 | Checking data and calculating completion | `routine-model.mjs` |
