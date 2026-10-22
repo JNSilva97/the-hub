@@ -12,6 +12,8 @@ Use **Find anything** or **Ctrl/Cmd K** to search apps and checklists. Arrow key
 
 **Field Mode** opens with the first unchecked item in checklist order. Choose **Mark done** to save that tick and advance, or **Undo last tick** to reverse the last Field Mode action. **Review checklist** expands the full list and optional section switches; only enabled sections enter the sequence. Finishing shows a short visual confirmation. Existing ticks are reused, including after a reload; no daily setup or new storage is needed.
 
+The home core has one progress ring per checklist, ordered from the outside in. The readout names each ring and shows its saved count. Completing a list pulses the docked core; returning home fills the rings and sends a blue pulse through the main core. Undo and reset update the same rings, while loading existing completions stays quiet. Motion controls and reduced-motion preferences also apply here.
+
 Optional sound uses three short digital textures: a rising scanner sweep for opening, a falling sweep for closing and a brief signal for selection. Frequency modulation adds metallic sidebands over band-passed data noise, with soft attacks and no bass impact or continuous drone. Turning sound off fades any remaining tail; hidden tabs are silenced. The synthesis and levels live in `interface-sound.js`.
 
 Opening **Routines** unfolds the workspace from the optical core and docks its artwork in the header. Closing it reverses the journey. The opening takes 880 ms and the return 520 ms. Reduced or paused motion opens and closes immediately. Escape during opening reverses the journey; pressing Escape again completes closing immediately. Resizing or hiding the tab finishes the current transition safely.
@@ -57,6 +59,8 @@ If a checklist download fails, open **Routines** and select **Try again**. A fai
 - `routines.demo.json` / ignored `private/routines.json` — public examples and local personal lists.
 
 `core-transition.js` owns the core-to-Routines animation. It uses native Web Animations and a decorative manual popover, with no animation library. The checklist remains a native modal dialog. When popovers are unavailable, the workspace still unfolds; if the transition script is unavailable, the dialog opens normally. The artwork copy is temporary, ignores clicks, takes no keyboard focus and is removed after each journey. SVG IDs are prefixed to avoid collisions.
+
+`core-progress.js` listens for `hub:progress` events from `routines.js`. It does not fetch or store data. It holds the departure ring values while Routines is open, then applies the latest counts after the native dialog closes, so the return artwork meets the home core before the rings fill. An undone completion is removed from the pending home pulse.
 
 ### Stylesheets
 

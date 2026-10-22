@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
-const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/motion.css', 'core-transition.js', 'interface-sound.js', 'experience.js', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
+const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ viewport: { width: options.width || 1024, height: 900 }, reducedMotion: options.motion || 'no-preference' });
@@ -87,6 +87,80 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
     });
   }
 
+  await t.test('core rings load saved progress without replaying completion celebrations', async () => {
+    const { context, page, errors } = await fixture(browser);
+    try {
+      await context.addInitScript(({ key }) => localStorage.setItem(key, JSON.stringify({ checks: {
+        'personal-care/care/item-1': true, 'personal-care/care/item-2': true, 'personal-care/care/item-3': true,
+        'workday/work/item-1': true
+      }, optional: { 'workday/after-work': true } })), { key: storageKey });
+      await ready(page);
+      assert.equal(await page.locator('.core-progress-fill').count(), 5);
+      assert.equal(await page.locator('#core-summary').textContent(), '1 / 5 CHECKLISTS READY');
+      assert.equal(await page.locator('.core-progress-fill[data-checklist="personal-care"]').evaluate(el => Number(el.style.strokeDashoffset)), 0);
+      const workOffset = await page.locator('.core-progress-fill[data-checklist="workday"]').evaluate(el => Number(el.style.strokeDashoffset));
+      assert.ok(Math.abs(workOffset - 100 * 5 / 6) < .001);
+      assert.equal(await page.locator('#core-signal-list [data-checklist="workday"] .core-signal-count').textContent(), '1 / 6');
+      assert.equal(await page.locator('.core-art > .core-energy').evaluate(el => el.getAnimations().length), 0);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  for (const motion of ['no-preference', 'reduce']) {
+    await t.test(`core keeps its departure rings, then updates and pulses on return with ${motion} motion`, async () => {
+      const { context, page, errors } = await fixture(browser, { motion, width: 390 });
+      try {
+        await ready(page);
+        await openRoutines(page);
+        await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
+        const ring = page.locator('.core-art .core-progress-fill[data-checklist="personal-care"]');
+        for (let i = 0; i < 3; i++) await page.locator('#field-complete').click();
+        assert.equal(await ring.evaluate(el => Number(el.style.strokeDashoffset)), 100);
+        assert.equal(await page.locator('.routine-optic .core-energy').evaluate(el => el.getAnimations().length > 0), motion !== 'reduce');
+        await page.keyboard.press('Escape');
+        if (motion !== 'reduce') {
+          assert.equal(await page.locator('.core-flight .core-progress-fill[data-checklist="personal-care"]').evaluate(el => parseFloat(el.style.strokeDashoffset)), 100);
+        }
+        await page.waitForFunction(() => !document.getElementById('routines-dialog').open && document.getElementById('core-summary').textContent.startsWith('1 /'));
+        assert.equal(await ring.evaluate(el => Number(el.style.strokeDashoffset)), 0);
+        const fill = await ring.evaluate(el => {
+          const animations = el.getAnimations();
+          for (const animation of animations) { animation.pause(); animation.currentTime = 300; }
+          return { offset: parseFloat(getComputedStyle(el).strokeDashoffset), animations: animations.length };
+        });
+        if (motion === 'reduce') assert.equal(fill.animations, 0);
+        else {
+          assert.ok(fill.offset > 0 && fill.offset < 100, 'The home ring fills gradually after the handoff.');
+          assert.ok(fill.animations > 0);
+        }
+        assert.equal(await page.locator('.core-art > .core-energy').evaluate(el => el.getAnimations().length > 0), motion !== 'reduce');
+        await ring.evaluate(el => el.getAnimations().forEach(animation => animation.finish()));
+        await openRoutines(page);
+        await page.locator('#field-undo').click();
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => !document.getElementById('routines-dialog').open && document.getElementById('core-summary').textContent.startsWith('0 /'));
+        assert.ok(Math.abs(await ring.evaluate(el => Number(el.style.strokeDashoffset)) - 100 / 3) < .001);
+        assert.equal(await page.locator('#routines-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    });
+  }
+
+  await t.test('undoing a completion before returning cancels its queued home pulse', async () => {
+    const { context, page } = await fixture(browser);
+    try {
+      await ready(page);
+      await openRoutines(page);
+      for (let i = 0; i < 3; i++) await page.locator('#field-complete').click();
+      await page.locator('#field-undo').click();
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      await page.waitForFunction(() => Number(document.querySelector('.core-art .core-progress-fill').style.strokeDashoffset) < 100);
+      assert.equal(await page.locator('#core-summary').textContent(), '0 / 5 CHECKLISTS READY');
+      assert.equal(await page.locator('.core-art > .core-energy').evaluate(el => el.getAnimations().length), 0);
+    } finally { await context.close(); }
+  });
+
   await t.test('ticks, optional counts, reload and scoped reset', async () => {
     const { context, page } = await fixture(browser);
     try {
@@ -116,6 +190,9 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       assert.equal(await page.locator('[data-group="workday/after-work"]').isChecked(), true);
       await page.locator('[data-routine="training"]').click();
       assert.equal(await page.locator('.check-row input').first().isChecked(), true);
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      await page.waitForFunction(() => document.querySelector('#core-signal-list [data-checklist="workday"] .core-signal-count').textContent === '0 / 6');
     } finally { await context.close(); }
   });
 
@@ -495,6 +572,11 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       assert.equal(await page.locator('#field-title').textContent(), 'Get a fresh towel');
       const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey);
       assert.equal(Object.values(saved.checks).filter(Boolean).length, 2);
+      await other.keyboard.press('Escape');
+      await other.waitForFunction(() => document.querySelector('#core-signal-list [data-checklist="personal-care"] .core-signal-count').textContent === '2 / 3');
+      await page.locator('[data-group="personal-care/extras"]').check();
+      await other.waitForFunction(() => document.querySelector('#core-signal-list [data-checklist="personal-care"] .core-signal-count').textContent === '2 / 5');
+      assert.equal(await other.locator('.core-art .core-progress-fill[data-checklist="personal-care"]').evaluate(el => Number(el.style.strokeDashoffset)), 60);
       await other.evaluate(key => localStorage.removeItem(key), storageKey);
       await page.waitForFunction(() => !document.querySelectorAll('.check-row input')[0].checked);
     } finally { await context.close(); }

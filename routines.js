@@ -69,6 +69,7 @@ function save() {
 }
 
 function updateProgress() {
+  const signals = [];
   for (const input of content.querySelectorAll('input[data-check]')) input.checked = state.checks[input.dataset.check] === true;
   for (const input of content.querySelectorAll('input[data-group]')) {
     input.checked = state.optional[input.dataset.group] === true;
@@ -79,6 +80,7 @@ function updateProgress() {
     const card = list.querySelector(`[data-routine="${routine.id}"]`);
     card.querySelector('.routine-count').textContent = `${progress.done} / ${progress.total}`;
     card.querySelector('.routine-mini-fill').style.transform = `scaleX(${progress.percent / 100})`;
+    signals.push({ id: routine.id, name: routine.name, ...progress });
   }
   const progress = getProgress(selected, state);
   content.closest('.routine-detail').dataset.complete = String(progress.total > 0 && progress.done === progress.total);
@@ -88,6 +90,7 @@ function updateProgress() {
   bar.firstElementChild.style.transform = `scaleX(${progress.percent / 100})`;
   document.getElementById('routine-restart').disabled = !Object.entries(state.checks).some(([key, checked]) => key.startsWith(`${selected.id}/`) && checked);
   updateField(progress);
+  document.dispatchEvent(new CustomEvent('hub:progress', { detail: signals }));
 }
 
 function updateField(progress) {

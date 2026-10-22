@@ -59,6 +59,10 @@ function createCoreTransition(panel) {
     for (const node of copies) if (node.id) { ids.set(node.id, `flight-${node.id}`); node.id = `flight-${node.id}`; }
     copies.forEach((node, index) => {
       for (const attribute of [...node.attributes]) node.setAttribute(attribute.name, attribute.value.replace(/url\(#([^)]+)\)/g, (_, id) => `url(#${ids.get(id) || id})`));
+      if (node.classList.contains('core-progress-fill')) {
+        node.style.strokeDashoffset = getComputedStyle(originals[index]).strokeDashoffset;
+        node.style.transition = 'none';
+      }
       if (originals[index].getAnimations().length) {
         node.style.transform = getComputedStyle(originals[index]).transform;
         node.style.animation = 'none';

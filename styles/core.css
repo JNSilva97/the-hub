@@ -20,6 +20,87 @@
   animation: optics-online 1600ms 1300ms var(--ease-arrive) both;
 }
 
+.core-progress-track {
+  stroke: #4b9bd1;
+  stroke-opacity: .18;
+  stroke-width: 1;
+}
+
+.core-progress-fill {
+  stroke-width: 2.5;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 750ms var(--ease-arrive);
+}
+
+.core-progress-fill[data-complete="true"] {
+  filter: drop-shadow(0 0 4px #47bdff);
+}
+
+.core-energy {
+  stroke: #8bdfff;
+  stroke-width: 2;
+  opacity: 0;
+  transform-origin: 300px 270px;
+  pointer-events: none;
+}
+
+.routine-optic .core-energy {
+  transform-origin: 32px 32px;
+}
+
+.core-signals {
+  width: min(920px, 100%);
+  margin: -12px auto 28px;
+}
+
+.core-signals[hidden] { display: none; }
+
+.core-signals-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  color: #8dbbd8;
+  font: 600 10px var(--font-interface);
+  letter-spacing: .16em;
+}
+
+.core-signals-heading span { color: #87a1b9; }
+
+.core-signals ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.core-signals li {
+  min-width: 0;
+  border-left: 2px solid var(--signal-color);
+  padding-left: 12px;
+}
+
+.core-signal-name {
+  display: block;
+  color: #a6c0d7;
+  font: 600 13px/1.4 var(--font-interface);
+  overflow-wrap: anywhere;
+}
+
+.core-signal-count {
+  display: block;
+  margin-top: 5px;
+  color: #8db8da;
+  font: 500 9px var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.core-signals li[data-complete="true"] .core-signal-count { color: #b5efff; }
+
 .core-reticle {
   position: absolute;
   inset: 9%;
@@ -62,7 +143,7 @@
 
 .core-coordinate {
   position: absolute;
-  inset: 83% 0px auto;
+  inset: 86% 0px auto;
   color: #8fc9df;
   letter-spacing: 0.17em;
   font: 600 10px var(--font-interface);
@@ -261,7 +342,7 @@ body[data-core-phase] .core * {
   .core-coordinate {
     font-size: 8px;
     letter-spacing: 0.12em;
-    top: 90%;
+    top: 96%;
   }
 
   .core-launch {
