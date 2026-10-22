@@ -10,6 +10,8 @@ Routines starts in **Field Mode**: one item, a **Mark done** button and a previe
 
 Choose **Notes** and start typing. Your first line becomes the title, and each edit saves automatically in this browser. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Public sample notes and the PC notebook are separate. Nothing you write is published or synced.
 
+**Delete note** asks for confirmation inside the app. **Keep note**, Escape or clicking outside cancels. After confirming, **Undo delete** recovers the last deleted note until you reload the page or successfully delete another note. Deleting one note leaves the others untouched.
+
 The online version uses example checklists. Your real lists load from the PC version at `http://127.0.0.1:8765/` while the local server is running. Ticks stay in the browser you use. They are not synced to your phone.
 
 ## 2. Find the right file

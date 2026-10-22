@@ -18,6 +18,8 @@ The home core has one progress ring per checklist, ordered from the outside in. 
 
 Each note has its own browser-storage entry. Changes from another tab update the list; conflicting local edits are kept as separate notes. Unreadable records are left untouched. If saving fails, the draft stays available for this visit with a **Not saved** warning: keep the tab open and copy the text. Clearing browser data removes saved notes, and notes do not sync between devices.
 
+**Delete note** opens an in-app confirmation with **Keep note** focused first. Confirming removes that note's text from storage and leaves deletion metadata to prevent stale tabs from resurrecting it. **Undo delete** restores the last deleted note as a new saved note; this recovery is available until the next successful deletion or a page reload. A failed deletion keeps the note, and a note changed in another tab must be reviewed before deletion. Deleted sample notes stay deleted too.
+
 Optional sound uses three short digital textures: a rising scanner sweep for opening, a falling sweep for closing and a brief signal for selection. Frequency modulation adds metallic sidebands over band-passed data noise, with soft attacks and no bass impact or continuous drone. Turning sound off fades any remaining tail; hidden tabs are silenced. The synthesis and levels live in `interface-sound.js`.
 
 Opening **Routines** unfolds the workspace from the optical core and docks its artwork in the header. Closing it reverses the journey. The opening takes 880 ms and the return 520 ms. Reduced or paused motion opens and closes immediately. Escape during opening reverses the journey; pressing Escape again completes closing immediately. Resizing or hiding the tab finishes the current transition safely.

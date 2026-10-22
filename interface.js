@@ -56,7 +56,7 @@ for (const button of document.querySelectorAll('.app')) {
 routinesLauncher.addEventListener('click', () => {
   routineTransition.open();
 });
-for (const panel of [dialog, routinesDialog, notesDialog, document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
+for (const panel of [dialog, routinesDialog, notesDialog, document.getElementById('note-delete-dialog'), document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
   panel.addEventListener('click', event => {
     if (event.target !== panel) return;
     const bounds = panel.getBoundingClientRect();

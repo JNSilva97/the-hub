@@ -133,6 +133,105 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
     });
   }
 
+  for (const width of [320, 1440]) {
+    await t.test(`note deletion confirms, persists and can be undone at ${width}px`, async () => {
+      const { context, page, errors } = await fixture(browser, { width, motion: 'reduce' });
+      try {
+        await ready(page);
+        await page.locator('[data-icon="notes"]').click();
+        await page.locator('#note-text').fill('Delete this draft\nKeep the other note.');
+        const id = await page.locator('#note-list button[aria-pressed="true"]').getAttribute('data-note');
+        const key = `thehub:notes:demo:v1:${id}`;
+        const original = await page.evaluate(key => localStorage.getItem(key), key);
+        await page.locator('#note-new').click();
+        await page.locator('#note-text').fill('Keep this note\nThis text must stay unchanged.');
+        await page.locator(`#note-list [data-note="${id}"]`).click();
+        await page.locator('#note-delete').click();
+        assert.equal(await page.locator('#note-delete-dialog .restart-keep').evaluate(el => el === document.activeElement), true);
+        await page.keyboard.press('Escape');
+        assert.equal(await page.evaluate(key => localStorage.getItem(key), key), original);
+        await page.locator('#note-delete').click();
+        await page.mouse.click(1, 1);
+        assert.equal(await page.locator('#note-delete-dialog').evaluate(el => el.open), false);
+        assert.equal(await page.evaluate(key => localStorage.getItem(key), key), original);
+        await page.locator('#note-delete').click();
+        await page.keyboard.press('Tab');
+        await page.keyboard.press('Enter');
+        assert.equal(await page.locator(`#note-list [data-note="${id}"]`).count(), 0);
+        const removed = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
+        assert.equal(removed.deleted, true);
+        assert.equal(removed.text, undefined);
+        assert.equal(await page.locator('#note-undo-delete').isVisible(), true);
+        await page.locator('#note-undo-delete').click();
+        assert.equal(await page.locator('#note-text').inputValue(), 'Delete this draft\nKeep the other note.');
+        assert.equal(await page.locator('#note-text').evaluate(el => el === document.activeElement), true);
+        assert.equal(await page.locator('#note-undo-delete').isVisible(), false);
+        await page.locator('#note-delete').click();
+        await page.locator('#note-delete-confirm').click();
+        await ready(page);
+        await page.locator('[data-icon="notes"]').click();
+        await page.locator('#notes-search').fill('Delete this draft');
+        assert.equal(await page.locator('#note-list button').count(), 0);
+        await page.locator('#notes-search').fill('Nightfall ideas');
+        await page.locator('#note-list button').click();
+        await page.locator('#note-delete').click();
+        assert.equal(await page.locator('#note-delete-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+        await page.locator('#note-delete-confirm').click();
+        await ready(page);
+        await page.locator('[data-icon="notes"]').click();
+        await page.locator('#notes-search').fill('Nightfall ideas');
+        assert.equal(await page.locator('#note-list button').count(), 0, 'Deleted sample notes must stay deleted too.');
+        await page.locator('#notes-search').fill('Keep this note');
+        await page.locator('#note-list button').click();
+        assert.equal(await page.locator('#note-text').inputValue(), 'Keep this note\nThis text must stay unchanged.');
+        assert.equal(await page.locator('#notes-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    });
+  }
+
+  await t.test('failed deletion keeps the note and stale confirmation cannot delete a newer edit', async () => {
+    const { context, page } = await fixture(browser, { motion: 'reduce' });
+    try {
+      await ready(page);
+      await page.locator('[data-icon="notes"]').click();
+      await page.locator('#note-text').fill('Protected note');
+      const id = await page.locator('#note-list button[aria-pressed="true"]').getAttribute('data-note');
+      const key = `thehub:notes:demo:v1:${id}`;
+      await page.locator('#note-delete').click();
+      await page.evaluate(key => localStorage.setItem(key, JSON.stringify({ version: 1, id: key.split(':').at(-1), text: 'Newer edit', updatedAt: Date.now() })), key);
+      await page.locator('#note-delete-confirm').click();
+      assert.match(await page.locator('#notes-status').textContent(), /changed in another tab/);
+      assert.equal(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).text, key), 'Newer edit');
+      await page.evaluate(() => { Storage.prototype.setItem = () => { throw new Error('Storage blocked'); }; });
+      await page.locator('#note-new').click();
+      await page.locator('#note-text').fill('Unsaved draft');
+      await page.locator('#note-delete').click();
+      await page.locator('#note-delete-confirm').click();
+      assert.match(await page.locator('#notes-status').textContent(), /Couldn’t delete/);
+      assert.equal(await page.locator('#note-text').inputValue(), 'Unsaved draft');
+    } finally { await context.close(); }
+  });
+
+  await t.test('deletion in another tab removes the active note without resurrecting it', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce' });
+    try {
+      await ready(page);
+      await page.locator('[data-icon="notes"]').click();
+      await page.locator('#note-text').fill('Shared removal\nThis note should disappear.');
+      const id = await page.locator('#note-list button[aria-pressed="true"]').getAttribute('data-note');
+      const other = await context.newPage();
+      await ready(other);
+      await other.locator('[data-icon="notes"]').click();
+      await other.locator('#note-delete').click();
+      await other.locator('#note-delete-confirm').click();
+      await page.waitForFunction(id => !document.querySelector(`#note-list [data-note="${id}"]`), id);
+      assert.equal(await page.locator('#note-text').inputValue() === 'Shared removal\nThis note should disappear.', false);
+      assert.match(await page.locator('#notes-status').textContent(), /deleted in another tab/);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
   await t.test('Instant Notes preserves separate edits to the same note in two tabs', async () => {
     const { context, page, errors } = await fixture(browser, { motion: 'reduce' });
     try {
@@ -337,7 +436,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       assert.equal(await page.locator('[data-group="workday/after-work"]').isChecked(), true);
       await page.locator('#routine-restart').click();
       assert.equal(await page.locator('#restart-dialog').evaluate(el => el.open), true);
-      assert.equal(await page.locator('.restart-keep').evaluate(el => el === document.activeElement), true);
+      assert.equal(await page.locator('#restart-dialog .restart-keep').evaluate(el => el === document.activeElement), true);
       await page.getByRole('button', { name: 'Keep progress' }).click();
       assert.equal(await page.locator('[data-check="workday/work/item-1"]').isChecked(), true);
       await page.locator('#routine-restart').click();

@@ -4,6 +4,8 @@ function createInstantNotes(panel) {
   const search = document.getElementById('notes-search');
   const list = document.getElementById('note-list');
   const status = document.getElementById('notes-status');
+  const deleteDialog = document.getElementById('note-delete-dialog');
+  const undoDelete = document.getElementById('note-undo-delete');
   const personal = ['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
   const prefix = `thehub:notes:${personal ? 'private' : 'demo'}:v1:`;
   const notes = new Map();
@@ -15,11 +17,15 @@ function createInstantNotes(panel) {
   let loaded = false;
   let warning = '';
   let closing;
+  let pendingDelete;
+  let lastDeleted;
   const title = note => note.text.trim().split(/\r?\n/)[0].slice(0, 80) || 'New note';
 
   function parse(raw, id) {
     const note = JSON.parse(raw);
-    if (note?.version !== 1 || note.id !== id || !/^[a-f0-9-]{36}$/.test(id) || typeof note.text !== 'string' || note.text.length > 50000 || !Number.isSafeInteger(note.updatedAt) || note.updatedAt < 0) throw new Error('Invalid note.');
+    if (note?.version !== 1 || note.id !== id || !/^[a-f0-9-]{36}$/.test(id) || !Number.isSafeInteger(note.updatedAt) || note.updatedAt < 0) throw new Error('Invalid note.');
+    if (note.deleted === true) return note;
+    if (note.deleted !== undefined && note.deleted !== false || typeof note.text !== 'string' || note.text.length > 50000) throw new Error('Invalid note.');
     return note;
   }
 
@@ -54,6 +60,7 @@ function createInstantNotes(panel) {
   function updateHeading() {
     document.getElementById('note-name').textContent = title(notes.get(selected));
     document.getElementById('note-count').textContent = `${editor.value.length.toLocaleString('en-GB')} / 50,000`;
+    document.getElementById('note-delete').disabled = !notes.get(selected).text && !revisions.has(selected);
   }
 
   function select(id) {
@@ -85,16 +92,17 @@ function createInstantNotes(panel) {
         const raw = localStorage.getItem(key);
         try {
           const note = parse(raw, key.slice(prefix.length));
-          notes.set(note.id, note);
+          if (!note.deleted) notes.set(note.id, note);
           revisions.set(note.id, raw);
         } catch { warning = 'Some saved notes could not be read. Their stored data is unchanged.'; }
       }
     } catch { warning = 'Storage is unavailable. Keep this tab open and copy your text before leaving.'; }
     const saved = [...notes.values()].sort((a, b) => b.updatedAt - a.updatedAt)[0];
-    if (!personal && !saved) {
-      for (const text of ['A place for your next idea\nCapture a thought, a plan or something to remember. These are sample notes; your edits stay in this browser.', 'Nightfall ideas\nA city after dark. Blue light. A clear next move.']) {
-        const note = { version: 1, id: crypto.randomUUID(), text, updatedAt: 0 };
-        notes.set(note.id, note);
+    if (!personal) {
+      const samples = ['A place for your next idea\nCapture a thought, a plan or something to remember. These are sample notes; your edits stay in this browser.', 'Nightfall ideas\nA city after dark. Blue light. A clear next move.'];
+      for (const [index, text] of samples.entries()) {
+        const id = `00000000-0000-4000-8000-00000000000${index + 1}`;
+        if (!revisions.has(id)) notes.set(id, { version: 1, id, text, updatedAt: 0 });
       }
     }
     if (saved) { select(saved.id); tell('Saved notes loaded from this browser.'); }
@@ -110,7 +118,9 @@ function createInstantNotes(panel) {
         // Preserve both texts when another tab changed the same note before this write.
         if (current !== null) {
           try {
-            notes.set(note.id, parse(current, note.id));
+            const stored = parse(current, note.id);
+            if (stored.deleted) notes.delete(note.id);
+            else notes.set(note.id, stored);
             revisions.set(note.id, current);
           } catch { /* Leave unreadable stored data untouched. */ }
         }
@@ -141,6 +151,56 @@ function createInstantNotes(panel) {
   editor.addEventListener('input', saveDraft);
   search.addEventListener('input', renderList);
   document.getElementById('note-new').addEventListener('click', newNote);
+
+  function forget(id) {
+    notes.delete(id);
+    unsaved.delete(id);
+    editedHere.delete(id);
+    if (selected === id) {
+      search.value = '';
+      const next = [...notes.values()].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      if (next) select(next.id);
+      else newNote();
+    } else renderList();
+  }
+
+  document.getElementById('note-delete').addEventListener('click', () => {
+    if (!selected || deleteDialog.open) return;
+    pendingDelete = { note: { ...notes.get(selected) }, revision: revisions.get(selected) ?? null };
+    document.getElementById('note-delete-description').textContent = `Delete “${title(pendingDelete.note)}” from this browser? You can undo the last deletion until you reload this page or delete another note.`;
+    deleteDialog.showModal();
+  });
+  deleteDialog.addEventListener('close', () => { if (!deleteDialog.open) pendingDelete = undefined; });
+  document.getElementById('note-delete-confirm').addEventListener('click', () => {
+    if (!deleteDialog.open || !pendingDelete || !panel.open) return;
+    const { note, revision } = pendingDelete;
+    pendingDelete = undefined;
+    deleteDialog.close();
+    try {
+      if (localStorage.getItem(prefix + note.id) !== revision) {
+        tell('This note changed in another tab. Review it before deleting.', true);
+        return;
+      }
+      // Keep only deletion metadata so stale tabs cannot silently resurrect this ID.
+      const raw = JSON.stringify({ version: 1, id: note.id, deleted: true, updatedAt: Date.now() });
+      localStorage.setItem(prefix + note.id, raw);
+      revisions.set(note.id, raw);
+      lastDeleted = note;
+      undoDelete.hidden = false;
+      undoDelete.setAttribute('aria-label', `Undo deletion of ${title(note)}`);
+      forget(note.id);
+      tell('Note deleted. Undo is available for this visit, until the next deletion.');
+    } catch { tell('Couldn’t delete this note. Your text is still here. Try again.', true); }
+  });
+  undoDelete.addEventListener('click', () => {
+    if (!lastDeleted) return;
+    const restored = store({ ...lastDeleted, id: crypto.randomUUID(), updatedAt: Date.now() });
+    lastDeleted = undefined;
+    undoDelete.hidden = true;
+    search.value = '';
+    select(restored.id);
+    if (!unsaved.has(restored.id)) tell('Note restored and saved in this browser.');
+  });
   window.addEventListener('storage', event => {
     if (!loaded || (event.key !== null && !event.key.startsWith(prefix))) return;
     if (event.key === null || event.newValue === null) {
@@ -156,6 +216,20 @@ function createInstantNotes(panel) {
     try {
       const incoming = parse(event.newValue, id);
       const local = notes.get(id);
+      if (incoming.deleted) {
+        const wasSelected = selected === id;
+        const keepCopy = local && (unsaved.has(id) || editedHere.has(id) && revisions.get(id) !== event.oldValue);
+        if (pendingDelete?.note.id === id) { pendingDelete = undefined; deleteDialog.close(); }
+        revisions.set(id, event.newValue);
+        let copy;
+        if (keepCopy) copy = store({ ...local, id: crypto.randomUUID() });
+        forget(id);
+        if (copy) {
+          if (wasSelected) select(copy.id);
+          if (!unsaved.has(copy.id)) tell('Deleted in another tab. Your newer edit was kept as a separate note.');
+        } else tell('Note deleted in another tab.');
+        return;
+      }
       const keepDraft = local && local.text !== incoming.text && (unsaved.has(id) || editedHere.has(id) || id === selected && panel.open && document.activeElement === editor && editor.value);
       notes.set(id, incoming);
       revisions.set(id, event.newValue);
@@ -188,7 +262,11 @@ function createInstantNotes(panel) {
   }
   panel.querySelector('form').addEventListener('submit', event => { event.preventDefault(); close(); });
   panel.addEventListener('cancel', event => { event.preventDefault(); close(); });
-  panel.addEventListener('close', () => { closing?.cancel(); closing = undefined; });
+  panel.addEventListener('close', () => {
+    closing?.cancel();
+    closing = undefined;
+    if (!panel.open && deleteDialog.open) deleteDialog.close();
+  });
   const settleClose = () => { if (closing) close(); };
   reducedMotion.addEventListener('change', settleClose);
   document.addEventListener('hub:motionchange', settleClose);
