@@ -7,6 +7,9 @@ const routinesUrl = new URL('./routines.js', scriptUrl);
 routinesUrl.search = scriptUrl.search;
 let routinesModule;
 let loadingRoutines = false;
+const routineTransition = typeof createCoreTransition === 'function' ? createCoreTransition(routinesDialog) : {
+  open: () => routinesDialog.showModal(), close: () => routinesDialog.close()
+};
 
 function dismissAccess() {
   document.querySelector('.access-sequence')?.remove();
@@ -22,6 +25,7 @@ motionToggle.addEventListener('click', () => {
   const paused = document.body.classList.toggle('motion-paused');
   motionToggle.setAttribute('aria-pressed', String(paused));
   motionToggle.textContent = paused ? 'Resume motion' : 'Pause motion';
+  document.dispatchEvent(new Event('hub:motionchange'));
 });
 
 const clock = document.getElementById('clock');
@@ -47,13 +51,16 @@ for (const button of document.querySelectorAll('.app')) {
 }
 
 routinesLauncher.addEventListener('click', () => {
-  routinesDialog.showModal();
+  routineTransition.open();
 });
 for (const panel of [dialog, routinesDialog, document.getElementById('command-dialog')]) {
   panel.addEventListener('click', event => {
     if (event.target !== panel) return;
     const bounds = panel.getBoundingClientRect();
-    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) panel.close();
+    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
+      if (panel === routinesDialog) routineTransition.close();
+      else panel.close();
+    }
   });
 }
 

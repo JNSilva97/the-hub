@@ -15,6 +15,38 @@
   display: none;
 }
 
+/* This panel's controller replaces the generic dialog entry animation. */
+.routines-dialog[open] {
+  animation: none;
+}
+
+.routines-dialog[data-transition] {
+  overflow: hidden;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.routines-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.routine-optic {
+  flex: 0 0 58px;
+  width: 58px;
+  height: 58px;
+  color: #78caff;
+  filter: drop-shadow(0 0 12px #158aff55);
+}
+
+.routine-optic svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .routines-header {
   position: sticky;
   top: 0px;
@@ -356,6 +388,16 @@
 
 /* Responsive adjustment: (max-width: 700px). */
 @media (max-width: 700px) {
+  .routines-identity {
+    gap: 10px;
+  }
+
+  .routine-optic {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+  }
+
   .routines-dialog {
     width: calc(100% - 16px);
     max-height: calc(100dvh - 20px);

@@ -20,6 +20,7 @@ The online version uses example checklists. Your real lists load from the PC ver
 | Dialogs, search and Settings appearance | `styles/panels.css` |
 | Keyframes, pausing and reduced motion | `styles/motion.css` |
 | Clock, opening dialogs and loading recovery | `interface.js` |
+| Core-to-Routines transformation and return | `core-transition.js` |
 | Search, intro replay, pointer light and sound | `experience.js` |
 | Checklist appearance | `styles/routines.css` |
 | Loading checklists, ticking items and saving | `routines.js` |
@@ -32,6 +33,8 @@ Each component has one stylesheet. Its main rules come first and screen-size adj
 ## 3. Understand the animation
 
 The intro lasts 3.2 seconds. Its doors open, the optical system appears and the status text moves through three stages. Click or press a key to skip it. **Replay intro** starts it again.
+
+Opening Routines unfolds a circular workspace from the home core while its optical artwork travels into the header. Closing it folds the workspace back toward the core. The two timings are named `open` and `close` near the top of `core-transition.js`; edit them there. The controller tracks opening, open and closing states, so Escape, resizing and navigation can interrupt the animation safely. With motion disabled, the dialog opens immediately.
 
 Most motion uses CSS transforms and opacity, which the browser can animate efficiently. Pointer lighting updates only when the mouse moves. There is no permanent JavaScript rendering loop. Turning motion off also disables replay; reduced-motion settings on your device take priority.
 

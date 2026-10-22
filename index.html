@@ -8,10 +8,10 @@
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles/base.css?v=styles-1">
   <link rel="stylesheet" href="styles/shell.css?v=styles-1">
-  <link rel="stylesheet" href="styles/core.css?v=styles-1">
+  <link rel="stylesheet" href="styles/core.css?v=portal-1">
   <link rel="stylesheet" href="styles/access.css?v=styles-1">
   <link rel="stylesheet" href="styles/panels.css?v=styles-1">
-  <link rel="stylesheet" href="styles/routines.css?v=styles-1">
+  <link rel="stylesheet" href="styles/routines.css?v=portal-1">
   <link rel="stylesheet" href="styles/motion.css?v=styles-1">
 </head>
 <body>
@@ -131,7 +131,10 @@
   </dialog>
   <dialog id="routines-dialog" class="routines-dialog" aria-labelledby="routines-title">
     <div class="routines-header">
-      <div><div class="panel-eyebrow">THE HUB / PERSONAL OPERATIONS</div><h2 id="routines-title">ROUTINES</h2></div>
+      <div class="routines-identity">
+        <div class="routine-optic" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="29" stroke="currentColor" stroke-opacity=".3"/><circle cx="32" cy="32" r="25" stroke="currentColor" stroke-dasharray="42 12 3 8"/><circle cx="32" cy="32" r="16" stroke="currentColor" stroke-opacity=".6"/><circle cx="32" cy="32" r="9" fill="#073263" stroke="currentColor"/><circle cx="32" cy="32" r="3" fill="#b5f0ff"/></svg></div>
+        <div><div class="panel-eyebrow">THE HUB / PERSONAL OPERATIONS</div><h2 id="routines-title">ROUTINES</h2></div>
+      </div>
       <form method="dialog"><button class="routine-exit" type="submit" aria-label="Close routines">×</button></form>
     </div>
     <div class="routines-meta"><span id="routine-source" class="routine-source">LOADING</span><p id="routine-data-note">Loading your checklists…</p></div>
@@ -154,7 +157,8 @@
     <p id="command-empty" hidden>No matches. Try “Routines” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="interface.js?v=neon-1"></script>
+  <script defer src="core-transition.js?v=portal-1"></script>
+  <script defer src="interface.js?v=portal-1"></script>
   <script defer src="experience.js?v=neon-1"></script>
 </body>
 </html>

@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
-const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/motion.css', 'experience.js', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
+const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/motion.css', 'core-transition.js', 'experience.js', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ viewport: { width: options.width || 1024, height: 900 }, reducedMotion: options.motion || 'no-preference' });
@@ -17,11 +17,13 @@ async function fixture(browser, options = {}) {
   const errors = [];
   const failures = { data: false, module: false, dependency: false };
   context.on('page', page => page.on('pageerror', error => errors.push(error.message)));
-  await context.route('**/*', route => {
+  await context.route('**/*', async route => {
     const request = route.request();
     const url = new URL(request.url());
     const filename = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
     requests.push({ pathname: url.pathname, method: request.method() });
+    if (filename === 'core-transition.js' && options.noTransition) return route.abort();
+    if (filename === 'routines.demo.json' && options.dataDelay) await new Promise(resolve => setTimeout(resolve, options.dataDelay));
     if (filename === 'routines.demo.json' && failures.data) return route.fulfill({ status: 503, body: 'Unavailable' });
     if (filename === 'routines.js' && failures.module) return route.abort();
     if (filename === 'routine-model.mjs' && failures.dependency) return route.abort();
@@ -55,6 +57,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
         await ready(page);
         await openRoutines(page);
         await page.keyboard.press('Escape');
+        await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
         assert.equal(await page.locator('#routines-launch').evaluate(element => document.activeElement === element), true);
         await page.keyboard.press('Enter');
         await page.getByRole('button', { name: 'Close routines' }).click();
@@ -62,6 +65,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
           await app.click();
           assert.equal(await page.locator('#app-title').textContent(), await app.locator('.app-name').textContent());
           await page.keyboard.press('Escape');
+          await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
         }
         await page.addScriptTag({ path: path.join(root, 'smoke-test.js') });
         assert.equal((await page.evaluate(() => testHub())).passed, true);
@@ -106,6 +110,92 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
     } finally { await context.close(); }
   });
 
+  await t.test('core journey opens and returns with focus, clean artwork and no duplicate IDs', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 390 });
+    try {
+      await ready(page);
+      await openRoutines(page);
+      assert.equal(await page.locator('#routines-dialog').getAttribute('data-transition'), 'opening');
+      assert.equal(await page.locator('.core-flight:popover-open').count(), 1);
+      assert.equal(await page.evaluate(() => {
+        const ids = [...document.querySelectorAll('[id]')].map(el => el.id);
+        return new Set(ids).size === ids.length;
+      }), true);
+      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
+      assert.equal(await page.locator('.core-flight').count(), 0);
+      assert.equal(await page.locator('#routines-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+      await page.getByRole('button', { name: 'Close routines' }).click();
+      assert.equal(await page.locator('#routines-dialog').getAttribute('data-transition'), 'closing');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      assert.equal(await page.locator('.core-flight').count(), 0);
+      assert.equal(await page.evaluate(() => document.body.hasAttribute('data-core-phase')), false);
+      assert.equal(await page.locator('#routines-launch').evaluate(el => el === document.activeElement), true);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('interrupted journeys recover after repeated Escape, resize and programmatic navigation', async () => {
+    const { context, page, errors } = await fixture(browser);
+    try {
+      await ready(page);
+      await openRoutines(page);
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      await openRoutines(page);
+      await page.setViewportSize({ width: 768, height: 800 });
+      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
+      assert.equal(await page.locator('.core-flight').count(), 0);
+      await page.keyboard.press('Control+k');
+      assert.equal(await page.locator('#command-dialog').evaluate(el => el.open), true);
+      await page.locator('#command-search').fill('Workday');
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
+      assert.equal(await page.locator('#routine-name').textContent(), 'Workday');
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      assert.equal(await page.locator('.core-flight').count(), 0);
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      assert.equal(await page.locator('.core-flight').count(), 0);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('checklists arriving during unfolding settle into a usable panel', async () => {
+    const { context, page, errors } = await fixture(browser, { dataDelay: 700 });
+    try {
+      await page.goto(origin);
+      await openRoutines(page);
+      assert.equal(await page.locator('#routines-dialog').getAttribute('data-ready'), 'false');
+      await page.waitForSelector('#routines-dialog[data-ready="true"]', { state: 'attached' });
+      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
+      assert.equal(await page.locator('.core-flight').count(), 0);
+      await page.locator('.check-row input').first().check();
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('reduced motion, paused motion and missing popovers keep Routines usable', async () => {
+    for (const mode of ['reduce', 'paused', 'no-popover', 'no-script', 'no-animate']) {
+      const { context, page, errors } = await fixture(browser, { motion: mode === 'reduce' ? 'reduce' : 'no-preference', noTransition: mode === 'no-script' });
+      try {
+        if (mode === 'no-popover') await context.addInitScript(() => { delete HTMLElement.prototype.showPopover; });
+        if (mode === 'no-animate') await context.addInitScript(() => { Element.prototype.animate = () => { throw new Error('Animation unavailable'); }; });
+        await ready(page);
+        if (mode === 'paused') await page.locator('.motion-toggle').click();
+        await openRoutines(page);
+        if (mode !== 'no-popover') assert.equal(await page.locator('#routines-dialog').getAttribute('data-transition'), null);
+        assert.equal(await page.locator('.core-flight').count(), 0);
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+        assert.equal(await page.evaluate(() => document.body.hasAttribute('data-core-phase')), false);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    }
+  });
+
   await t.test('quick access filters checklists, supports keyboard and handles no matches', async () => {
     const { context, page, errors } = await fixture(browser, { width: 390 });
     try {
@@ -118,6 +208,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       assert.equal(await page.locator('#routines-dialog').evaluate(el => el.open), true);
       assert.equal(await page.locator('#routine-name').textContent(), 'Workday');
       await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       await page.locator('#command-launch').click();
       await page.locator('#command-search').fill('zzzz-no-match');
       assert.equal(await page.locator('#command-empty').isVisible(), true);
@@ -129,6 +220,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await page.keyboard.press('ArrowDown');
       assert.equal(await page.locator('#command-results button').first().evaluate(el => el === document.activeElement), true);
       await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       assert.equal(await page.locator('#command-launch').evaluate(el => el === document.activeElement), true);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
@@ -163,6 +255,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await page.locator('#settings-sound').click();
       assert.equal(await page.evaluate(() => window.toneCount), tones);
       await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       await page.locator('[data-icon="projects"]').click();
       assert.equal(await page.locator('#interface-settings').isVisible(), false);
       assert.deepEqual(errors, []);
@@ -180,6 +273,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
       await page.locator('.check-row input').first().uncheck();
       assert.equal(await page.locator('.routine-detail').getAttribute('data-complete'), 'false');
       await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       await page.locator('[data-icon="settings"]').click();
       assert.equal(await page.locator('#settings-motion').isDisabled(), true);
     } finally { await context.close(); }

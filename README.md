@@ -10,6 +10,8 @@ The intro is visual only and does not authenticate users. Any click or keypress 
 
 Use **Find anything** or **Ctrl/Cmd K** to search apps and checklists. Arrow keys move through results; Enter opens one and Escape closes the launcher. **Replay intro** repeats the opening when motion is enabled. Settings last for this visit; sound starts off and uses quiet, locally generated tones. There are no audio downloads or microphone permissions. Background CSS animations pause when the tab is hidden.
 
+Opening **Routines** unfolds the workspace from the optical core and docks its artwork in the header. Closing it reverses the journey. The opening takes 880 ms and the return 520 ms. Reduced or paused motion opens and closes immediately. Escape during opening reverses the journey; pressing Escape again completes closing immediately. Resizing or hiding the tab finishes the current transition safely.
+
 For a plain-English tour of the files, read [START_HERE.md](START_HERE.md).
 
 Built with HTML, CSS and JavaScript. No dependencies or build step.
@@ -47,6 +49,8 @@ If a checklist download fails, open **Routines** and select **Try again**. A fai
 - `routines.js` — checklist loading, rendering and browser storage. Component styles live in `styles/`.
 - `routine-model.mjs` — data validation, progress calculations and scoped reset.
 - `routines.demo.json` / ignored `private/routines.json` — public examples and local personal lists.
+
+`core-transition.js` owns the core-to-Routines animation. It uses native Web Animations and a decorative manual popover, with no animation library. The checklist remains a native modal dialog. When popovers are unavailable, the workspace still unfolds; if the transition script is unavailable, the dialog opens normally. The artwork copy is temporary, ignores clicks, takes no keyboard focus and is removed after each journey. SVG IDs are prefixed to avoid collisions.
 
 ### Stylesheets
 

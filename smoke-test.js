@@ -56,6 +56,7 @@ async function testHub() {
   routinesLauncher.click();
   assert(routines.open, 'Routines did not open.');
   routines.querySelector('.routine-exit').click();
+  for (let attempt = 0; routines.open && attempt < 30; attempt++) await new Promise(resolve => setTimeout(resolve, 50));
   assert(!routines.open, 'Routines did not close.');
   assert(document.activeElement === routinesLauncher, 'Focus did not return to Routines.');
   return { passed: true, apps: apps.length + 1, checklists: 5, source: routines.dataset.source, viewport: `${innerWidth}x${innerHeight}` };

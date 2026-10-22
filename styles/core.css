@@ -180,6 +180,39 @@
   filter: drop-shadow(#006bff65 0px 0px 35px);
 }
 
+.core-flight {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.core-flight > svg {
+  position: absolute;
+  overflow: visible;
+  transform-origin: top left;
+  filter: drop-shadow(0 0 22px #168aff65);
+}
+
+body[data-core-phase] .core-art,
+body[data-core-phase] .gyro,
+body[data-core-phase] .core-reticle {
+  visibility: hidden;
+}
+
+/* Preserve the departure frame while the optic is docked in Routines. */
+body[data-core-phase] .core * {
+  animation-play-state: paused;
+}
+
 /* Responsive adjustment: (max-width: 1050px) and (min-width: 701px). */
 @media (max-width: 1050px) and (min-width: 701px) {
   .core {
