@@ -1,4 +1,4 @@
-import { firebaseConfig } from './firebase-config.mjs?v=sync-1';
+import { firebaseConfig } from './firebase-config.mjs?v=sync-2';
 import { validateRoutines, parseProgress, getProgressPatch } from './routine-model.mjs?v=sync-1';
 
 const panel = document.getElementById('account-dialog');

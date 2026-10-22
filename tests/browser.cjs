@@ -38,7 +38,8 @@ async function fixture(browser, options = {}) {
       if (failures.sdk) return route.abort();
       return route.fulfill({ path: path.join(root, 'tests/firebase-fixture.mjs'), contentType: 'text/javascript' });
     }
-    if (options.firebase && filename === 'firebase-config.mjs') return route.fulfill({ contentType: 'text/javascript', body: 'export const firebaseConfig = {projectId:"fixture",apiKey:"fixture",authDomain:"fixture.firebaseapp.com",appId:"fixture"};' });
+    // Never connect regression tests to the real account, even after production activation.
+    if (filename === 'firebase-config.mjs') return route.fulfill({ contentType: 'text/javascript', body: options.firebase ? 'export const firebaseConfig = {projectId:"fixture",apiKey:"fixture",authDomain:"fixture.firebaseapp.com",appId:"fixture"};' : 'export const firebaseConfig = null;' });
     if (filename === 'core-transition.js' && options.noTransition) return route.abort();
     if (filename === 'notes.js' && options.noNotes) return route.abort();
     if (filename === 'routines.demo.json' && options.dataDelay) await new Promise(resolve => setTimeout(resolve, options.dataDelay));

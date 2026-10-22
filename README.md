@@ -28,7 +28,7 @@ Opening **Routines** unfolds the workspace from the optical core and docks its a
 
 For a plain-English tour of the files, read [START_HERE.md](START_HERE.md).
 
-Built with HTML, CSS and JavaScript, without a build step. Optional checklist sync uses the official Firebase Authentication and Firestore SDK from Google's CDN; it is currently disabled until a Firebase project is configured. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for activation and verification.
+Built with HTML, CSS and JavaScript, without a build step. Optional checklist sync connects to the configured Firebase project using the official Authentication and Firestore SDK from Google's CDN. Sign-in is required to access account data. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for setup and verification.
 
 Display typography uses self-hosted Orbitron and Rajdhani fonts. Their SIL Open Font License notices are included in `assets/fonts/`. Checklist text keeps the system font for readability.
 
@@ -50,7 +50,7 @@ On `127.0.0.1`, `localhost` or `[::1]`, the app first checks for `private/routin
 
 Keep the local server bound to loopback. Do not force-add the `private/` directory or copy personal data into public assets. Personal and demo ticks have separate browser-storage keys. Without a configured and signed-in Firebase account, ticks stay in that browser. Clearing browser data clears those local ticks; the original checklist file stays on disk.
 
-**Private access** in Routines opens the account panel. Once Firebase is activated, sign in with Google and explicitly choose **Sync PC checklists** on the loopback version to import personal definitions and progress into an empty account. The same account can then access them from the public site. Demo data and notes are not uploaded. Different ticks merge individually; a failed or pending write stays in the open tab, with a warning and retry. Wait for the synced notice before closing or reloading. This version does not persist pending cloud writes across a forced close or reload.
+**Private access** in Routines opens the account panel. Sign in with Google and explicitly choose **Sync PC checklists** on the loopback version to import personal definitions and progress into an empty account. The same account can then access them from the public site. Demo data and notes are not uploaded. Different ticks merge individually; a failed or pending write stays in the open tab, with a warning and retry. Wait for the synced notice before closing or reloading. This version does not persist pending cloud writes across a forced close or reload.
 
 ## Recovery and saved progress
 

@@ -1,6 +1,10 @@
 # Checklist sync: activation
 
-The integration is implemented, but **not activated**: `firebase-config.mjs` is `null` until a project is connected. The current website does not contact Firebase or upload personal data. Notes remain browser-only.
+The integration is configured for project **the-hub-16a6d**. Google sign-in and an explicit **Sync PC checklists** action are required before personal lists are uploaded. Notes remain browser-only. The setup steps below also document how to connect another project.
+
+To disable the Firebase connection, set `firebaseConfig` to `null` and bump the module query versions described below. This does not delete cloud data or copy later cloud edits back to the original PC file. Export current cloud lists and progress before removing the service; a cloud-to-file export button is not implemented.
+
+Activation checks on 2026-10-22: all 57 automated tests passed with the real project isolated from test traffic. The published rules were inspected in Console. Rules Playground allowed the owner's read and valid progress creation; it denied anonymous reads/writes, another account's reads/writes, malformed progress, definition updates and deletion. These simulations did not create or delete database records. Real Google login, personal import and synchronization across devices still require the user's verification.
 
 ## 1. Create the free project
 

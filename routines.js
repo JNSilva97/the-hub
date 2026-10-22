@@ -1,5 +1,5 @@
 import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=sync-1';
-import { cloudWorkspace } from './cloud.js?v=sync-1';
+import { cloudWorkspace } from './cloud.js?v=sync-2';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
