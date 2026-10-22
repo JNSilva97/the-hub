@@ -4,18 +4,29 @@ service cloud.firestore {
     function owner(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
+    function validDefinitions() {
+      return request.resource.data.keys().hasOnly(['version', 'routines', 'revision'])
+        && request.resource.data.version == 1
+        && request.resource.data.routines is list
+        && request.resource.data.routines.size() > 0
+        && request.resource.data.routines.size() <= 20;
+    }
 
     match /users/{uid}/hub/{document} {
       allow read: if owner(uid);
 
       allow create: if owner(uid) && document == 'routines'
-        && request.resource.data.keys().hasOnly(['version', 'routines'])
-        && request.resource.data.version == 1
-        && request.resource.data.routines is list
-        && request.resource.data.routines.size() > 0
-        && request.resource.data.routines.size() <= 20;
+        && validDefinitions()
+        && request.resource.data.get('revision', 1) is int
+        && request.resource.data.get('revision', 1) == 1;
 
-      // Definitions are imported once; no client can replace an existing account's lists.
+      // Only the owner edits definitions; revisions reject stale editor saves.
+      allow update: if owner(uid) && document == 'routines'
+        && validDefinitions()
+        && request.resource.data.revision is int
+        && request.resource.data.revision <= 1000000000
+        && request.resource.data.revision == resource.data.get('revision', 0) + 1;
+
       allow create, update: if owner(uid) && document == 'progress'
         && request.resource.data.keys().hasOnly(['checks', 'optional'])
         && request.resource.data.checks is map
@@ -25,6 +36,6 @@ service cloud.firestore {
         && request.resource.data.checks.values().hasOnly([true, false])
         && request.resource.data.optional.values().hasOnly([true, false]);
     }
-    // Unmatched paths, definition updates and all deletions are denied by default.
+    // Unmatched paths and all document deletions are denied by default.
   }
 }

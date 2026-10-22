@@ -57,7 +57,7 @@
   }
 
   function render() {
-    const nextSignature = latest.map(signal => signal.id).join('/');
+    const nextSignature = JSON.stringify(latest.map(signal => [signal.id, signal.name]));
     if (signature !== nextSignature) {
       signature = nextSignature;
       buildRings(latest);

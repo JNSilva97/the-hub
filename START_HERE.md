@@ -16,6 +16,8 @@ While signed out, the online version uses example checklists. Your real lists lo
 
 **Private access** inside Routines is the entry point for checklist sync. Sign in on the PC and explicitly choose **Sync PC checklists**, then sign into the same account on your phone. See [Firebase setup and verification](FIREBASE_SETUP.md). Notes remain local. A pending or failed cloud save must finish before you close the tab; normal sign-out is blocked until then.
 
+Choose **Edit & backup** inside Routines to change your lists or download a portable backup. Save applies edits; removals and backup replacement ask for confirmation. Existing ticks follow renamed or reordered items. If a save fails, keep the draft open and retry. Notes are separate. **Settings → Install** adds The Hub to your home screen when supported; sync still needs a connection.
+
 ## 2. Find the right file
 
 | What you want to change | Where to look |
@@ -37,6 +39,9 @@ While signed out, the online version uses example checklists. Your real lists lo
 | Note saving, search, conflict copies and dialog controls | `notes.js` |
 | Loading checklists, ticking items and saving | `routines.js` |
 | Checking data and calculating completion | `routine-model.mjs` |
+| Checklist editor, backup and restore | `routine-tools.js` / `styles/routine-tools.css` |
+| Portable workspace validation and progress pruning | `workspace-model.mjs` |
+| Home-screen installation and app identity | `install.js` / `manifest.webmanifest` / `assets/icons/` |
 | Google login, account state and checklist synchronization | `cloud.js` |
 | Public Firebase web configuration and server access rules | `firebase-config.mjs` / `firestore.rules` |
 | Online example checklists | `routines.demo.json` |
@@ -51,6 +56,8 @@ The intro lasts 3.2 seconds. Its doors open, the optical system appears and the 
 Opening Routines unfolds a circular workspace from the home core while its optical artwork travels into the header. Closing it folds the workspace back toward the core. The two timings are named `open` and `close` near the top of `core-transition.js`; edit them there. The controller tracks opening, open and closing states, so Escape, resizing and navigation can interrupt the animation safely. With motion disabled, the dialog opens immediately.
 
 The outer core rings show checklist progress. The readout beneath the launcher identifies them from outside to inside. They use the same saved ticks and optional sections as Field Mode. `core-progress.js` waits for the return journey to finish before filling the home rings, and pulses only for a new completion. It adds no separate storage or account.
+
+The robotic eye uses inline SVG glass, housing and aperture layers in `index.html`. `styles/core.css` styles them, `styles/motion.css` defines focus/scanner movements, and `experience.js` aims the lens at the hovered or keyboard-focused module. No continuous JavaScript animation loop is used.
 
 Inside `core-progress.js`, `buildRings` creates the rings and their labels; `render` updates their saved counts. Their appearance lives in `styles/core.css`. The ready counter sits below the rings, and only the decorative frame is clipped, so its text labels stay readable.
 

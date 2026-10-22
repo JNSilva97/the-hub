@@ -98,7 +98,7 @@
   font: 600 11px var(--font-interface);
 }
 
-#account-launch {
+#account-launch, #control-launch {
   margin-left: auto;
   min-height: 44px;
   padding: 9px 14px;
@@ -108,7 +108,7 @@
   font: 600 15px var(--font-interface);
 }
 
-#account-launch:hover {
+#account-launch:hover, #control-launch:hover {
   background: #10345a;
   border-color: #80d5ff;
 }

@@ -51,3 +51,7 @@ The app uses an in-memory Firestore cache. While the tab remains open, the SDK c
 - `tests/browser.cjs` and `tests/firebase-fixture.mjs`: isolated transport fixtures for loading, merging, failures, import and sign-out. `tests/routine-model.test.mjs` verifies minimal progress patches and reset behavior.
 
 The SDK is pinned to version `13.1.0` on Google's CDN and loads only when configured. No Analytics library or new desktop packages were installed. See [official web setup](https://firebase.google.com/docs/web/alt-setup), [Google sign-in](https://firebase.google.com/docs/auth/web/google-signin), [Firestore rules](https://firebase.google.com/docs/firestore/security/get-started) and [offline behavior](https://firebase.google.com/docs/firestore/manage-data/enable-offline).
+
+## Checklist editing and restore
+
+Deploy the current `firestore.rules` before publishing the editor. Owners can update definitions only by advancing an integer revision by one; legacy definitions without a revision start at zero. Definitions and pruned progress are replaced in a transaction. Restores additionally check that progress has not changed since preview. Existing documents need no migration. Account ownership and progress boolean validation remain enforced; document deletion is denied. Browser regression tests use an isolated fake transport and never contact the configured project.

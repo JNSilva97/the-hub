@@ -25,7 +25,7 @@ export function parseProgress(raw) {
   if (!raw) return { checks: {}, optional: {} };
   const data = JSON.parse(raw);
   for (const field of ['checks', 'optional']) {
-    if (!data?.[field] || typeof data[field] !== 'object' || Array.isArray(data[field]) || Object.entries(data[field]).some(([key, value]) => key.length > 160 || typeof value !== 'boolean')) throw new Error('Invalid saved progress.');
+    if (!data?.[field] || typeof data[field] !== 'object' || Array.isArray(data[field]) || Object.keys(data[field]).length > (field === 'checks' ? 24000 : 240) || Object.entries(data[field]).some(([key, value]) => key.length > 160 || typeof value !== 'boolean')) throw new Error('Invalid saved progress.');
   }
   return { checks: { ...data.checks }, optional: { ...data.optional } };
 }

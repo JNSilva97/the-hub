@@ -63,7 +63,7 @@ function createCoreTransition(panel) {
         node.style.strokeDashoffset = getComputedStyle(originals[index]).strokeDashoffset;
         node.style.transition = 'none';
       }
-      if (originals[index].getAnimations().length) {
+      if (originals[index].getAnimations().length || node.classList.contains('eye-gaze')) {
         node.style.transform = getComputedStyle(originals[index]).transform;
         node.style.animation = 'none';
       }

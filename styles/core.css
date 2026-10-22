@@ -263,12 +263,29 @@
 
 .scanner-sweep {
   transform-origin: 300px 270px;
-  animation: orbit 8s linear infinite;
+  animation: optic-scan 14s var(--ease-arrive) infinite;
 }
 
-.iris-blades {
+.eye-gaze {
+  transform: translate(var(--eye-x, 0px), var(--eye-y, 0px));
+  transition: transform 650ms cubic-bezier(.16, 1, .3, 1);
+}
+
+.eye-focus, .eye-pupil {
   transform-origin: 300px 270px;
-  animation: iris-breathe 9s ease-in-out infinite;
+  animation: optic-focus 12s ease-in-out infinite;
+}
+
+.eye-pupil { animation-name: pupil-focus; }
+
+.core:has(.core-launch:hover) .eye-focus,
+.core:has(.core-launch:focus-visible) .eye-focus {
+  animation-play-state: paused;
+}
+
+.iris-fibres {
+  transform-origin: 300px 270px;
+  animation: optic-calibrate 24s ease-in-out infinite;
 }
 
 .workspace:has(.app:hover) .core-art {

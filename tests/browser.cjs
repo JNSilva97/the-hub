@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
-const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
+const publicFiles = ['index.html', 'styles/routine-tools.css', 'routine-tools.js', 'workspace-model.mjs', 'install.js', 'manifest.webmanifest', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png', 'assets/icons/hub-180.png', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ viewport: { width: options.width || 1024, height: 900 }, reducedMotion: options.motion || 'no-preference' });
@@ -70,9 +70,132 @@ async function reviewChecklist(page) {
   if (!await page.locator('#routine-review').evaluate(element => element.open)) await page.locator('#routine-review > summary').click();
 }
 
-test('The Hub browser regressions', { timeout: 180000 }, async t => {
+test('The Hub browser regressions', { timeout: 240000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   t.after(() => browser.close());
+
+  await t.test('editor preserves ticks through rename/reorder and confirms removal; backup round-trips at mobile width', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
+    try {
+      await ready(page); await openRoutines(page); await page.locator('#field-complete').click();
+      await page.locator('#control-launch').click();
+      assert.equal(await page.locator('#checklist-control').evaluate(el => el.scrollWidth > el.clientWidth), false);
+      await page.getByLabel('Checklist name', { exact: true }).fill('My edited list');
+      await page.locator('.editor-item').first().getByRole('button', { name: 'Move item 1 down', exact: true }).click();
+      await page.locator('#editor-save').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
+      let saved = await page.evaluate(() => JSON.parse(localStorage.getItem('thehub:workspace:demo:v1')));
+      assert.equal(saved.routines[0].name, 'My edited list'); assert.equal(saved.progress.checks['personal-care/care/item-1'], true);
+      await page.locator('.control-backup > summary').click();
+      const downloaded = page.waitForEvent('download'); await page.locator('#backup-export').click();
+      const download = await downloaded; const backupText = readFileSync(await download.path(), 'utf8');
+      assert.equal(JSON.parse(backupText).format, 'the-hub-checklists');
+      await page.locator('.editor-item').nth(1).getByRole('button', { name: 'Remove item 2', exact: true }).click();
+      await page.locator('#editor-save').click(); assert.equal(await page.locator('#control-confirm').evaluate(el => el.open), true);
+      await page.locator('#control-confirm-yes').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('thehub:workspace:demo:v1')).progress.checks['personal-care/care/item-1']), undefined);
+      await page.locator('#backup-file').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(backupText) });
+      await page.locator('#backup-restore').click(); await page.locator('#control-confirm-yes').click();
+      await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
+      assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('thehub:workspace:demo:v1'))), saved);
+      await page.locator('#control-close').click(); await page.keyboard.press('Escape');
+      await page.waitForFunction(() => document.getElementById('core-signal-list').textContent.includes('My edited list'));
+      assert.match(await page.locator('#core-signal-list').textContent(), /My edited list/);
+      await page.reload(); await page.waitForSelector('#routines-dialog[data-ready="true"]', { state: 'attached' });
+      assert.equal(await page.locator('#routine-name').textContent(), 'My edited list');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('editor creates lists, sections and items; failed storage keeps the draft and rejects invalid backup', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce' });
+    try {
+      await ready(page); await openRoutines(page); await page.locator('#control-launch').click();
+      await page.locator('#editor-add-list').click(); await page.getByLabel('Checklist name', { exact: true }).fill('Created checklist');
+      await page.getByRole('button', { name: '+ Add section', exact: true }).click();
+      await page.locator('.editor-section').last().getByRole('button', { name: '+ Add item', exact: true }).click();
+      await page.evaluate(() => { window.__originalSetItem = Storage.prototype.setItem; Storage.prototype.setItem = function() { throw new Error('full'); }; });
+      await page.locator('#editor-save').click(); assert.match(await page.locator('#control-status').textContent(), /could not save/);
+      assert.equal(await page.getByLabel('Checklist name', { exact: true }).inputValue(), 'Created checklist');
+      await page.evaluate(() => { Storage.prototype.setItem = window.__originalSetItem; });
+      await page.locator('#editor-save').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
+      assert.equal(await page.locator('.routine-card').count(), 6);
+      await page.locator('.control-backup > summary').click();
+      await page.locator('#backup-file').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"format":"other"}') });
+      await page.waitForFunction(() => document.getElementById('control-status').textContent.includes('not a supported'));
+      assert.equal(await page.locator('#restore-preview').isVisible(), false); assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('cloud editor retains concurrent ticks, rejects stale revisions and preserves a rejected draft', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce', firebase: true, cloudDocuments: { 'account-a': { routines: JSON.parse(demo), progress: { checks: {}, optional: {} } } } });
+    try {
+      await ready(page); await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
+      await openRoutines(page); await page.locator('#control-launch').click();
+      await page.getByLabel('Checklist name', { exact: true }).fill('Cloud edit');
+      await page.evaluate(() => { const service = window.__hubFirebase; service.docs['account-a'].progress.checks['personal-care/care/item-1'] = true; service.publish(); service.rejectWrites = true; });
+      await page.locator('#editor-save').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.includes('could not save'));
+      assert.equal(await page.getByLabel('Checklist name', { exact: true }).inputValue(), 'Cloud edit');
+      await page.evaluate(() => { window.__hubFirebase.rejectWrites = false; }); await page.locator('#editor-save').click();
+      await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
+      assert.equal(await page.evaluate(() => window.__hubFirebase.docs['account-a'].progress.checks['personal-care/care/item-1']), true);
+      assert.equal(await page.evaluate(() => window.__hubFirebase.docs['account-a'].routines.revision), 1);
+      await page.getByLabel('Checklist name', { exact: true }).fill('Stale draft');
+      await page.evaluate(() => { const service = window.__hubFirebase; service.docs['account-a'].routines.revision = 2; service.docs['account-a'].routines.routines[0].name = 'Other device'; service.publish(); });
+      await page.locator('#editor-save').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.includes('changed on another device'));
+      assert.equal(await page.getByLabel('Checklist name', { exact: true }).inputValue(), 'Stale draft');
+      await page.evaluate(() => { window.__hubFirebase.user = null; window.__hubFirebase.authListener(null); });
+      assert.equal(await page.locator('#checklist-control').evaluate(el => el.open), false);
+      assert.equal(await page.locator('#checklist-editor').textContent(), ''); assert.equal(await page.locator('#control-status').textContent(), '');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('restore refuses progress changes after preview; local editors reject another tab definition edit', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce' });
+    try {
+      await ready(page); await openRoutines(page); await page.locator('#control-launch').click(); await page.locator('.control-backup > summary').click();
+      const backup = { format: 'the-hub-checklists', version: 1, routines: JSON.parse(demo).routines, progress: { checks: {}, optional: {} } };
+      await page.locator('#backup-file').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
+      await page.waitForSelector('#restore-preview', { state: 'visible' });
+      await page.evaluate(() => localStorage.setItem('thehub:routines:demo:v1', JSON.stringify({ checks: { 'personal-care/care/item-1': true }, optional: {} })));
+      await page.locator('#backup-restore').click(); await page.locator('#control-confirm-yes').click();
+      await page.waitForFunction(() => document.getElementById('control-status').textContent.includes('Progress changed'));
+      const other = await context.newPage(); await ready(other); await openRoutines(other); await other.locator('#control-launch').click();
+      await other.getByLabel('Checklist name', { exact: true }).fill('Other tab'); await other.locator('#editor-save').click();
+      await other.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
+      await page.getByLabel('Checklist name', { exact: true }).fill('Old tab draft'); await page.locator('#editor-save').click();
+      await page.waitForFunction(() => document.getElementById('control-status').textContent.includes('changed in another tab'));
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('thehub:workspace:demo:v1')).routines[0].name), 'Other tab'); assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('installation provides native prompt and fallback, manifest stays within GitHub Pages scope', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce' });
+    try {
+      await ready(page); await page.locator('[data-icon="settings"]').click(); await page.locator('#install-app').click();
+      assert.match(await page.locator('#install-help').textContent(), /Safari/);
+      assert.match(await page.locator('#install-help').textContent(), /Android/);
+      await page.evaluate(() => { const event = new Event('beforeinstallprompt', { cancelable: true }); event.prompt = async () => { window.__installPrompted = true; }; event.userChoice = Promise.resolve({ outcome: 'accepted' }); dispatchEvent(event); });
+      await page.locator('#install-app').click(); assert.equal(await page.evaluate(() => window.__installPrompted), true);
+      const manifest = JSON.parse(readFileSync(path.join(root, 'manifest.webmanifest')));
+      for (const field of ['id', 'start_url', 'scope']) assert.equal(new URL(manifest[field], 'https://example.com/the-hub/manifest.webmanifest').pathname, '/the-hub/');
+      for (const icon of manifest.icons) { const png = readFileSync(path.join(root, icon.src)); assert.equal(png.readUInt32BE(16), Number(icon.sizes.split('x')[0])); }
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('mechanical optic follows module focus and stops under pause and reduced motion', async () => {
+    const { context, page, errors } = await fixture(browser);
+    try {
+      await ready(page); await page.locator('[data-icon="projects"]').focus();
+      assert.notEqual(await page.locator('.core-art').evaluate(el => el.style.getPropertyValue('--eye-x')), '');
+      await page.locator('.motion-toggle').click();
+      assert.equal(await page.locator('.core-art').evaluate(el => el.style.getPropertyValue('--eye-x')), '');
+      assert.equal(await page.locator('.eye-focus').evaluate(el => el.getAnimations().length), 0);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      assert.equal(await page.locator('.eye-pupil').evaluate(el => el.getAnimations().length), 0); assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
 
   await t.test('unconfigured private access explains setup and does not download or contact Firebase', async () => {
     const { context, page, requests, errors } = await fixture(browser, { width: 320, motion: 'reduce' });

@@ -1,0 +1,167 @@
+import { cleanRoutines, createBackup, parseBackup, countItems, removedItems, MAX_BACKUP_BYTES } from './workspace-model.mjs?v=control-1';
+
+// Drafts own their IDs; text edits and moves never change saved tick identities.
+export function createRoutineTools(workspace) {
+  const panel = document.getElementById('checklist-control');
+  const editor = document.getElementById('checklist-editor');
+  const chooser = document.getElementById('editor-list');
+  const message = document.getElementById('control-status');
+  const preview = document.getElementById('restore-preview');
+  const confirmation = document.getElementById('control-confirm');
+  const file = document.getElementById('backup-file');
+  let baseline, draft, chosen = 0, restored, busy = false, epoch = 0, confirmAction;
+  const id = prefix => `${prefix}-${crypto.randomUUID()}`;
+  const item = () => ({ id: id('i'), label: 'New item' });
+  const group = () => ({ id: id('g'), title: 'New section', optional: false, items: [item()] });
+  const dirty = () => draft && JSON.stringify(draft) !== JSON.stringify(baseline.routines);
+  const status = text => { message.textContent = text; };
+  const button = (text, action, label = text) => {
+    const node = document.createElement('button');
+    node.type = 'button'; node.textContent = text; node.setAttribute('aria-label', label);
+    node.addEventListener('click', action);
+    return node;
+  };
+  function input(label, value, change) {
+    const wrapper = document.createElement('label');
+    const caption = document.createElement('span'); caption.textContent = label;
+    const node = document.createElement('input'); node.value = value; node.maxLength = 240; node.required = true;
+    node.addEventListener('input', () => change(node.value));
+    wrapper.append(caption, node);
+    return wrapper;
+  }
+  function actions(array, index, kind, rerender) {
+    const bar = document.createElement('div'); bar.className = 'editor-actions';
+    for (const [text, step] of [['↑', -1], ['↓', 1]]) {
+      const move = button(text, () => {
+        [array[index], array[index + step]] = [array[index + step], array[index]];
+        if (kind === 'checklist') chosen += step;
+        rerender();
+      }, `Move ${kind} ${index + 1} ${step < 0 ? 'up' : 'down'}`);
+      move.disabled = index + step < 0 || index + step >= array.length; bar.append(move);
+    }
+    const remove = button('Remove', () => {
+      array.splice(index, 1); if (kind === 'checklist') chosen = Math.min(chosen, draft.length - 1);
+      rerender(); status('Removed from your draft. Save will ask before deleting saved items.');
+    }, `Remove ${kind} ${index + 1}`);
+    remove.disabled = array.length <= 1; bar.append(remove);
+    return bar;
+  }
+  function render() {
+    chooser.replaceChildren();
+    draft.forEach((routine, index) => { const option = document.createElement('option'); option.value = index; option.textContent = routine.name; chooser.append(option); });
+    chooser.value = chosen;
+    const routine = draft[chosen];
+    editor.replaceChildren();
+    const details = document.createElement('div'); details.className = 'editor-details';
+    details.append(input('Checklist name', routine.name, value => { routine.name = value; chooser.options[chosen].textContent = value; }), input('Description', routine.description, value => { routine.description = value; }), actions(draft, chosen, 'checklist', render));
+    editor.append(details);
+    routine.groups.forEach((section, sectionIndex) => {
+      const card = document.createElement('fieldset'); card.className = 'editor-section';
+      const legend = document.createElement('legend'); legend.textContent = `Section ${sectionIndex + 1}`; card.append(legend);
+      card.append(input('Section title', section.title, value => { section.title = value; }));
+      const optional = document.createElement('label'); optional.className = 'editor-optional';
+      const toggle = document.createElement('input'); toggle.type = 'checkbox'; toggle.checked = section.optional;
+      toggle.addEventListener('change', () => { section.optional = toggle.checked; });
+      optional.append(toggle, document.createTextNode('Optional section'));
+      card.append(optional, actions(routine.groups, sectionIndex, 'section', render));
+      section.items.forEach((entry, index) => {
+        const row = document.createElement('div'); row.className = 'editor-item';
+        row.append(input(`Item ${index + 1}`, entry.label, value => { entry.label = value; }), actions(section.items, index, 'item', render));
+        card.append(row);
+      });
+      const add = button('+ Add item', () => { section.items.push(item()); render(); });
+      add.disabled = section.items.length >= 100; card.append(add); editor.append(card);
+    });
+    const add = button('+ Add section', () => { routine.groups.push(group()); render(); });
+    add.disabled = routine.groups.length >= 12; editor.append(add);
+    document.getElementById('editor-add-list').disabled = draft.length >= 20;
+  }
+  function ask(title, description, label, action) {
+    document.getElementById('control-confirm-title').textContent = title;
+    document.getElementById('control-confirm-description').textContent = description;
+    document.getElementById('control-confirm-yes').textContent = label;
+    confirmAction = action; confirmation.showModal();
+  }
+  function close() {
+    if (busy) return;
+    if (dirty()) ask('Discard your draft?', 'Your saved checklists and ticks will stay as they are.', 'Discard draft', () => panel.close());
+    else panel.close();
+  }
+  function reset() {
+    epoch++; baseline = draft = restored = undefined; confirmAction = undefined;
+    preview.hidden = true; file.value = ''; editor.replaceChildren(); chooser.replaceChildren();
+    for (const id of ['control-destination', 'restore-summary', 'control-confirm-title', 'control-confirm-description', 'control-status']) document.getElementById(id).textContent = '';
+    confirmation.close(); panel.close();
+  }
+  async function save(next, progress, targetBaseline = baseline) {
+    if (busy) return;
+    const current = epoch;
+    busy = true; panel.setAttribute('aria-busy', 'true');
+    document.getElementById('control-fields').disabled = true;
+    status('Saving… Keep this tab open.');
+    try {
+      await workspace.commit(next, targetBaseline, progress);
+      if (current !== epoch) return;
+      baseline = workspace.snapshot(); draft = structuredClone(baseline.routines);
+      restored = undefined; preview.hidden = true; file.value = ''; chosen = Math.min(chosen, draft.length - 1);
+      render(); status('Saved. Your checklists and ticks are ready.');
+    } catch (error) { if (current === epoch) status(error.message || 'Could not save. Your draft is still here.'); }
+    finally { busy = false; panel.removeAttribute('aria-busy'); document.getElementById('control-fields').disabled = false; }
+  }
+  document.getElementById('control-launch').addEventListener('click', () => {
+    try {
+      baseline = workspace.snapshot(); draft = structuredClone(baseline.routines); chosen = 0; epoch++;
+      restored = undefined; preview.hidden = true; file.value = '';
+      document.getElementById('control-destination').textContent = `Editing ${baseline.destination}. Changes apply when you save. Notes are separate.`;
+      render(); status('Rename, reorder or add items. Existing ticks follow their items.'); panel.showModal();
+    } catch (error) { document.getElementById('routine-notice').textContent = error.message; }
+  });
+  document.getElementById('control-close').addEventListener('click', close);
+  panel.addEventListener('cancel', event => { event.preventDefault(); close(); });
+  panel.addEventListener('close', () => { if (!panel.open) reset(); });
+  confirmation.addEventListener('close', () => { if (!confirmation.open) confirmAction = undefined; });
+  document.getElementById('control-confirm-yes').addEventListener('click', () => { const action = confirmAction; confirmAction = undefined; confirmation.close(); action?.(); });
+  chooser.addEventListener('change', () => { chosen = Number(chooser.value); render(); });
+  document.getElementById('editor-add-list').addEventListener('click', () => { draft.push({ id: id('r'), name: 'New checklist', description: 'Your next steps.', groups: [group()] }); chosen = draft.length - 1; render(); });
+  document.getElementById('editor-save').addEventListener('click', () => {
+    if (![...editor.querySelectorAll('input')].every(input => input.reportValidity())) return;
+    let cleaned;
+    try { cleaned = cleanRoutines(draft); } catch { status('Use 1–20 checklists, 1–12 sections per list and 1–100 items per section. Every text field needs 1–240 characters.'); return; }
+    const removed = removedItems(baseline.routines, cleaned);
+    if (removed) ask('Remove saved items?', `${removed} item${removed === 1 ? '' : 's'} and their saved ticks will be removed from ${baseline.destination}. Export a backup first if you need a copy.`, 'Save and remove', () => save(cleaned));
+    else save(cleaned);
+  });
+  document.getElementById('backup-export').addEventListener('click', () => {
+    try {
+      const current = workspace.snapshot();
+      const data = createBackup(current.routines, current.progress);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+      const link = document.createElement('a'); link.href = url; link.download = `the-hub-checklists-${new Date().toISOString().slice(0, 10)}.json`; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      status('Backup downloaded: saved checklists and ticks. Unsaved edits and Notes are not included.');
+    } catch (error) { status(error.message); }
+  });
+  file.addEventListener('change', async () => {
+    const selected = file.files[0]; const current = ++epoch;
+    restored = undefined; preview.hidden = true;
+    if (!selected) return;
+    try {
+      if (selected.size > MAX_BACKUP_BYTES) throw new Error('Choose a backup smaller than 2 MB.');
+      const text = await selected.text();
+      if (current !== epoch || !panel.open) return;
+      const parsed = parseBackup(text);
+      const currentWorkspace = workspace.snapshot();
+      restored = { ...parsed, baseline: currentWorkspace };
+      document.getElementById('restore-summary').textContent = `${parsed.routines.length} checklists · ${countItems(parsed.routines)} items · ${Object.values(parsed.progress.checks).filter(Boolean).length} saved ticks. This replaces the checklists and ticks in ${currentWorkspace.destination}. Your Notes stay as they are.`;
+      preview.hidden = false; status('Backup checked. Review the replacement before restoring.');
+    } catch (error) { if (current === epoch) status(error.message); }
+  });
+  document.getElementById('backup-restore').addEventListener('click', () => {
+    if (!restored) return;
+    ask('Replace checklists and ticks?', `This replaces all saved checklists and ticks in ${restored.baseline.destination}, including your current editor draft. Download a backup first if you need the current version.`, 'Replace from backup', () => {
+      save(restored.routines, restored.progress, restored.baseline);
+    });
+  });
+  document.addEventListener('hub:workspacechange', () => { if (baseline && workspace.identity() !== baseline.identity) reset(); });
+  window.addEventListener('beforeunload', event => { if (dirty() || busy) { event.preventDefault(); event.returnValue = ''; } });
+}

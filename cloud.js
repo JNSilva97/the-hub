@@ -1,5 +1,6 @@
-import { firebaseConfig } from './firebase-config.mjs?v=sync-2';
-import { validateRoutines, parseProgress, getProgressPatch } from './routine-model.mjs?v=sync-1';
+import { firebaseConfig } from './firebase-config.mjs?v=control-1';
+import { validateRoutines, parseProgress, getProgressPatch } from './routine-model.mjs?v=control-1';
+import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=control-1';
 
 const panel = document.getElementById('account-dialog');
 const loginButton = document.getElementById('account-login');
@@ -22,23 +23,26 @@ let generation = 0;
 let sequence = 0;
 let pending = 0;
 let importing = false;
+let workspaceSaving = false;
+let revision = 0;
 const edits = new Map();
 
 function render() {
   loginButton.hidden = Boolean(user);
   loginButton.disabled = !auth || setupFailure;
   logoutButton.hidden = !user;
-  logoutButton.disabled = importing || pending > 0 || edits.size > 0;
+  logoutButton.disabled = importing || workspaceSaving || pending > 0 || edits.size > 0;
   importButton.hidden = !user || !ready || routines !== null || !local || Boolean(failure);
   importButton.disabled = importing;
   retryButton.hidden = !firebaseConfig || (!failure && !edits.size);
-  retryButton.disabled = importing || pending > 0;
+  retryButton.disabled = importing || workspaceSaving || pending > 0;
   document.getElementById('account-identity').textContent = user ? user.email || 'Signed in' : 'Your checklists, on your devices.';
   document.getElementById('account-launch').textContent = user ? 'Account & sync' : 'Private access';
   let message;
   if (!firebaseConfig) message = 'Private access is not configured yet. Your existing checklists still work.';
   else if (failure) message = failure;
   else if (importing) message = 'Uploading your PC checklists… Keep this tab open.';
+  else if (workspaceSaving) message = 'Saving your checklists… Keep this tab open.';
   else if (!auth) message = 'Connecting to Firebase…';
   else if (!user) message = 'Sign in to access your private checklists. Notes stay in this browser.';
   else if (!ready) message = 'Loading your account…';
@@ -52,7 +56,7 @@ function render() {
   status.dataset.warning = String(Boolean(failure) || !navigator.onLine && edits.size > 0);
   const routineNotice = document.getElementById('routine-notice');
   if (document.getElementById('routines-dialog').dataset.source === 'account') {
-    routineNotice.textContent = failure || (pending || edits.size ? 'Ticks not yet synced. Keep this tab open.' : 'Progress synced to your account.');
+    routineNotice.textContent = failure || (workspaceSaving || pending || edits.size ? 'Changes not yet synced. Keep this tab open.' : 'Progress synced to your account.');
   }
 }
 
@@ -85,10 +89,13 @@ function watchAccount() {
         if (record.id === 'progress') saved = record.data();
       }
       const incomingRoutines = definitions ? validateRoutines(definitions) : null;
+      const incomingRevision = definitions?.revision ?? 0;
+      if (!Number.isSafeInteger(incomingRevision) || incomingRevision < 0) throw new Error('Invalid revision.');
       if (incomingRoutines && !saved) throw new Error('Missing progress.');
       const incomingProgress = saved ? parseProgress(JSON.stringify(saved)) : parseProgress(null);
       const changed = !ready || failure || JSON.stringify(routines) !== JSON.stringify(incomingRoutines);
       routines = incomingRoutines;
+      revision = incomingRevision;
       progress = applyEdits(incomingProgress);
       ready = true;
       failure = '';
@@ -133,6 +140,8 @@ async function connect() {
       edits.clear();
       pending = 0;
       importing = false;
+      workspaceSaving = false;
+      revision = 0;
       ready = false;
       failure = '';
       if (user) watchAccount();
@@ -181,8 +190,45 @@ export const cloudWorkspace = {
   get active() { return Boolean(user && ready && routines); },
   get routines() { return routines; },
   get progress() { return parseProgress(JSON.stringify(progress)); },
+  get revision() { return revision; },
+  get canEdit() { return Boolean(user && ready && !failure && !pending && !edits.size && !importing && !workspaceSaving); },
+  async replace(nextRoutines, baseline, restoredProgress) {
+    if (!this.canEdit || !navigator.onLine) throw new Error('Wait for your ticks to sync and check your connection before saving.');
+    const cleaned = cleanRoutines(nextRoutines);
+    const current = generation;
+    const accountId = user.uid;
+    if (baseline.identity !== accountId) throw new Error('The account changed. Reopen checklist control.');
+    workspaceSaving = true;
+    render();
+    try {
+      const definitionsRef = sdk.doc(database, 'users', accountId, 'hub', 'routines');
+      const progressRef = sdk.doc(database, 'users', accountId, 'hub', 'progress');
+      const committed = await sdk.runTransaction(database, async transaction => {
+        const definitions = await transaction.get(definitionsRef);
+        const saved = await transaction.get(progressRef);
+        if (current !== generation || (definitions.data()?.revision ?? 0) !== baseline.revision) throw new Error('Checklists changed on another device. Reopen checklist control before saving.');
+        const latest = saved.exists() ? parseProgress(JSON.stringify(saved.data())) : parseProgress(null);
+        // A restore must not erase ticks made on another device after its preview opened.
+        if (restoredProgress && JSON.stringify(latest) !== JSON.stringify(baseline.progress)) throw new Error('Progress changed on another device. Open the backup again to review the restore.');
+        transaction.set(definitionsRef, { version: 1, routines: cleaned, revision: baseline.revision + 1 });
+        const nextProgress = keepProgress(cleaned, restoredProgress || latest);
+        transaction.set(progressRef, nextProgress);
+        return nextProgress;
+      });
+      if (current === generation && revision < baseline.revision + 1) {
+        routines = cleaned; progress = committed; revision = baseline.revision + 1;
+        notify();
+      }
+    } catch (error) {
+      if (current !== generation) throw new Error('The account changed. Reopen checklist control.');
+      if (error.code) throw new Error('Checklists could not save. Check your connection and the updated Firebase rules. Your draft is still here.');
+      throw error;
+    } finally {
+      if (current === generation) { workspaceSaving = false; render(); }
+    }
+  },
   save(next) {
-    if (!this.active) throw new Error('Account is not ready.');
+    if (!this.active || workspaceSaving) throw new Error('Account is not ready.');
     const patch = getProgressPatch(progress, next);
     const submitted = [];
     for (const [field, values] of Object.entries(patch)) for (const [key, value] of Object.entries(values)) {
@@ -202,10 +248,12 @@ export const cloudWorkspace = {
     try {
       const response = await fetch('./private/routines.json', { cache: 'no-store', signal: AbortSignal.timeout(5000) });
       if (!response.ok) throw new Error('Personal lists unavailable.');
-      const data = await response.json();
+      let data = await response.json();
       validateRoutines(data);
       // Import only personal progress; unreadable storage aborts instead of silently losing ticks.
-      const saved = parseProgress(localStorage.getItem('thehub:routines:private:v1'));
+      let saved = parseProgress(localStorage.getItem('thehub:routines:private:v1'));
+      const workspace = localStorage.getItem('thehub:workspace:private:v1');
+      if (workspace) { const edited = readWorkspace(JSON.parse(workspace)); data = { version: 1, routines: edited.routines }; saved = edited.progress; }
       if (current !== generation) return;
       const definitionsRef = sdk.doc(database, 'users', accountId, 'hub', 'routines');
       const progressRef = sdk.doc(database, 'users', accountId, 'hub', 'progress');
@@ -244,7 +292,7 @@ loginButton.addEventListener('click', () => {
   }).finally(render);
 });
 logoutButton.addEventListener('click', () => {
-  if (!auth || importing || pending || edits.size) return;
+  if (!auth || importing || workspaceSaving || pending || edits.size) return;
   sdk.signOut(auth).catch(() => { failure = 'Sign-out did not finish. Try again.'; render(); });
 });
 importButton.addEventListener('click', () => cloudWorkspace.importPC());
@@ -259,7 +307,7 @@ retryButton.addEventListener('click', () => {
 window.addEventListener('online', render);
 window.addEventListener('offline', render);
 window.addEventListener('beforeunload', event => {
-  if (pending || edits.size || importing) { event.preventDefault(); event.returnValue = ''; }
+  if (pending || edits.size || importing || workspaceSaving) { event.preventDefault(); event.returnValue = ''; }
 });
 render();
 connect();

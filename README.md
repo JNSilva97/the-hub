@@ -12,6 +12,8 @@ Use **Find anything** or **Ctrl/Cmd K** to search apps and checklists. Arrow key
 
 **Field Mode** opens with the first unchecked item in checklist order. Choose **Mark done** to save that tick and advance, or **Undo last tick** to reverse the last Field Mode action. **Review checklist** expands the full list and optional section switches; only enabled sections enter the sequence. Finishing shows a short visual confirmation. Existing ticks are reused, including after a reload; no daily setup or new storage is needed.
 
+The optical eye now has a machined housing, fasteners, a layered glass surface, radial iris fibres, a dark pupil and nine aperture blades. Its focus and scanner movements pause between adjustments. Focusing or hovering a module aims the lens toward it; motion controls and reduced-motion settings disable this movement. The flight copy freezes the current lens pose during the journey to Routines.
+
 The home core has one progress ring per checklist, ordered from the outside in. The readout names each ring and shows its saved count. Completing a list pulses the docked core; returning home fills the rings and sends a blue pulse through the main core. Undo and reset update the same rings, while loading existing completions stays quiet. Motion controls and reduced-motion preferences also apply here.
 
 **Instant Notes** opens directly into a plain-text editor. Its first line becomes the note title, **New note** starts another, and search matches the whole text. Each input saves immediately to this browser, without a Save button or account. Notes have a 50,000-character limit. The public version starts with sample notes; the PC version starts blank. Public and loopback notes use separate storage namespaces, and no note text is sent to GitHub or a server.
@@ -52,6 +54,20 @@ Keep the local server bound to loopback. Do not force-add the `private/` directo
 
 **Private access** in Routines opens the account panel. Sign in with Google and explicitly choose **Sync PC checklists** on the loopback version to import personal definitions and progress into an empty account. The same account can then access them from the public site. Demo data and notes are not uploaded. Different ticks merge individually; a failed or pending write stays in the open tab, with a warning and retry. Wait for the synced notice before closing or reloading. This version does not persist pending cloud writes across a forced close or reload.
 
+## Checklist control and backups
+
+Open **Routines → Edit & backup** to create, rename and reorder checklists, sections and items. IDs stay stable when text or order changes, so saved ticks follow the same items. Optional sections can be switched on or off. Changes apply only with **Save changes**; removing saved items asks for confirmation. A failed save keeps the draft open. Closing a changed draft asks before discarding it.
+
+**Backup & restore** downloads a portable JSON file containing saved checklist definitions and ticks. Notes, account credentials and unsaved drafts are excluded. Opening a backup validates its format and size (up to 2 MB), then shows counts and the destination before a second replacement confirmation. Export a copy before restoring if you need the old version. Restore rejects ticks changed since the preview; reopen the file to review the latest destination.
+
+Signed-in changes use a Firestore transaction and revision check. Editing preserves the latest ticks from other devices; stale definition edits must be reopened. Unsigned edits save one browser-storage record containing definitions and progress; the original PC file stays on disk. Other tabs refresh this record. Browser storage cannot provide transactions across tabs, so truly simultaneous writes can still conflict. Do not edit the same workspace concurrently in multiple tabs.
+
+## Install on your phone
+
+Open **Settings → Install**. Supported browsers offer their native installation prompt. Otherwise the app shows instructions: on iPhone/iPad use Safari **Share → Add to Home Screen**; on Android use the browser menu's **Install app / Add to Home screen**. Desktop installation is also available when the browser supports it. The manifest and cube icons use relative URLs for GitHub Pages and loopback hosting.
+
+Installation provides an icon and a standalone window. It does not add offline caching. Account sync requires a connection, and pending cloud writes still require the tab to stay open until synced. An installed app may use a separate browser session, so sign in there if needed.
+
 ## Recovery and saved progress
 
 Open tabs in the same browser update their ticks when another tab saves progress. If browser storage is blocked or unreadable, ticks last for the current visit and the app shows a notice. Unreadable saved data is preserved. Browser storage does not support atomic updates across tabs; simultaneous edits can still conflict.
@@ -71,6 +87,8 @@ If a checklist download fails, open **Routines** and select **Try again**. A fai
 `core-transition.js` owns the core-to-Routines animation. It uses native Web Animations and a decorative manual popover, with no animation library. The checklist remains a native modal dialog. When popovers are unavailable, the workspace still unfolds; if the transition script is unavailable, the dialog opens normally. The artwork copy is temporary, ignores clicks, takes no keyboard focus and is removed after each journey. SVG IDs are prefixed to avoid collisions.
 
 `core-progress.js` listens for `hub:progress` events from `routines.js`. It does not fetch or store data. It holds the departure ring values while Routines is open, then applies the latest counts after the native dialog closes, so the return artwork meets the home core before the rings fill. An undone completion is removed from the pending home pulse.
+
+`routine-tools.js` owns checklist drafts, backup downloads, restore previews and replacement confirmations. `workspace-model.mjs` validates portable workspaces and prunes progress for removed IDs. Their layout lives in `styles/routine-tools.css`. `install.js` owns installation prompts and instructions; `manifest.webmanifest` and `assets/icons/` contain the app identity.
 
 `cloud.js` owns account state and synchronization. `firebase-config.mjs` is public connection configuration, while `firestore.rules` must be deployed on the service to enforce isolation. The checklist data model calculates the smallest progress patch, and the existing UI renders account, local and demo workspaces. Account changes clear the previous workspace's cards and core readout before loading the next one.
 
@@ -105,7 +123,7 @@ The check covers intro dismissal, pause/resume, reduced motion, all nine launche
 Run the data-model tests with Node.js:
 
 ```sh
-node --test tests/routine-model.test.mjs
+node --test tests/routine-model.test.mjs tests/workspace-model.test.mjs
 ```
 
 For the browser regression suite, make the installed `playwright` package available to Node.js and use a system Chrome installation:
@@ -114,4 +132,4 @@ For the browser regression suite, make the installed `playwright` package availa
 node --test tests/browser.cjs
 ```
 
-The suite serves intercepted public fixtures without starting a server or reading personal data. It uses real pointer clicks at 320, 390, 768, 1024 and 1440 pixels, keyboard access, the smoke check, quick-access search, replay, Settings, sound opt-in, completion feedback, saved ticks, optional counts, scoped reset, cross-tab edits, failed-load retries, blocked/corrupt storage, reduced motion and separate demo/personal storage. Preview screenshots are ignored by Git. This verifies browser layouts and sound generation; physical phones and speaker volume are not covered.
+New checks cover editor IDs, reordering, removal confirmation, backup round-trips, rejected storage writes, account revision conflicts, changed progress at restore time, installation prompts and mechanical optic motion. The suite serves intercepted public fixtures without starting a server or reading personal data. It uses real pointer clicks at 320, 390, 768, 1024 and 1440 pixels, keyboard access, the smoke check, quick-access search, replay, Settings, sound opt-in, completion feedback, saved ticks, optional counts, scoped reset, cross-tab edits, failed-load retries, blocked/corrupt storage, reduced motion and separate demo/personal storage. Preview screenshots are ignored by Git. This verifies browser layouts and sound generation; physical phones and speaker volume are not covered.

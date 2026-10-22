@@ -43,6 +43,7 @@ export async function setDoc(reference, patch) {
   else commit();
 }
 export async function runTransaction(database, update) {
+  if (service.rejectWrites) throw Object.assign(new Error('Denied.'), { code: 'permission-denied' });
   const writes = [];
   const transaction = {
     async get(reference) {
@@ -51,8 +52,9 @@ export async function runTransaction(database, update) {
     },
     set(reference, data) { writes.push({ path: reference.path, data: structuredClone(data) }); }
   };
-  await update(transaction);
+  const result = await update(transaction);
   for (const write of writes) (service.docs[write.path[1]] ??= {})[write.path[3]] = write.data;
   service.imports++;
   service.publish();
+  return result;
 }

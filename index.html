@@ -4,16 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#010205">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/hub-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=ice-1">
-  <link rel="stylesheet" href="styles/shell.css?v=readable-1">
-  <link rel="stylesheet" href="styles/core.css?v=readable-2">
-  <link rel="stylesheet" href="styles/access.css?v=ice-1">
-  <link rel="stylesheet" href="styles/panels.css?v=sync-1">
-  <link rel="stylesheet" href="styles/routines.css?v=sync-1">
-  <link rel="stylesheet" href="styles/notes.css?v=notes-2">
-  <link rel="stylesheet" href="styles/motion.css?v=notes-1">
+  <link rel="stylesheet" href="styles/base.css?v=control-1">
+  <link rel="stylesheet" href="styles/shell.css?v=control-1">
+  <link rel="stylesheet" href="styles/core.css?v=control-1">
+  <link rel="stylesheet" href="styles/access.css?v=control-1">
+  <link rel="stylesheet" href="styles/panels.css?v=control-1">
+  <link rel="stylesheet" href="styles/routines.css?v=control-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=control-1">
+  <link rel="stylesheet" href="styles/notes.css?v=control-1">
+  <link rel="stylesheet" href="styles/motion.css?v=control-1">
 </head>
 <body>
   <div class="cityscape" aria-hidden="true"><div class="city-buildings"></div><div class="city-horizon"></div></div>
@@ -57,10 +63,6 @@
         <svg class="core-art" viewBox="0 0 600 600" fill="none" aria-hidden="true">
           <defs>
             <radialGradient id="aura"><stop stop-color="#4bcfff" stop-opacity=".2"/><stop offset=".55" stop-color="#1781be" stop-opacity=".09"/><stop offset="1" stop-color="#1781be" stop-opacity="0"/></radialGradient>
-            <radialGradient id="sphere"><stop stop-color="#020711"/><stop offset=".3" stop-color="#061427"/><stop offset=".58" stop-color="#196c92"/><stop offset=".76" stop-color="#0a3455"/><stop offset="1" stop-color="#030e21"/></radialGradient>
-            <radialGradient id="sphere-light" cx=".25" cy=".2" r=".65"><stop stop-color="#c7fbff" stop-opacity=".65"/><stop offset="1" stop-color="#7cddff" stop-opacity="0"/></radialGradient>
-            <filter id="soft-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
-            <clipPath id="sphere-mask"><circle cx="300" cy="270" r="78"/></clipPath>
           </defs>
           <circle cx="300" cy="285" r="270" fill="url(#aura)"/>
           <circle cx="300" cy="300" r="260" stroke="#67badd" stroke-opacity=".12"/>
@@ -69,33 +71,119 @@
           <circle cx="300" cy="300" r="220" stroke="#529ac6" stroke-opacity=".22"/>
           <g class="orbit-reverse"><circle cx="300" cy="300" r="211" stroke="#4eacd6" stroke-opacity=".3" stroke-dasharray="85 35 85 155" pathLength="360"/><path d="M81 300h18m402 0h18M300 81v18m0 402v18" stroke="#89e4ff" stroke-opacity=".65"/></g>
           <path d="M42 300H13m574 0h-29M300 42V13m0 574v-29" stroke="#8de5ff" stroke-opacity=".5"/>
-          <circle cx="300" cy="270" r="126" stroke="#278cff" stroke-opacity=".1"/>
-          <circle cx="300" cy="270" r="113" stroke="#70d8ff" stroke-opacity=".2" stroke-dasharray="1 10" pathLength="360"/>
-          <g class="scanner-sweep">
-            <circle cx="300" cy="270" r="105" stroke="#2b96ff" stroke-width="2" stroke-dasharray="60 300" pathLength="360"/>
-            <circle cx="300" cy="165" r="3" fill="#c0f5ff"/>
-            <path d="M300 165v24" stroke="#85e7ff" stroke-opacity=".4"/>
-          </g>
-          <circle cx="300" cy="270" r="96" stroke="#49b8eb" stroke-width="7" stroke-opacity=".15"/>
-          <circle cx="300" cy="270" r="92" stroke="#83def8" stroke-opacity=".6"/>
-          <circle cx="300" cy="270" r="78" fill="url(#sphere)" stroke="#90e8ff" stroke-opacity=".5"/>
-          <g clip-path="url(#sphere-mask)">
-            <g class="iris-blades" fill="#1d7b9a40" stroke="#83ddf5" stroke-opacity=".5" stroke-width=".7">
-              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(0 300 270)"/>
-              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(60 300 270)"/>
-              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(120 300 270)"/>
-              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(180 300 270)"/>
-              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(240 300 270)"/>
-              <path d="M314 270 369 230 Q343 198 300 192 L282 247Z" transform="rotate(300 300 270)"/>
+          <defs>
+            <linearGradient id="optic-metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#90b4c8"/><stop offset=".17" stop-color="#233f56"/><stop offset=".48" stop-color="#07121f"/><stop offset=".7" stop-color="#426782"/><stop offset="1" stop-color="#0b1728"/></linearGradient>
+            <linearGradient id="optic-blade" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3c687e"/><stop offset=".45" stop-color="#102a40"/><stop offset="1" stop-color="#030b16"/></linearGradient>
+            <radialGradient id="optic-iris"><stop offset=".22" stop-color="#01050b"/><stop offset=".35" stop-color="#0b2637"/><stop offset=".5" stop-color="#66cbe5"/><stop offset=".64" stop-color="#116e9d"/><stop offset=".85" stop-color="#092b48"/><stop offset="1" stop-color="#020710"/></radialGradient>
+            <radialGradient id="optic-glass" cx=".3" cy=".22"><stop stop-color="#d3faff" stop-opacity=".25"/><stop offset=".5" stop-color="#79d7ff" stop-opacity=".03"/><stop offset=".88" stop-color="#020914" stop-opacity=".07"/><stop offset="1" stop-color="#00030a" stop-opacity=".7"/></radialGradient>
+            <clipPath id="optic-mask"><circle cx="300" cy="270" r="83"/></clipPath>
+          </defs>
+          <circle cx="300" cy="270" r="122" fill="#020711" stroke="#245275"/>
+          <circle cx="300" cy="270" r="116" stroke="#2d81bb" stroke-width="2" stroke-dasharray="1 5"/>
+          <g class="scanner-sweep"><circle cx="300" cy="270" r="116" stroke="#9cecff" stroke-width="3" stroke-dasharray="28 332" pathLength="360"/><path d="M300 149v12" stroke="#d8f9ff" stroke-width="2"/></g>
+          <circle cx="300" cy="270" r="105" fill="url(#optic-metal)" stroke="#8ab7cb" stroke-opacity=".6"/>
+          <circle cx="300" cy="270" r="99" fill="#030a14" stroke="#06101e" stroke-width="3"/>
+          <circle cx="300" cy="270" r="94" stroke="#3c728f" stroke-width="7" stroke-dasharray="41 4 12 4"/>
+          <circle cx="300" cy="270" r="88" fill="#01040a" stroke="#8cdaed" stroke-width="1.5"/>
+          <g transform="rotate(45 300 270)"><path d="M290 149h20l7 14-5 10h-24l-5-10Z" fill="#0c2035" stroke="#3c6c8b"/><circle cx="300" cy="161" r="4" fill="#030811" stroke="#7da7ba"/><path d="M297 161h6" stroke="#a9d0dc"/></g><g transform="rotate(135 300 270)"><path d="M290 149h20l7 14-5 10h-24l-5-10Z" fill="#0c2035" stroke="#3c6c8b"/><circle cx="300" cy="161" r="4" fill="#030811" stroke="#7da7ba"/><path d="M297 161h6" stroke="#a9d0dc"/></g><g transform="rotate(225 300 270)"><path d="M290 149h20l7 14-5 10h-24l-5-10Z" fill="#0c2035" stroke="#3c6c8b"/><circle cx="300" cy="161" r="4" fill="#030811" stroke="#7da7ba"/><path d="M297 161h6" stroke="#a9d0dc"/></g><g transform="rotate(315 300 270)"><path d="M290 149h20l7 14-5 10h-24l-5-10Z" fill="#0c2035" stroke="#3c6c8b"/><circle cx="300" cy="161" r="4" fill="#030811" stroke="#7da7ba"/><path d="M297 161h6" stroke="#a9d0dc"/></g>
+          <g clip-path="url(#optic-mask)">
+            <circle cx="300" cy="270" r="83" fill="#01040a"/>
+            <g class="eye-gaze">
+              <circle cx="300" cy="270" r="81" fill="url(#optic-iris)"/>
+              <g class="iris-fibres" stroke="#8cdef1" stroke-width=".7"><path d="M300 198l-2 19" transform="rotate(0.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l-1 20" transform="rotate(4.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l0 21" transform="rotate(9.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l1 22" transform="rotate(13.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l2 23" transform="rotate(18.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l-2 24" transform="rotate(22.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l-1 25" transform="rotate(27.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l0 26" transform="rotate(31.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l1 27" transform="rotate(36.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l2 28" transform="rotate(40.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l-2 29" transform="rotate(45.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l-1 30" transform="rotate(49.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l0 31" transform="rotate(54.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l1 19" transform="rotate(58.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l2 20" transform="rotate(63.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l-2 21" transform="rotate(67.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l-1 22" transform="rotate(72.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l0 23" transform="rotate(76.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l1 24" transform="rotate(81.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l2 25" transform="rotate(85.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l-2 26" transform="rotate(90.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l-1 27" transform="rotate(94.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l0 28" transform="rotate(99.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l1 29" transform="rotate(103.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l2 30" transform="rotate(108.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l-2 31" transform="rotate(112.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l-1 19" transform="rotate(117.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l0 20" transform="rotate(121.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l1 21" transform="rotate(126.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l2 22" transform="rotate(130.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l-2 23" transform="rotate(135.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l-1 24" transform="rotate(139.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l0 25" transform="rotate(144.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l1 26" transform="rotate(148.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l2 27" transform="rotate(153.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l-2 28" transform="rotate(157.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l-1 29" transform="rotate(162.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l0 30" transform="rotate(166.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l1 31" transform="rotate(171.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l2 19" transform="rotate(175.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l-2 20" transform="rotate(180.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l-1 21" transform="rotate(184.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l0 22" transform="rotate(189.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l1 23" transform="rotate(193.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l2 24" transform="rotate(198.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l-2 25" transform="rotate(202.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l-1 26" transform="rotate(207.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l0 27" transform="rotate(211.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l1 28" transform="rotate(216.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l2 29" transform="rotate(220.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l-2 30" transform="rotate(225.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l-1 31" transform="rotate(229.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l0 19" transform="rotate(234.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l1 20" transform="rotate(238.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l2 21" transform="rotate(243.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l-2 22" transform="rotate(247.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l-1 23" transform="rotate(252.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l0 24" transform="rotate(256.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l1 25" transform="rotate(261.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l2 26" transform="rotate(265.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l-2 27" transform="rotate(270.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l-1 28" transform="rotate(274.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l0 29" transform="rotate(279.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l1 30" transform="rotate(283.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l2 31" transform="rotate(288.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l-2 19" transform="rotate(292.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l-1 20" transform="rotate(297.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l0 21" transform="rotate(301.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l1 22" transform="rotate(306.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l2 23" transform="rotate(310.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l-2 24" transform="rotate(315.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l-1 25" transform="rotate(319.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l0 26" transform="rotate(324.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l1 27" transform="rotate(328.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l2 28" transform="rotate(333.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l-2 29" transform="rotate(337.5 300 270)" opacity="0.64"/>
+              <path d="M300 198l-1 30" transform="rotate(342.0 300 270)" opacity="0.25"/>
+              <path d="M300 198l0 31" transform="rotate(346.5 300 270)" opacity="0.38"/>
+              <path d="M300 198l1 19" transform="rotate(351.0 300 270)" opacity="0.51"/>
+              <path d="M300 198l2 20" transform="rotate(355.5 300 270)" opacity="0.64"/></g>
+              <circle cx="300" cy="270" r="62" stroke="#7fd2e9" stroke-opacity=".25" stroke-dasharray=".6 3" stroke-width="12"/>
+              <g class="eye-focus" fill="url(#optic-blade)" stroke="#86bdcc" stroke-opacity=".4" stroke-width=".6"><path d="M321 247 373 229Q395 287 352 330L306 298 328 279Z" transform="rotate(0 300 270)"/><path d="M321 247 373 229Q395 287 352 330L306 298 328 279Z" transform="rotate(40 300 270)"/><path d="M321 247 373 229Q395 287 352 330L306 298 328 279Z" transform="rotate(80 300 270)"/><path d="M321 247 373 229Q395 287 352 330L306 298 328 279Z" transform="rotate(120 300 270)"/><path d="M321 247 373 229Q395 287 352 330L306 298 328 279Z" transform="rotate(160 300 270)"/><path d="M321 247 373 229Q395 287 352 330L306 298 328 279Z" transform="rotate(200 300 270)"/><path d="M321 247 373 229Q395 287 352 330L306 298 328 279Z" transform="rotate(240 300 270)"/><path d="M321 247 373 229Q395 287 352 330L306 298 328 279Z" transform="rotate(280 300 270)"/><path d="M321 247 373 229Q395 287 352 330L306 298 328 279Z" transform="rotate(320 300 270)"/></g>
+              <circle class="eye-pupil" cx="300" cy="270" r="25" fill="#000207" stroke="#8ae4f4" stroke-width="1.1"/>
+              <circle cx="300" cy="270" r="16" stroke="#13527b" stroke-opacity=".8"/>
+              <path d="M297 270h6m-3-3v6" stroke="#44b4e2" stroke-width=".7" opacity=".5"/>
             </g>
-            <circle cx="300" cy="270" r="78" fill="url(#sphere-light)"/>
+            <circle cx="300" cy="270" r="83" fill="url(#optic-glass)"/>
+            <path d="M242 246Q253 207 293 203" stroke="#d6f8ff" stroke-width="6" stroke-linecap="round" opacity=".3"/>
+            <path d="M251 246Q263 218 288 216" stroke="#e4fcff" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+            <path d="M329 331Q353 321 365 297" stroke="#61c6ff" stroke-width="2" opacity=".4"/>
+            <ellipse cx="273" cy="237" rx="7" ry="4" fill="#e4faff" opacity=".55" transform="rotate(-35 273 237)"/>
           </g>
-          <circle cx="300" cy="270" r="35" stroke="#8de7ff" stroke-opacity=".75" stroke-width=".8"/>
-          <circle cx="300" cy="270" r="26" fill="#041023" stroke="#73d7f7" stroke-width="1.5"/>
-          <circle cx="300" cy="270" r="12" fill="#42c8f5" filter="url(#soft-glow)" opacity=".5"/>
-          <circle cx="300" cy="270" r="4" fill="#d0f8ff"/>
-          <path d="M300 216v12m0 84v12m-54-54h12m84 0h12" stroke="#a3edff" stroke-width="1"/>
-          <path d="M199 251v-24h24m154 0h24v24m0 38v24h-24m-154 0h-24v-24" stroke="#2e8aff" stroke-opacity=".6"/>
+          <path d="M165 250v-26h20m230 0h20v26m0 40v26h-20m-230 0h-20v-26" stroke="#368dcc" stroke-opacity=".7"/>
+          <g fill="#96cfe5" font-family="monospace" font-size="6" letter-spacing="1"><text x="168" y="340">OPTIC / 01</text><text x="381" y="340">AF LOCK</text></g>
           <path d="M280 479h40m-28 6h16" stroke="#9ce6ff" stroke-opacity=".55"/>
           <g stroke="#5ca8cf" stroke-opacity=".35"><path d="m126 126 12 12m324 324 12 12m0-348-12 12M138 462l-12 12"/></g>
           <g class="core-progress-rings" transform="rotate(-90 300 300)"></g>
@@ -132,6 +220,8 @@
     <div id="interface-settings" hidden>
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Metallic scanner sweeps and digital signals.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
+      <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
+      <p id="install-help" class="settings-note" role="status" hidden></p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
     </div>
     <form method="dialog"><button class="close" type="submit">Back to the Hub</button></form>
@@ -172,7 +262,7 @@
       </div>
       <form method="dialog"><button class="routine-exit" type="submit" aria-label="Close routines">×</button></form>
     </div>
-    <div class="routines-meta"><span id="routine-source" class="routine-source">LOADING</span><p id="routine-data-note">Loading your checklists…</p><button id="account-launch" type="button">Private access</button></div>
+    <div class="routines-meta"><span id="routine-source" class="routine-source">LOADING</span><p id="routine-data-note">Loading your checklists…</p><button id="control-launch" type="button">Edit &amp; backup</button><button id="account-launch" type="button">Private access</button></div>
     <div class="routine-layout">
       <nav id="routine-list" class="routine-list" aria-label="Checklists"></nav>
       <section class="routine-detail" aria-labelledby="routine-name">
@@ -196,6 +286,25 @@
       </section>
     </div>
     <div class="routine-feedback"><p id="routine-notice" class="routine-notice" role="status">Loading checklists…</p><button id="routine-retry" class="routine-retry" type="button" hidden>Try again</button></div>
+  </dialog>
+  <dialog id="checklist-control" class="control-dialog" aria-labelledby="control-title">
+    <div class="command-heading"><h2 id="control-title">CHECKLIST CONTROL</h2><button id="control-close" class="routine-exit" type="button" aria-label="Close checklist control">×</button></div>
+    <p id="control-destination"></p>
+    <fieldset id="control-fields">
+      <details class="control-backup"><summary>Backup &amp; restore</summary>
+        <p>Keep a portable copy of your saved checklists and ticks. Notes and unsaved drafts are separate.</p>
+        <button id="backup-export" type="button">Download backup</button>
+        <label for="backup-file">Open a Hub backup · JSON, up to 2 MB</label><input id="backup-file" type="file" accept=".json,application/json">
+        <div id="restore-preview" hidden><p id="restore-summary"></p><button id="backup-restore" type="button">Review replacement</button></div>
+      </details>
+      <div class="editor-toolbar"><label for="editor-list">Your checklists<select id="editor-list"></select></label><button id="editor-add-list" type="button">+ New checklist</button></div>
+      <div id="checklist-editor"></div>
+      <div class="control-footer"><button id="editor-save" type="button">Save changes</button><p id="control-status" role="status"></p></div>
+    </fieldset>
+  </dialog>
+  <dialog id="control-confirm" class="restart-dialog" role="alertdialog" aria-labelledby="control-confirm-title" aria-describedby="control-confirm-description">
+    <h2 id="control-confirm-title"></h2><p id="control-confirm-description"></p>
+    <form method="dialog" class="restart-actions"><button class="restart-keep" type="submit" autofocus>Go back</button><button id="control-confirm-yes" class="restart-confirm" type="button"></button></form>
   </dialog>
   <dialog id="account-dialog" class="account-dialog" aria-labelledby="account-title" aria-describedby="account-status">
     <div class="command-heading"><h2 id="account-title">PRIVATE ACCESS</h2><form method="dialog"><button class="routine-exit" type="submit" aria-label="Close private access" autofocus>×</button></form></div>
@@ -228,11 +337,12 @@
     <p id="command-empty" hidden>No matches. Try “Routines” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=sync-1"></script>
-  <script defer src="core-transition.js?v=signal-1"></script>
+  <script defer src="core-progress.js?v=control-1"></script>
+  <script defer src="core-transition.js?v=control-1"></script>
   <script defer src="notes.js?v=notes-2"></script>
-  <script defer src="interface.js?v=sync-2"></script>
+  <script defer src="interface.js?v=control-1"></script>
   <script defer src="interface-sound.js?v=signal-2"></script>
-  <script defer src="experience.js?v=notes-1"></script>
+  <script defer src="experience.js?v=control-1"></script>
+  <script defer src="install.js?v=control-1"></script>
 </body>
 </html>

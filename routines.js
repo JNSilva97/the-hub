@@ -1,5 +1,7 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=sync-1';
-import { cloudWorkspace } from './cloud.js?v=sync-2';
+import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=control-1';
+import { cloudWorkspace } from './cloud.js?v=control-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=control-1';
+import { createRoutineTools } from './routine-tools.js?v=control-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -23,6 +25,8 @@ let routines = [];
 let selected;
 let state;
 let storageKey;
+let workspaceKey;
+let localOverride = false;
 let storageAvailable = true;
 let loadGeneration = 0;
 
@@ -50,6 +54,8 @@ function latestProgress() {
   // shortcut: merge before saving; simultaneous tab writes need transactional storage.
   if (!storageAvailable) return state;
   try {
+    const raw = localStorage.getItem(workspaceKey);
+    if (raw) return readWorkspace(JSON.parse(raw)).progress;
     return parseProgress(localStorage.getItem(storageKey));
   } catch {
     storageAvailable = false;
@@ -68,7 +74,19 @@ function save() {
     return;
   }
   try {
-    localStorage.setItem(storageKey, JSON.stringify(state));
+    const raw = localStorage.getItem(workspaceKey);
+    if (raw) {
+      const latest = readWorkspace(JSON.parse(raw));
+      if (JSON.stringify(latest.routines) !== JSON.stringify(routines)) {
+        queueMicrotask(initialiseRoutines);
+        return;
+      }
+      state = keepProgress(routines, state);
+      localStorage.setItem(workspaceKey, JSON.stringify({ routines, progress: state }));
+    } else if (localOverride) {
+      queueMicrotask(initialiseRoutines);
+      return;
+    } else localStorage.setItem(storageKey, JSON.stringify(state));
     notice.textContent = 'Progress saved in this browser.';
   } catch {
     storageAvailable = false;
@@ -278,16 +296,27 @@ export async function initialiseRoutines() {
   if (current !== loadGeneration) return;
   routines = loadedRoutines;
   storageKey = `thehub:routines:${source}:v1`;
+  workspaceKey = `thehub:workspace:${source}:v1`;
+  localOverride = false;
   storageAvailable = true;
   try {
     state = source === 'account' ? cloudWorkspace.progress : parseProgress(localStorage.getItem(storageKey));
+    if (source !== 'account') {
+      const raw = localStorage.getItem(workspaceKey);
+      if (raw) {
+        const workspace = readWorkspace(JSON.parse(raw));
+        routines = workspace.routines;
+        state = workspace.progress;
+        localOverride = true;
+      }
+    }
   } catch {
     storageAvailable = false;
     state = parseProgress(null);
     localWarning = 'Saved progress could not be read. You can use the checklists for this visit.';
   }
-  sourceBadge.textContent = source === 'account' ? 'PRIVATE / YOUR ACCOUNT' : source === 'private' ? 'PERSONAL / THIS PC' : 'DEMO / SAMPLE DATA';
-  document.getElementById('routine-data-note').textContent = source === 'account' ? 'Your personal checklists. Available on devices signed into your account.' : source === 'private' ? 'Your real checklists. Loaded only from this PC.' : 'Example checklists. Your personal lists are not on this website.';
+  sourceBadge.textContent = source === 'account' ? 'PRIVATE / YOUR ACCOUNT' : localOverride ? 'CUSTOM / THIS BROWSER' : source === 'private' ? 'PERSONAL / THIS PC' : 'DEMO / SAMPLE DATA';
+  document.getElementById('routine-data-note').textContent = source === 'account' ? 'Your personal checklists. Available on devices signed into your account.' : localOverride ? 'Your edited checklists, saved in this browser. Export a backup to keep a copy.' : source === 'private' ? 'Your real checklists. Loaded only from this PC.' : 'Example checklists. Your personal lists are not on this website.';
   notice.textContent = source === 'account' ? 'Progress synced to your account.' : localWarning || 'Ticks stay in this browser. Nothing is sent to an account.';
   list.replaceChildren();
   for (const [index, routine] of routines.entries()) {
@@ -310,6 +339,8 @@ export async function initialiseRoutines() {
 
 window.addEventListener('storage', event => {
   if (dialog.dataset.source === 'account') return;
+  if (event.key === workspaceKey || event.key === null && localOverride) { initialiseRoutines(); return; }
+  if (localOverride) return;
   if (!storageAvailable || (event.key !== storageKey && event.key !== null) || !selected) return;
   try {
     state = parseProgress(localStorage.getItem(storageKey));
@@ -319,6 +350,35 @@ window.addEventListener('storage', event => {
     storageAvailable = false;
     notice.textContent = 'Progress from another tab could not be read. Your current ticks are unchanged.';
   }
+});
+
+createRoutineTools({
+  snapshot() {
+    const account = Boolean(cloudWorkspace.user);
+    if (!selected || account && !cloudWorkspace.canEdit) throw new Error('Wait for your account and ticks to finish syncing, then try again.');
+    if (!account && !storageAvailable) throw new Error('Browser storage is unavailable or unreadable. Your saved data is unchanged.');
+    const progress = account ? cloudWorkspace.progress : latestProgress();
+    return { routines: structuredClone(account ? cloudWorkspace.routines || routines : routines), progress,
+      identity: account ? cloudWorkspace.user.uid : dialog.dataset.source,
+      revision: account ? cloudWorkspace.revision : JSON.stringify(routines),
+      destination: account ? 'your signed-in account' : 'this browser', account };
+  },
+  async commit(next, baseline, restoredProgress) {
+    if (baseline.account) await cloudWorkspace.replace(next, baseline, restoredProgress);
+    else {
+      if (cloudWorkspace.user || baseline.identity !== dialog.dataset.source) throw new Error('The workspace changed. Reopen checklist control.');
+      const raw = localStorage.getItem(workspaceKey);
+      const latest = raw ? readWorkspace(JSON.parse(raw)) : { routines, progress: parseProgress(localStorage.getItem(storageKey)) };
+      if (JSON.stringify(latest.routines) !== baseline.revision || localOverride && !raw) throw new Error('Checklists changed in another tab. Reopen checklist control before saving.');
+      if (restoredProgress && JSON.stringify(latest.progress) !== JSON.stringify(baseline.progress)) throw new Error('Progress changed in another tab. Open the backup again before restoring.');
+      const cleaned = cleanRoutines(next);
+      // One record keeps definitions and ticks together, even if storage is full.
+      try { localStorage.setItem(workspaceKey, JSON.stringify({ routines: cleaned, progress: keepProgress(cleaned, restoredProgress || latest.progress) })); }
+      catch { throw new Error('Browser storage could not save. Your draft is still here. Free some space and try again.'); }
+      await initialiseRoutines();
+    }
+  },
+  identity: () => cloudWorkspace.user?.uid || dialog.dataset.source
 });
 
 document.addEventListener('hub:cloudprogress', () => {

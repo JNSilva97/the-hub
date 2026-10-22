@@ -81,7 +81,22 @@
   });
 
   // One render per pointer frame; no continuous JavaScript animation loop.
+  const optic = document.querySelector('.core-art');
+  const clearGaze = () => { optic.style.removeProperty('--eye-x'); optic.style.removeProperty('--eye-y'); };
+  const aim = target => {
+    if (!motionAllowed() || document.hidden || document.querySelector('dialog[open]')) return;
+    const center = optic.getBoundingClientRect();
+    const bounds = target.getBoundingClientRect();
+    optic.style.setProperty('--eye-x', `${Math.max(-9, Math.min(9, (bounds.left + bounds.width / 2 - center.left - center.width / 2) / 30))}px`);
+    optic.style.setProperty('--eye-y', `${Math.max(-6, Math.min(6, (bounds.top + bounds.height / 2 - center.top - center.height / 2) / 30))}px`);
+  };
+  reducedMotion.addEventListener('change', clearGaze);
+  document.addEventListener('hub:motionchange', clearGaze);
+  document.addEventListener('visibilitychange', clearGaze);
   for (const app of document.querySelectorAll('.app')) {
+    app.addEventListener('pointerenter', () => aim(app));
+    app.addEventListener('focus', () => aim(app));
+    app.addEventListener('blur', clearGaze);
     app.addEventListener('click', () => {
       const settings = app.dataset.icon === 'settings';
       document.getElementById('interface-settings').hidden = !settings;
@@ -98,6 +113,7 @@
       });
     });
     app.addEventListener('pointerleave', () => {
+      clearGaze();
       cancelAnimationFrame(frame);
       app.style.removeProperty('--spot-x');
       app.style.removeProperty('--spot-y');
@@ -128,6 +144,7 @@
     document.getElementById('command-empty').hidden = results.children.length > 0;
   }
   function openPalette() {
+    if (document.getElementById('checklist-control').open) return;
     if (palette.open) { palette.close(); return; }
     for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
     const launch = target => { target.focus(); target.click(); };
