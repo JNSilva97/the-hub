@@ -343,7 +343,7 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('machine sounds render distinct short, quiet pulses with silent tails', async () => {
+  await t.test('scanner sounds stay quiet, avoid bass impacts and end in silence', async () => {
     const { context, page } = await fixture(browser);
     try {
       await ready(page);
@@ -352,7 +352,8 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
         for (const kind of ['select', 'open', 'close']) {
           const audio = new OfflineAudioContext(1, 17640, 44100);
           synthesizeInterfaceSound(audio, audio.destination, kind);
-          const data = (await audio.startRendering()).getChannelData(0);
+          const rendered = await audio.startRendering();
+          const data = rendered.getChannelData(0);
           let peak = 0, energy = 0, last = 0, tail = 0;
           for (let i = 0; i < data.length; i++) {
             peak = Math.max(peak, Math.abs(data[i]));
@@ -360,13 +361,25 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
             if (Math.abs(data[i]) > .00005) last = i / 44100;
             if (i > 14112) tail = Math.max(tail, Math.abs(data[i]));
           }
-          results.push({ kind, peak, rms: Math.sqrt(energy / data.length), last, tail });
+          const bassContext = new OfflineAudioContext(1, data.length, 44100);
+          const source = bassContext.createBufferSource();
+          const lowpass = bassContext.createBiquadFilter();
+          source.buffer = rendered;
+          lowpass.type = 'lowpass';
+          lowpass.frequency.value = 250;
+          lowpass.Q.value = Math.SQRT1_2;
+          source.connect(lowpass).connect(bassContext.destination);
+          source.start();
+          const bass = (await bassContext.startRendering()).getChannelData(0);
+          const bassEnergy = bass.reduce((sum, value) => sum + value ** 2, 0);
+          results.push({ kind, peak, rms: Math.sqrt(energy / data.length), bassRatio: bassEnergy / energy, last, tail });
         }
         return results;
       });
       for (const sound of rendered) {
         assert.ok(sound.peak > .005 && sound.peak < .12, `${sound.kind} should be audible without clipping or a loud peak.`);
         assert.ok(sound.rms > .0005 && sound.rms < .03);
+        assert.ok(sound.bassRatio < .02, `${sound.kind} should have no drum-like bass impact.`);
         assert.equal(sound.tail, 0, 'No lingering drone after the one-shot ends.');
       }
       assert.ok(rendered[0].last < rendered[2].last && rendered[2].last < rendered[1].last);
