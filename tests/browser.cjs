@@ -87,6 +87,48 @@ test('The Hub browser regressions', { timeout: 180000 }, async t => {
     });
   }
 
+  await t.test('bright completed rings leave the summary and frame labels readable across screen sizes', async () => {
+    const checks = {}, optional = {};
+    for (const routine of JSON.parse(demo).routines.slice(0, 4)) {
+      for (const group of routine.groups) {
+        if (group.optional) optional[`${routine.id}/${group.id}`] = true;
+        for (const item of group.items) checks[`${routine.id}/${group.id}/${item.id}`] = true;
+      }
+    }
+    for (const width of [320, 390, 768, 1024, 1440, 1728]) {
+      const { context, page } = await fixture(browser, { width, motion: 'reduce' });
+      try {
+        await context.addInitScript(({ key, value }) => localStorage.setItem(key, value), { key: storageKey, value: JSON.stringify({ checks, optional }) });
+        await ready(page);
+        assert.equal(await page.locator('#core-summary').textContent(), '4 / 5 CHECKLISTS READY');
+        const layout = await page.evaluate(() => {
+          const box = selector => document.querySelector(selector).getBoundingClientRect();
+          const summary = box('#core-summary');
+          const ring = box('.core-progress-rings');
+          const next = box(innerWidth <= 700 ? '.apps' : '.workspace-caption');
+          const frame = document.querySelector('.core-reticle');
+          const label = document.querySelector('.core-reticle span:last-child');
+          return {
+            ringGap: summary.top - ring.bottom,
+            nextGap: next.top - summary.bottom,
+            fontSize: parseFloat(getComputedStyle(document.getElementById('core-summary')).fontSize),
+            background: getComputedStyle(document.getElementById('core-summary')).backgroundColor,
+            clipped: getComputedStyle(frame).clipPath !== 'none',
+            labelFont: parseFloat(getComputedStyle(label).fontSize),
+            overflow: document.documentElement.scrollWidth > innerWidth
+          };
+        });
+        assert.ok(layout.ringGap >= 8, `${width}px: the summary must sit below the rings.`);
+        assert.ok(layout.nextGap >= 8, `${width}px: the next row must clear the summary.`);
+        assert.ok(layout.fontSize >= 14);
+        assert.equal(layout.background, 'rgb(3, 10, 20)');
+        assert.equal(layout.clipped, false, 'Only the decorative frame can be clipped, never its labels.');
+        if (width > 700) assert.ok(layout.labelFont >= 12);
+        assert.equal(layout.overflow, false);
+      } finally { await context.close(); }
+    }
+  });
+
   await t.test('core rings load saved progress without replaying completion celebrations', async () => {
     const { context, page, errors } = await fixture(browser);
     try {

@@ -24,39 +24,43 @@
     animation.finished.catch(() => {}).finally(() => { pulses = pulses.filter(value => value !== animation); });
   }
 
+  function buildRings(signals) {
+    layer.replaceChildren();
+    list.replaceChildren();
+    rings.clear();
+    const spacing = Math.min(12, 124 / Math.max(1, signals.length - 1));
+    signals.forEach((signal, index) => {
+      const color = index % 2 ? '#51a9ff' : '#8bdfff';
+      const track = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      track.setAttribute('cx', '300');
+      track.setAttribute('cy', '300');
+      track.setAttribute('r', String(260 - spacing * index));
+      track.setAttribute('pathLength', '100');
+      track.setAttribute('class', 'core-progress-track');
+      const fill = track.cloneNode();
+      fill.setAttribute('class', 'core-progress-fill');
+      fill.dataset.checklist = signal.id;
+      fill.style.stroke = color;
+      layer.append(track, fill);
+      const item = document.createElement('li');
+      item.dataset.checklist = signal.id;
+      item.style.setProperty('--signal-color', color);
+      const name = document.createElement('span');
+      name.className = 'core-signal-name';
+      name.textContent = `${String(index + 1).padStart(2, '0')} / ${signal.name}`;
+      const count = document.createElement('span');
+      count.className = 'core-signal-count';
+      item.append(name, count);
+      list.append(item);
+      rings.set(signal.id, { fill, count, item });
+    });
+  }
+
   function render() {
     const nextSignature = latest.map(signal => signal.id).join('/');
     if (signature !== nextSignature) {
       signature = nextSignature;
-      layer.replaceChildren();
-      list.replaceChildren();
-      rings.clear();
-      const spacing = Math.min(12, 124 / Math.max(1, latest.length - 1));
-      latest.forEach((signal, index) => {
-        const color = index % 2 ? '#51a9ff' : '#8bdfff';
-        const track = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        track.setAttribute('cx', '300');
-        track.setAttribute('cy', '300');
-        track.setAttribute('r', String(260 - spacing * index));
-        track.setAttribute('pathLength', '100');
-        track.setAttribute('class', 'core-progress-track');
-        const fill = track.cloneNode();
-        fill.setAttribute('class', 'core-progress-fill');
-        fill.dataset.checklist = signal.id;
-        fill.style.stroke = color;
-        layer.append(track, fill);
-        const item = document.createElement('li');
-        item.dataset.checklist = signal.id;
-        item.style.setProperty('--signal-color', color);
-        const name = document.createElement('span');
-        name.className = 'core-signal-name';
-        name.textContent = `${String(index + 1).padStart(2, '0')} / ${signal.name}`;
-        const count = document.createElement('span');
-        count.className = 'core-signal-count';
-        item.append(name, count);
-        list.append(item);
-        rings.set(signal.id, { fill, count, item });
-      });
+      buildRings(latest);
     }
     for (const signal of latest) {
       const { fill, count, item } = rings.get(signal.id);

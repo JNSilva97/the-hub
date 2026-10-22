@@ -104,22 +104,31 @@
 .core-reticle {
   position: absolute;
   inset: 9%;
+}
+
+.core-reticle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   border: 1px solid #327bc52b;
   clip-path: polygon(0px 0px, 12% 0px, 12% 1px, 88% 1px, 88% 0px, 100% 0px, 100% 12%, calc(100% - 1px) 12%, calc(100% - 1px) 88%, 100% 88%, 100% 100%, 88% 100%, 88% calc(100% - 1px), 12% calc(100% - 1px), 12% 100%, 0px 100%);
 }
 
 .core-reticle span {
   position: absolute;
-  top: 0px;
-  left: 5%;
-  font: 9px var(--font-interface);
-  letter-spacing: 0.22em;
-  color: #83b8df;
+  top: -10px;
+  left: 14px;
+  padding: 4px 8px;
+  background: #030a14;
+  font: 600 11px/1.4 var(--font-interface);
+  letter-spacing: 0.14em;
+  color: #b1ddf5;
 }
 
 .core-reticle span:last-child {
-  inset: auto 5% 0px auto;
-  color: var(--neon-cyan);
+  inset: auto 0 -10px auto;
+  font-size: 12px;
+  color: #a4e4ff;
 }
 
 .core-label {
@@ -141,12 +150,21 @@
   font: 500 36px var(--font-display);
 }
 
-.core-coordinate {
+.core-summary {
   position: absolute;
-  inset: 86% 0px auto;
-  color: #8fc9df;
-  letter-spacing: 0.17em;
-  font: 600 10px var(--font-interface);
+  top: calc(100% - 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 16px);
+  padding: 8px 14px;
+  border: 1px solid #3b779e;
+  background: #030a14;
+  color: #d0f2ff;
+  box-shadow: 0 5px 18px #00000080;
+  letter-spacing: 0.1em;
+  font: 600 15px/1.4 var(--font-interface);
+  font-variant-numeric: tabular-nums;
 }
 
 .core-launch {
@@ -316,11 +334,11 @@ body[data-core-phase] .core * {
     width: min(370px, 100%);
     height: auto;
     aspect-ratio: 1 / 1;
-    margin: 12px 0px 2px;
+    margin: 12px 0px 58px;
   }
 
   .core-reticle span {
-    font-size: 7px;
+    font-size: 9px;
   }
 
   .core-reticle span:last-child {
@@ -339,10 +357,9 @@ body[data-core-phase] .core * {
     top: 58%;
   }
 
-  .core-coordinate {
-    font-size: 8px;
-    letter-spacing: 0.12em;
-    top: 96%;
+  .core-summary {
+    font-size: 14px;
+    top: calc(100% + 8px);
   }
 
   .core-launch {
