@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
-const publicFiles = ['index.html', 'interface.css', 'routines.css', 'cyberpunk.css', 'experience.js', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
+const publicFiles = ['index.html', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/motion.css', 'experience.js', 'interface.js', 'routines.js', 'routine-model.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ viewport: { width: options.width || 1024, height: 900 }, reducedMotion: options.motion || 'no-preference' });

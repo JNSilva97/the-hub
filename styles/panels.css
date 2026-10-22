@@ -1,0 +1,241 @@
+/* Shared dialogs, quick access and interface settings. */
+
+dialog {
+  width: min(440px, calc(100% - 40px));
+  padding: 38px 30px 30px;
+  border: 1px solid #3c88cf;
+  border-radius: 3px;
+  color: #e9f6ff;
+  text-align: center;
+  background: radial-gradient(at center top, #03132f, #010309 75%);
+  box-shadow: #0c1f35 0px 0px 0px 1px, #006eff1a 0px 0px 75px, #000000cc 0px 25px 100px;
+}
+
+dialog .tile {
+  margin: 0px auto 24px;
+  width: 62px;
+  height: 62px;
+}
+
+dialog .tile svg {
+  width: 30px;
+  height: 30px;
+}
+
+dialog p {
+  color: #aec6d9;
+  line-height: 1.6;
+  font-size: 14px;
+  margin: 16px 0px 28px;
+}
+
+dialog[open] {
+  animation: panel-materialise 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+dialog[open]::backdrop {
+  animation: backdrop-in 220ms ease both;
+}
+
+dialog h2 {
+  margin: 0px;
+  letter-spacing: 0.06em;
+  font: 500 25px var(--font-display);
+}
+
+dialog::backdrop {
+  background: #01050cce;
+  backdrop-filter: blur(12px) saturate(0.6);
+}
+
+.panel-eyebrow {
+  color: #8dcee5;
+  letter-spacing: 0.2em;
+  margin: 0px 0px 20px;
+  font: 600 11px var(--font-interface);
+}
+
+.close {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #2474bb;
+  border-radius: 2px;
+  padding: 12px 24px;
+  background: #061a36;
+  letter-spacing: 0.06em;
+  font: 600 16px var(--font-interface);
+}
+
+.close:hover {
+  background: #0a2950;
+}
+
+.routine-exit {
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid #275786;
+  background: #051122;
+  color: #b9dcff;
+  font-size: 22px;
+}
+
+.routine-exit:hover {
+  border-color: #46a4ff;
+}
+
+.command-dialog {
+  width: min(560px, calc(100% - 24px));
+  max-height: calc(100dvh - 48px);
+  padding: 24px;
+  text-align: left;
+  background: #030b16;
+}
+
+.command-dialog label {
+  display: block;
+  color: #a3bed5;
+  font-size: 13px;
+  margin-bottom: 9px;
+}
+
+.command-dialog [hidden] {
+  display: none;
+}
+
+.command-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  gap: 12px;
+}
+
+.command-heading h2 {
+  font-size: 20px;
+}
+
+#command-search {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid #3479ad;
+  background: #061323;
+  color: #e3f5ff;
+  border-radius: 2px;
+  font: normal 16px "Segoe UI", sans-serif;
+}
+
+#command-search:focus {
+  outline: #8fdbff solid 2px;
+  outline-offset: 3px;
+}
+
+.command-results {
+  display: grid;
+  gap: 5px;
+  margin-top: 16px;
+}
+
+.command-results button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  min-height: 48px;
+  padding: 12px;
+  background: #071322;
+  border: 1px solid #1c3550;
+  text-align: left;
+}
+
+.command-results button:hover {
+  background: #0b2c50;
+  border-color: #61b8f1;
+}
+
+.command-results button:focus-visible {
+  background: #0b2c50;
+  border-color: #61b8f1;
+}
+
+.command-results small {
+  flex-shrink: 0;
+  color: #9cb8ce;
+  font: 600 12px var(--font-interface);
+}
+
+.command-help {
+  font-size: 12px;
+  color: #a2bcd1;
+  margin-bottom: 0px;
+}
+
+#interface-settings[hidden] {
+  display: none;
+}
+
+#interface-settings .settings-note {
+  color: #9cb3c8;
+  font-size: 12px;
+  text-align: left;
+  margin-top: 8px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  text-align: left;
+  padding: 18px 0px;
+  border-top: 1px solid #1e3b58;
+}
+
+.setting-row strong {
+  display: block;
+  font: 600 19px var(--font-interface);
+  color: #d9edff;
+}
+
+.setting-row small {
+  display: block;
+  color: #a4bcd0;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 5px;
+}
+
+.setting-row button {
+  flex-shrink: 0;
+  min-width: 76px;
+  min-height: 44px;
+  background: #0b1d30;
+  border: 1px solid #34597b;
+  font: 600 16px var(--font-interface);
+}
+
+.setting-row button[aria-pressed="true"] {
+  background: #104278;
+  border-color: #82cdff;
+}
+
+.setting-row button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Responsive adjustment: (max-width: 700px). */
+@media (max-width: 700px) {
+  .panel-eyebrow {
+    font-size: 9px;
+  }
+
+  .command-dialog {
+    padding: 18px;
+  }
+
+  .command-heading h2 {
+    font-size: 17px;
+  }
+}

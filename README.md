@@ -43,10 +43,24 @@ If a checklist download fails, open **Routines** and select **Try again**. A fai
 ## Code layout
 
 - `index.html` — accessible screen structure, icons and dialogs.
-- `interface.js` / `interface.css` — screen controls, clock, launchers, intro and motion settings. `experience.js` / `cyberpunk.css` add the Nightfall theme, quick access and Settings.
-- `routines.js` / `routines.css` — checklist loading, rendering, browser storage and retry feedback.
+- `interface.js` / `experience.js` — screen controls, clock, loading recovery, quick access, intro replay and Settings.
+- `routines.js` — checklist loading, rendering and browser storage. Component styles live in `styles/`.
 - `routine-model.mjs` — data validation, progress calculations and scoped reset.
 - `routines.demo.json` / ignored `private/routines.json` — public examples and local personal lists.
+
+### Stylesheets
+
+| File | Responsibility |
+| --- | --- |
+| `styles/base.css` | Fonts, shared tokens, page defaults and button accessibility |
+| `styles/shell.css` | Header, clock, page layout, app tiles, skyline and footer |
+| `styles/core.css` | Optical core, rings and the Routines launcher |
+| `styles/access.css` | Opening sequence and mechanical doors |
+| `styles/panels.css` | Shared dialogs, close buttons, quick access and Settings |
+| `styles/routines.css` | Checklist cards, optional sections and progress |
+| `styles/motion.css` | All keyframes, pause behavior and reduced motion |
+
+Each component's final values live in its own stylesheet. Responsive adjustments sit at the bottom of that file, grouped by breakpoint. Shared motion rules load last so pause and reduced-motion settings apply across the app. Keep declarations on separate lines and edit the existing component block rather than adding a new override at the end. There is no separate theme override stylesheet.
 
 ## Publish with GitHub Pages
 

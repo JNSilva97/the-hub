@@ -1,0 +1,162 @@
+/* Decorative opening sequence and mechanical doors. */
+
+.access-sequence {
+  position: fixed;
+  inset: 0px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  animation: vault-reveal 3200ms linear both;
+  perspective: 1000px;
+  background: #01040955;
+}
+
+.blast-door {
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  width: 50%;
+  background: linear-gradient(105deg, #010204, #020916);
+  box-shadow: #000000 0px 0px 150px inset;
+  overflow: hidden;
+  animation-duration: 3200ms;
+}
+
+.blast-door::before {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border: 1px solid #16366a80;
+  background: repeating-linear-gradient(0deg, transparent 0px, transparent 50px, #1440a118 51px, #1440a118 52px);
+}
+
+.blast-door::after {
+  content: "";
+  position: absolute;
+  inset: 0px;
+  opacity: 0.3;
+  background: repeating-linear-gradient(90deg, transparent 0px, transparent 90px, #2a639c24 91px, #2a639c24 92px);
+}
+
+.blast-door-left {
+  left: 0px;
+  border-right: 1px solid #6ec7ff;
+  animation: door-left 2600ms cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+.blast-door-right {
+  right: 0px;
+  border-left: 1px solid #d27acb;
+  animation: door-right 2600ms cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+.access-seam {
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  left: 50%;
+  width: 1px;
+  background: #4aaaff;
+  box-shadow: #006fff90 0px 0px 22px 5px;
+  animation: seam-reveal 3200ms ease both;
+}
+
+.access-content {
+  position: relative;
+  width: min(320px, 80vw);
+  text-align: center;
+  z-index: 1;
+  animation: boot-content 3200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.access-ring {
+  position: relative;
+  margin: 0px auto 32px;
+  border: 1px solid #238dff80;
+  border-radius: 50%;
+  width: 190px;
+  height: 190px;
+  box-shadow: #006aff25 0px 0px 85px, #004cff24 0px 0px 40px inset;
+  background: radial-gradient(circle, #000000 0px, #000000 13%, #68bfff 14%, #062968 15%, #062968 22%, transparent 23%), repeating-conic-gradient(from 20deg, #1d6fb322 0deg, #1d6fb322 30deg, transparent 30deg, transparent 60deg);
+  animation: iris-acquire 1700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  outline: #386894 dashed 1px;
+  outline-offset: 28px;
+}
+
+.access-ring::before {
+  content: "";
+  position: absolute;
+  border-style: solid;
+  border-color: #48a7ff transparent;
+  border-image: none;
+  border-radius: 50%;
+  animation: orbit 1700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  inset: 16px;
+  border-width: 3px;
+}
+
+.access-ring::after {
+  content: "";
+  position: absolute;
+  border-style: solid;
+  border-image: none;
+  border-radius: 50%;
+  animation: orbit 1700ms cubic-bezier(0.22, 1, 0.36, 1) reverse both;
+  border-width: 1px;
+  transform: rotate(45deg);
+  inset: -15px;
+  border-color: #2a83ff60 transparent #2a83ff60 #d57fc8;
+}
+
+.access-crosshair {
+  position: absolute;
+  border: 1px solid #56b1ff90;
+  inset: 64px;
+  clip-path: none;
+  transform: rotate(45deg);
+  box-shadow: #087cff22 0px 0px 16px;
+  animation: reticle-lock 2400ms var(--ease-arrive) both;
+}
+
+.access-title {
+  margin: 0px;
+  color: #ddf7ff;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  text-shadow: #218aff80 2px 0px, #d161ba60 -2px 0px, #3287ff60 0px 0px 35px;
+  font: 500 25px var(--font-display);
+}
+
+.access-status {
+  margin: 15px 0px 22px;
+  letter-spacing: 0.2em;
+  min-height: 18px;
+  color: #b1dcff;
+  font: 600 12px var(--font-interface);
+}
+
+.access-progress {
+  height: 1px;
+  background: #73c9e927;
+  overflow: hidden;
+}
+
+.access-progress::after {
+  content: "";
+  display: block;
+  height: 100%;
+  transform-origin: left center;
+  animation: interface-progress 1700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  background: #308dff;
+  box-shadow: #007bff 0px 0px 16px;
+}
+
+.access-note {
+  margin: 16px 0px 0px;
+  letter-spacing: 0.17em;
+  color: #90abc6;
+  font: 600 10px/1.7 var(--font-interface);
+}

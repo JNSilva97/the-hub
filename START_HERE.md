@@ -13,17 +13,21 @@ The online version uses example checklists. Your real lists load from the PC ver
 | What you want to change | Where to look |
 | --- | --- |
 | Text, buttons, icons or dialog structure | `index.html` |
-| Main layout and screen sizes | `interface.css` |
-| Nightfall colors, skyline and visual effects | `cyberpunk.css` |
+| Shared colors, fonts and page defaults | `styles/base.css` |
+| Main layout, app tiles, skyline and screen sizes | `styles/shell.css` |
+| Optical core, rings and central button | `styles/core.css` |
+| Opening sequence and doors | `styles/access.css` |
+| Dialogs, search and Settings appearance | `styles/panels.css` |
+| Keyframes, pausing and reduced motion | `styles/motion.css` |
 | Clock, opening dialogs and loading recovery | `interface.js` |
 | Search, intro replay, pointer light and sound | `experience.js` |
-| Checklist appearance | `routines.css` |
+| Checklist appearance | `styles/routines.css` |
 | Loading checklists, ticking items and saving | `routines.js` |
 | Checking data and calculating completion | `routine-model.mjs` |
 | Online example checklists | `routines.demo.json` |
 | Your real checklists, on this PC only | `private/routines.json` |
 
-Styles load in that order: main interface, checklist styles, then the Nightfall theme. The theme changes the appearance without moving the working button hit areas. Decorative layers ignore pointer events so they cannot block clicks.
+Each component has one stylesheet. Its main rules come first and screen-size adjustments come at the bottom. Change the component's existing rule instead of adding another override. Shared fonts and defaults load first; motion controls load last. Decorative layers ignore pointer events so they cannot block clicks.
 
 ## 3. Understand the animation
 
