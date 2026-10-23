@@ -16,7 +16,7 @@ While signed out, the online version uses example checklists. Your real lists lo
 
 **Private access** inside Routines is the entry point for checklist sync. Sign in on the PC and explicitly choose **Sync PC checklists**, then sign into the same account on your phone. See [Firebase setup and verification](FIREBASE_SETUP.md). Notes remain local. A pending or failed cloud save must finish before you close the tab; normal sign-out is blocked until then.
 
-Choose **Edit & backup** inside Routines to change your lists or download a portable backup. Save applies edits; removals and backup replacement ask for confirmation. Existing ticks follow renamed or reordered items. If a save fails, keep the draft open and retry. Notes are separate. **Settings → Install** adds The Hub to your home screen when supported; sync still needs a connection.
+Choose **Edit checklist** beside the selected checklist title to edit directly in the checklist panel. Use the separate **Backup & restore** button at the top for portable copies. Save applies edits; removals and backup replacement ask for confirmation. Existing ticks follow renamed or reordered items. If a save fails, keep the draft open and retry. Notes are separate. **Settings → Install** adds The Hub to your home screen when supported; sync still needs a connection.
 
 ## 2. Find the right file
 

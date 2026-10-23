@@ -3,18 +3,21 @@ import { cleanRoutines, createBackup, parseBackup, countItems, removedItems, MAX
 // Drafts own their IDs; text edits and moves never change saved tick identities.
 export function createRoutineTools(workspace) {
   const panel = document.getElementById('checklist-control');
+  const backup = document.getElementById('backup-dialog');
+  const reader = document.getElementById('routine-reader');
+  const navigation = document.getElementById('routine-list');
   const editor = document.getElementById('checklist-editor');
   const chooser = document.getElementById('editor-list');
   const message = document.getElementById('control-status');
   const preview = document.getElementById('restore-preview');
   const confirmation = document.getElementById('control-confirm');
   const file = document.getElementById('backup-file');
-  let baseline, draft, chosen = 0, restored, busy = false, epoch = 0, confirmAction;
+  let baseline, draft, chosen = 0, restored, busy = false, epoch = 0, confirmAction, backupIdentity;
   const id = prefix => `${prefix}-${crypto.randomUUID()}`;
   const item = () => ({ id: id('i'), label: 'New item' });
   const group = () => ({ id: id('g'), title: 'New section', optional: false, items: [item()] });
-  const dirty = () => draft && JSON.stringify(draft) !== JSON.stringify(baseline.routines);
-  const status = text => { message.textContent = text; };
+  const dirty = () => baseline && draft && JSON.stringify(draft) !== JSON.stringify(baseline.routines);
+  const status = text => { (backup.open ? document.getElementById('backup-status') : message).textContent = text; };
   const button = (text, action, label = text) => {
     const node = document.createElement('button');
     node.type = 'button'; node.textContent = text; node.setAttribute('aria-label', label);
@@ -84,41 +87,68 @@ export function createRoutineTools(workspace) {
   }
   function close() {
     if (busy) return;
-    if (dirty()) ask('Discard your draft?', 'Your saved checklists and ticks will stay as they are.', 'Discard draft', () => panel.close());
-    else panel.close();
+    if (dirty()) ask('Discard your draft?', 'Your saved checklists and ticks will stay as they are.', 'Discard draft', exitEditor);
+    else exitEditor();
+  }
+  function exitEditor() {
+    panel.hidden = true; reader.hidden = false; navigation.inert = false;
+    document.getElementById('control-launch').hidden = false; document.getElementById('backup-launch').disabled = false;
+    if (baseline && draft) workspace.select(draft[chosen]?.id);
+    baseline = draft = undefined; editor.replaceChildren(); chooser.replaceChildren();
+    if (document.getElementById('routines-dialog').open) document.getElementById('control-launch').focus();
   }
   function reset() {
     epoch++; baseline = draft = restored = undefined; confirmAction = undefined;
     preview.hidden = true; file.value = ''; editor.replaceChildren(); chooser.replaceChildren();
-    for (const id of ['control-destination', 'restore-summary', 'control-confirm-title', 'control-confirm-description', 'control-status']) document.getElementById(id).textContent = '';
-    confirmation.close(); panel.close();
+    for (const id of ['control-destination', 'backup-destination', 'backup-status', 'restore-summary', 'control-confirm-title', 'control-confirm-description', 'control-status']) document.getElementById(id).textContent = '';
+    confirmation.close(); exitEditor(); backup.close();
   }
   async function save(next, progress, targetBaseline = baseline) {
     if (busy) return;
     const current = epoch;
     busy = true; panel.setAttribute('aria-busy', 'true');
-    document.getElementById('control-fields').disabled = true;
+    document.getElementById('control-fields').disabled = true; document.getElementById('backup-fields').disabled = true;
     status('Saving… Keep this tab open.');
     try {
       await workspace.commit(next, targetBaseline, progress);
       if (current !== epoch) return;
-      baseline = workspace.snapshot(); draft = structuredClone(baseline.routines);
-      restored = undefined; preview.hidden = true; file.value = ''; chosen = Math.min(chosen, draft.length - 1);
-      render(); status('Saved. Your checklists and ticks are ready.');
+      if (!panel.hidden) { baseline = workspace.snapshot(); draft = structuredClone(baseline.routines); }
+      restored = undefined; preview.hidden = true; file.value = ''; if (draft) { chosen = Math.min(chosen, draft.length - 1); render(); }
+      status('Saved. Your checklists and ticks are ready.');
     } catch (error) { if (current === epoch) status(error.message || 'Could not save. Your draft is still here.'); }
-    finally { busy = false; panel.removeAttribute('aria-busy'); document.getElementById('control-fields').disabled = false; }
+    finally { busy = false; panel.removeAttribute('aria-busy'); document.getElementById('control-fields').disabled = false; document.getElementById('backup-fields').disabled = false; }
   }
   document.getElementById('control-launch').addEventListener('click', () => {
     try {
-      baseline = workspace.snapshot(); draft = structuredClone(baseline.routines); chosen = 0; epoch++;
+      baseline = workspace.snapshot(); draft = structuredClone(baseline.routines); chosen = Math.max(0, draft.findIndex(routine => routine.id === baseline.selectedId)); epoch++;
       restored = undefined; preview.hidden = true; file.value = '';
       document.getElementById('control-destination').textContent = `Editing ${baseline.destination}. Changes apply when you save. Notes are separate.`;
-      render(); status('Rename, reorder or add items. Existing ticks follow their items.'); panel.showModal();
+      render(); status('Rename, reorder or add items. Existing ticks follow their items.'); panel.hidden = false; reader.hidden = true; navigation.inert = true; document.getElementById('control-launch').hidden = true; document.getElementById('backup-launch').disabled = true; chooser.focus();
     } catch (error) { document.getElementById('routine-notice').textContent = error.message; }
   });
   document.getElementById('control-close').addEventListener('click', close);
-  panel.addEventListener('cancel', event => { event.preventDefault(); close(); });
-  panel.addEventListener('close', () => { if (!panel.open) reset(); });
+  const routinesDialog = document.getElementById('routines-dialog');
+  routinesDialog.addEventListener('cancel', event => { if (!panel.hidden) { event.preventDefault(); event.stopImmediatePropagation(); close(); } }, true);
+  routinesDialog.addEventListener('click', event => {
+    if (panel.hidden) return;
+    const bounds = routinesDialog.getBoundingClientRect();
+    const outside = event.target === routinesDialog && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom);
+    if (outside || event.target.closest('form[method="dialog"]')) { event.preventDefault(); event.stopImmediatePropagation(); close(); }
+  }, true);
+  routinesDialog.addEventListener('close', reset);
+  document.getElementById('backup-launch').addEventListener('click', () => {
+    if (!panel.hidden) { status('Finish editing before opening backups.'); return; }
+    try {
+      const current = workspace.snapshot(); backupIdentity = current.identity;
+      document.getElementById('backup-destination').textContent = `Backup destination: ${current.destination}.`;
+      restored = undefined; preview.hidden = true; file.value = ''; epoch++;
+      backup.showModal(); status('Download your saved checklists or open a backup to restore.');
+    } catch (error) { document.getElementById('routine-notice').textContent = error.message; }
+  });
+  function closeBackup() { if (!busy) backup.close(); }
+  document.getElementById('backup-close').addEventListener('click', closeBackup);
+  backup.addEventListener('cancel', event => { event.preventDefault(); closeBackup(); });
+  backup.addEventListener('close', () => { epoch++; restored = undefined; preview.hidden = true; file.value = ''; document.getElementById('backup-status').textContent = ''; document.getElementById('restore-summary').textContent = ''; document.getElementById('backup-destination').textContent = ''; });
   confirmation.addEventListener('close', () => { if (!confirmation.open) confirmAction = undefined; });
   document.getElementById('control-confirm-yes').addEventListener('click', () => { const action = confirmAction; confirmAction = undefined; confirmation.close(); action?.(); });
   chooser.addEventListener('change', () => { chosen = Number(chooser.value); render(); });
@@ -148,7 +178,7 @@ export function createRoutineTools(workspace) {
     try {
       if (selected.size > MAX_BACKUP_BYTES) throw new Error('Choose a backup smaller than 2 MB.');
       const text = await selected.text();
-      if (current !== epoch || !panel.open) return;
+      if (current !== epoch || !backup.open) return;
       const parsed = parseBackup(text);
       const currentWorkspace = workspace.snapshot();
       restored = { ...parsed, baseline: currentWorkspace };
@@ -158,10 +188,10 @@ export function createRoutineTools(workspace) {
   });
   document.getElementById('backup-restore').addEventListener('click', () => {
     if (!restored) return;
-    ask('Replace checklists and ticks?', `This replaces all saved checklists and ticks in ${restored.baseline.destination}, including your current editor draft. Download a backup first if you need the current version.`, 'Replace from backup', () => {
+    ask('Replace checklists and ticks?', `This replaces all saved checklists and ticks in ${restored.baseline.destination}. Download a backup first if you need the current version.`, 'Replace from backup', () => {
       save(restored.routines, restored.progress, restored.baseline);
     });
   });
-  document.addEventListener('hub:workspacechange', () => { if (baseline && workspace.identity() !== baseline.identity) reset(); });
+  document.addEventListener('hub:workspacechange', () => { if (baseline && workspace.identity() !== baseline.identity || backup.open && workspace.identity() !== backupIdentity) reset(); });
   window.addEventListener('beforeunload', event => { if (dirty() || busy) { event.preventDefault(); event.returnValue = ''; } });
 }

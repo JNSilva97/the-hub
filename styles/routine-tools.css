@@ -7,7 +7,7 @@
 }
 .control-dialog h2 { font-size: 20px; }
 .control-dialog p { margin: 12px 0; }
-#control-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+#control-fields, #backup-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 .control-dialog button, .control-dialog select, .control-dialog input[type="file"]::file-selector-button {
   min-height: 44px;
   padding: 8px 14px;
@@ -20,7 +20,6 @@
 .control-dialog button:hover { border-color: #8cdbff; background: #0d2a48; }
 .control-dialog button:disabled { opacity: .45; cursor: default; }
 .control-backup { padding: 16px; border: 1px solid #21486b; background: #030b16; margin: 18px 0; }
-.control-backup summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: #9cdaff; }
 .control-backup input[type="file"] { display: block; max-width: 100%; margin-top: 8px; color: #a8cde6; }
 .control-backup label { display: block; margin-top: 16px; }
 .control-backup #restore-preview { border-top: 1px solid #315471; margin-top: 14px; padding-top: 8px; }
@@ -43,7 +42,7 @@
 .editor-item { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin: 14px 0; }
 .control-footer { position: sticky; bottom: -24px; padding: 16px 0; margin-top: 20px; border-top: 1px solid #245171; background: #020915; }
 .control-footer button { background: #124378; border-color: #67bded; }
-#control-status { font-size: 14px; overflow-wrap: anywhere; }
+#control-status, #backup-status { font-size: 14px; overflow-wrap: anywhere; }
 @media (max-width: 540px) {
   .control-dialog { padding: 16px; }
   .control-dialog h2 { font-size: 15px; }
@@ -52,3 +51,12 @@
   .editor-section { padding: 12px; }
   .control-footer { bottom: -16px; }
 }
+
+.inline-editor { width: 100%; max-height: none; padding: 0; margin-top: 20px; }
+.inline-editor .routine-exit { width: auto; }
+.inline-editor .control-footer { bottom: 0; }
+.routine-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.routine-heading h3 { margin: 0; min-width: 0; flex: 1 1 170px; overflow-wrap: anywhere; }
+
+#backup-launch:disabled { opacity: .45; cursor: default; }
+.routine-list[inert] { opacity: .65; }

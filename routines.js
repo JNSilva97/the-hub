@@ -1,7 +1,7 @@
 import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=control-1';
 import { cloudWorkspace } from './cloud.js?v=control-1';
 import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=control-1';
-import { createRoutineTools } from './routine-tools.js?v=control-1';
+import { createRoutineTools } from './routine-tools.js?v=control-2';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -353,6 +353,7 @@ window.addEventListener('storage', event => {
 });
 
 createRoutineTools({
+  select: id => { const routine = routines.find(routine => routine.id === id); if (routine) selectRoutine(routine); },
   snapshot() {
     const account = Boolean(cloudWorkspace.user);
     if (!selected || account && !cloudWorkspace.canEdit) throw new Error('Wait for your account and ticks to finish syncing, then try again.');
@@ -360,7 +361,7 @@ createRoutineTools({
     const progress = account ? cloudWorkspace.progress : latestProgress();
     return { routines: structuredClone(account ? cloudWorkspace.routines || routines : routines), progress,
       identity: account ? cloudWorkspace.user.uid : dialog.dataset.source,
-      revision: account ? cloudWorkspace.revision : JSON.stringify(routines),
+      selectedId: selected.id, revision: account ? cloudWorkspace.revision : JSON.stringify(routines),
       destination: account ? 'your signed-in account' : 'this browser', account };
   },
   async commit(next, baseline, restoredProgress) {

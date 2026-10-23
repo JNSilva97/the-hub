@@ -85,19 +85,21 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.locator('#editor-save').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
       let saved = await page.evaluate(() => JSON.parse(localStorage.getItem('thehub:workspace:demo:v1')));
       assert.equal(saved.routines[0].name, 'My edited list'); assert.equal(saved.progress.checks['personal-care/care/item-1'], true);
-      await page.locator('.control-backup > summary').click();
+      await page.locator('#control-close').click(); await page.locator('#backup-launch').click();
       const downloaded = page.waitForEvent('download'); await page.locator('#backup-export').click();
       const download = await downloaded; const backupText = readFileSync(await download.path(), 'utf8');
       assert.equal(JSON.parse(backupText).format, 'the-hub-checklists');
+      await page.locator('#backup-close').click(); await page.locator('#control-launch').click();
       await page.locator('.editor-item').nth(1).getByRole('button', { name: 'Remove item 2', exact: true }).click();
       await page.locator('#editor-save').click(); assert.equal(await page.locator('#control-confirm').evaluate(el => el.open), true);
       await page.locator('#control-confirm-yes').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
       assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('thehub:workspace:demo:v1')).progress.checks['personal-care/care/item-1']), undefined);
+      await page.locator('#control-close').click(); await page.locator('#backup-launch').click();
       await page.locator('#backup-file').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(backupText) });
       await page.locator('#backup-restore').click(); await page.locator('#control-confirm-yes').click();
-      await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
+      await page.waitForFunction(() => document.getElementById('backup-status').textContent.startsWith('Saved.'));
       assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('thehub:workspace:demo:v1'))), saved);
-      await page.locator('#control-close').click(); await page.keyboard.press('Escape');
+      await page.locator('#backup-close').click(); await page.keyboard.press('Escape');
       await page.waitForFunction(() => document.getElementById('core-signal-list').textContent.includes('My edited list'));
       assert.match(await page.locator('#core-signal-list').textContent(), /My edited list/);
       await page.reload(); await page.waitForSelector('#routines-dialog[data-ready="true"]', { state: 'attached' });
@@ -119,10 +121,36 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.evaluate(() => { Storage.prototype.setItem = window.__originalSetItem; });
       await page.locator('#editor-save').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
       assert.equal(await page.locator('.routine-card').count(), 6);
-      await page.locator('.control-backup > summary').click();
+      await page.locator('#control-close').click(); await page.locator('#backup-launch').click();
       await page.locator('#backup-file').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"format":"other"}') });
-      await page.waitForFunction(() => document.getElementById('control-status').textContent.includes('not a supported'));
+      await page.waitForFunction(() => document.getElementById('backup-status').textContent.includes('not a supported'));
       assert.equal(await page.locator('#restore-preview').isVisible(), false); assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('editing stays inside the selected checklist and guards Escape, exit and backdrop; backup stays separate', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
+    try {
+      await ready(page); await openRoutines(page); await page.locator('.routine-card').nth(2).click();
+      const name = await page.locator('#routine-name').textContent();
+      await page.locator('#control-launch').click();
+      assert.equal(await page.getByLabel('Checklist name', { exact: true }).inputValue(), name);
+      assert.equal(await page.locator('#routines-dialog').evaluate(el => el.matches(':modal')), true);
+      assert.equal(await page.locator('#routine-reader').isVisible(), false);
+      assert.equal(await page.locator('#backup-launch').isDisabled(), true);
+      await page.getByLabel('Checklist name', { exact: true }).fill('Unsaved draft');
+      for (const exit of [() => page.keyboard.press('Escape'), () => page.getByRole('button', {name:'Close routines',exact:true}).click(), () => page.mouse.click(1,1)]) {
+        await exit(); await page.waitForSelector('#control-confirm[open]');
+        assert.equal(await page.locator('#routines-dialog').evaluate(el => el.open), true);
+        await page.locator('#control-confirm .restart-keep').click();
+        assert.equal(await page.getByLabel('Checklist name', {exact:true}).inputValue(), 'Unsaved draft');
+      }
+      await page.locator('#control-close').click(); await page.locator('#control-confirm-yes').click();
+      assert.equal(await page.locator('#routine-reader').isVisible(), true);
+      assert.equal(await page.locator('#routine-name').textContent(), name);
+      await page.locator('#backup-launch').click(); assert.equal(await page.locator('#backup-dialog').evaluate(el => el.open), true);
+      assert.equal(await page.getByLabel('Checklist name', {exact:true}).count(), 0);
+      assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });
 
@@ -144,7 +172,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.locator('#editor-save').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.includes('changed on another device'));
       assert.equal(await page.getByLabel('Checklist name', { exact: true }).inputValue(), 'Stale draft');
       await page.evaluate(() => { window.__hubFirebase.user = null; window.__hubFirebase.authListener(null); });
-      assert.equal(await page.locator('#checklist-control').evaluate(el => el.open), false);
+      assert.equal(await page.locator('#checklist-control').evaluate(el => el.hidden), true);
       assert.equal(await page.locator('#checklist-editor').textContent(), ''); assert.equal(await page.locator('#control-status').textContent(), '');
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
@@ -153,13 +181,14 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
   await t.test('restore refuses progress changes after preview; local editors reject another tab definition edit', async () => {
     const { context, page, errors } = await fixture(browser, { motion: 'reduce' });
     try {
-      await ready(page); await openRoutines(page); await page.locator('#control-launch').click(); await page.locator('.control-backup > summary').click();
+      await ready(page); await openRoutines(page); await page.locator('#backup-launch').click();
       const backup = { format: 'the-hub-checklists', version: 1, routines: JSON.parse(demo).routines, progress: { checks: {}, optional: {} } };
       await page.locator('#backup-file').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
       await page.waitForSelector('#restore-preview', { state: 'visible' });
       await page.evaluate(() => localStorage.setItem('thehub:routines:demo:v1', JSON.stringify({ checks: { 'personal-care/care/item-1': true }, optional: {} })));
       await page.locator('#backup-restore').click(); await page.locator('#control-confirm-yes').click();
-      await page.waitForFunction(() => document.getElementById('control-status').textContent.includes('Progress changed'));
+      await page.waitForFunction(() => document.getElementById('backup-status').textContent.includes('Progress changed'));
+      await page.locator('#backup-close').click(); await page.locator('#control-launch').click();
       const other = await context.newPage(); await ready(other); await openRoutines(other); await other.locator('#control-launch').click();
       await other.getByLabel('Checklist name', { exact: true }).fill('Other tab'); await other.locator('#editor-save').click();
       await other.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
