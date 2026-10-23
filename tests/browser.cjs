@@ -213,16 +213,26 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('mechanical optic follows module focus and stops under pause and reduced motion', async () => {
+  await t.test('holographic eye tracks pointer and module focus, stays identical in Routines and respects motion preferences', async () => {
     const { context, page, errors } = await fixture(browser);
     try {
-      await ready(page); await page.locator('[data-icon="projects"]').focus();
+      await ready(page);
+      await page.mouse.move(800, 400); await page.waitForTimeout(50);
+      const pointerX = await page.locator('.core-art').evaluate(el => el.style.getPropertyValue('--eye-x'));
+      assert.notEqual(pointerX, '');
+      await page.mouse.move(200, 400); await page.waitForTimeout(50);
+      assert.notEqual(await page.locator('.core-art').evaluate(el => el.style.getPropertyValue('--eye-x')), pointerX);
+      await page.locator('[data-icon="projects"]').focus();
       assert.notEqual(await page.locator('.core-art').evaluate(el => el.style.getPropertyValue('--eye-x')), '');
       await page.locator('.motion-toggle').click();
       assert.equal(await page.locator('.core-art').evaluate(el => el.style.getPropertyValue('--eye-x')), '');
-      assert.equal(await page.locator('.eye-focus').evaluate(el => el.getAnimations().length), 0);
+      assert.equal(await page.locator('.core-art .eye-focus').evaluate(el => el.getAnimations().length), 0);
+      await openRoutines(page);
+      assert.equal(await page.locator('.routine-optic .eye-art').count(), 1);
+      assert.equal(await page.locator('.routine-optic .iris-fibres path').count(), await page.locator('.core-art .iris-fibres path').count());
+      assert.equal(await page.locator('.routine-optic .eye-art').getAttribute('viewBox'), await page.locator('.core-art .eye-art').getAttribute('viewBox'));
       await page.emulateMedia({ reducedMotion: 'reduce' });
-      assert.equal(await page.locator('.eye-pupil').evaluate(el => el.getAnimations().length), 0); assert.deepEqual(errors, []);
+      assert.equal(await page.locator('.core-art .eye-pupil').evaluate(el => el.getAnimations().length), 0); assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });
 
@@ -820,6 +830,16 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         const ids = [...document.querySelectorAll('[id]')].map(el => el.id);
         return new Set(ids).size === ids.length;
       }), true);
+      const dockError = await page.evaluate(() => {
+        for (const animation of document.getAnimations()) {
+          if (animation.effect.target.closest?.('#routines-dialog, .core-flight')) { animation.pause(); animation.currentTime = 879; }
+        }
+        const arriving = document.querySelector('.core-flight .eye-art').getBoundingClientRect();
+        const docked = document.querySelector('.routine-optic .eye-art').getBoundingClientRect();
+        return Math.abs(arriving.left - docked.left) + Math.abs(arriving.top - docked.top) + Math.abs(arriving.width - docked.width);
+      });
+      assert.ok(dockError < 1, 'The shared eye must arrive at exactly the header size and position.');
+      await page.evaluate(() => document.getAnimations().forEach(animation => animation.play()));
       await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
       assert.equal(await page.locator('.core-flight').count(), 0);
       assert.equal(await page.locator('#routines-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);

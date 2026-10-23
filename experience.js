@@ -83,13 +83,20 @@
   // One render per pointer frame; no continuous JavaScript animation loop.
   const optic = document.querySelector('.core-art');
   const clearGaze = () => { optic.style.removeProperty('--eye-x'); optic.style.removeProperty('--eye-y'); };
-  const aim = target => {
+  const aimPoint = (x, y) => {
     if (!motionAllowed() || document.hidden || document.querySelector('dialog[open]')) return;
     const center = optic.getBoundingClientRect();
-    const bounds = target.getBoundingClientRect();
-    optic.style.setProperty('--eye-x', `${Math.max(-9, Math.min(9, (bounds.left + bounds.width / 2 - center.left - center.width / 2) / 30))}px`);
-    optic.style.setProperty('--eye-y', `${Math.max(-6, Math.min(6, (bounds.top + bounds.height / 2 - center.top - center.height / 2) / 30))}px`);
+    optic.style.setProperty('--eye-x', `${Math.max(-13, Math.min(13, (x - center.left - center.width / 2) / 24))}px`);
+    optic.style.setProperty('--eye-y', `${Math.max(-8, Math.min(8, (y - center.top - center.height * .45) / 30))}px`);
   };
+  const aim = target => { const bounds = target.getBoundingClientRect(); aimPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2); };
+  let gazeFrame;
+  document.querySelector('.workspace').addEventListener('pointermove', event => {
+    if (!motionAllowed() || document.hidden || event.pointerType !== 'mouse' || document.querySelector('dialog[open]')) return;
+    cancelAnimationFrame(gazeFrame);
+    gazeFrame = requestAnimationFrame(() => aimPoint(event.clientX, event.clientY));
+  });
+  document.querySelector('.workspace').addEventListener('pointerleave', () => { cancelAnimationFrame(gazeFrame); clearGaze(); });
   reducedMotion.addEventListener('change', clearGaze);
   document.addEventListener('hub:motionchange', clearGaze);
   document.addEventListener('visibilitychange', clearGaze);
@@ -113,7 +120,6 @@
       });
     });
     app.addEventListener('pointerleave', () => {
-      clearGaze();
       cancelAnimationFrame(frame);
       app.style.removeProperty('--spot-x');
       app.style.removeProperty('--spot-y');

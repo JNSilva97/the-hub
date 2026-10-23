@@ -57,7 +57,7 @@ Opening Routines unfolds a circular workspace from the home core while its optic
 
 The outer core rings show checklist progress. The readout beneath the launcher identifies them from outside to inside. They use the same saved ticks and optional sections as Field Mode. `core-progress.js` waits for the return journey to finish before filling the home rings, and pulses only for a new completion. It adds no separate storage or account.
 
-The robotic eye uses inline SVG glass, housing and aperture layers in `index.html`. `styles/core.css` styles them, `styles/motion.css` defines focus/scanner movements, and `experience.js` aims the lens at the hovered or keyboard-focused module. No continuous JavaScript animation loop is used.
+The holographic eye is the `.eye-art` SVG in `index.html`. `core-transition.js` copies that same eye into the Routines header, preserving its pose and keeping SVG IDs unique. `styles/core.css` styles it, `styles/motion.css` defines its gentle drift and glow, and `experience.js` aims it toward the pointer or a keyboard-focused module. Pointer updates use a single scheduled frame, with no continuous JavaScript animation loop.
 
 Inside `core-progress.js`, `buildRings` creates the rings and their labels; `render` updates their saved counts. Their appearance lives in `styles/core.css`. The ready counter sits below the rings, and only the decorative frame is clipped, so its text labels stay readable.
 
