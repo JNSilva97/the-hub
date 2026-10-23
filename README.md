@@ -78,6 +78,7 @@ If a checklist download fails, open **Routines** and select **Try again**. A fai
 
 - `index.html` — accessible screen structure, icons and dialogs.
 - `interface.js` / `experience.js` — screen controls, clock, loading recovery, quick access, intro replay and Settings.
+- `pointer-effects.js` — eye tracking and button lighting, batched into one frame.
 - `routines.js` — checklist loading, rendering and browser storage. Component styles live in `styles/`.
 - `routine-model.mjs` — data validation, progress calculations and scoped reset.
 - `routines.demo.json` / ignored `private/routines.json` — public examples and local personal lists.
@@ -133,3 +134,5 @@ node --test tests/browser.cjs
 ```
 
 New checks cover editor IDs, reordering, removal confirmation, backup round-trips, rejected storage writes, account revision conflicts, changed progress at restore time, installation prompts and holographic eye motion. The suite serves intercepted public fixtures without starting a server or reading personal data. It uses real pointer clicks at 320, 390, 768, 1024 and 1440 pixels, keyboard access, the smoke check, quick-access search, replay, Settings, sound opt-in, completion feedback, saved ticks, optional counts, scoped reset, cross-tab edits, failed-load retries, blocked/corrupt storage, reduced motion and separate demo/personal storage. Preview screenshots are ignored by Git. This verifies browser layouts and sound generation; physical phones and speaker volume are not covered.
+
+Pointer effects read the active eye and hovered button positions before writing any styles. A burst of mouse events schedules one frame; transforms update the gaze directly instead of changing inherited variables across the SVG. The glow belongs to the static outline so the moving iris does not redraw a filtered image.

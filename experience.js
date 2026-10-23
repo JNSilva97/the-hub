@@ -80,59 +80,11 @@
     skyline.append(tower);
   });
 
-  // One render per pointer frame; no continuous JavaScript animation loop.
-  const optic = document.querySelector('.core-art');
-  const clearGaze = () => {
-    for (const eye of document.querySelectorAll('.eye-art')) {
-      const owner = eye.closest('.core-art') || eye;
-      owner.style.removeProperty('--eye-x'); owner.style.removeProperty('--eye-y');
-    }
-  };
-  const aimPoint = (x, y) => {
-    if (!motionAllowed() || document.hidden) return;
-    const traveling = document.querySelector('.core-flight .eye-art');
-    for (const eye of document.querySelectorAll('.eye-art')) {
-      const rect = (traveling || eye).getBoundingClientRect();
-      if (!rect.width || !traveling && getComputedStyle(eye).visibility === 'hidden') continue;
-      const owner = eye.closest('.core-art') || eye;
-      owner.style.setProperty('--eye-x', `${Math.max(-13, Math.min(13, (x - rect.left - rect.width / 2) / rect.width * 18))}px`);
-      owner.style.setProperty('--eye-y', `${Math.max(-8, Math.min(8, (y - rect.top - rect.height / 2) / rect.height * 12))}px`);
-    }
-  };
-  const aim = target => { const bounds = target.getBoundingClientRect(); aimPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2); };
-  let gazeFrame;
-  document.addEventListener('pointermove', event => {
-    if (!motionAllowed() || document.hidden || event.pointerType !== 'mouse') return;
-    cancelAnimationFrame(gazeFrame);
-    gazeFrame = requestAnimationFrame(() => aimPoint(event.clientX, event.clientY));
-  });
-  document.addEventListener('pointerout', event => { if (!event.relatedTarget) { cancelAnimationFrame(gazeFrame); clearGaze(); } });
-  reducedMotion.addEventListener('change', clearGaze);
-  document.addEventListener('hub:motionchange', clearGaze);
-  document.addEventListener('visibilitychange', clearGaze);
   for (const app of document.querySelectorAll('.app')) {
-    app.addEventListener('pointerenter', () => aim(app));
-    app.addEventListener('focus', () => aim(app));
-    app.addEventListener('blur', clearGaze);
     app.addEventListener('click', () => {
       const settings = app.dataset.icon === 'settings';
       document.getElementById('interface-settings').hidden = !settings;
       document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : app.dataset.icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Routines.';
-    });
-    let frame;
-    app.addEventListener('pointermove', event => {
-      if (!motionAllowed() || event.pointerType !== 'mouse') return;
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const rect = app.getBoundingClientRect();
-        app.style.setProperty('--spot-x', `${event.clientX - rect.left}px`);
-        app.style.setProperty('--spot-y', `${event.clientY - rect.top}px`);
-      });
-    });
-    app.addEventListener('pointerleave', () => {
-      cancelAnimationFrame(frame);
-      app.style.removeProperty('--spot-x');
-      app.style.removeProperty('--spot-y');
     });
   }
 
@@ -160,7 +112,7 @@
     document.getElementById('command-empty').hidden = results.children.length > 0;
   }
   function openPalette() {
-    if (document.getElementById('checklist-control').open) return;
+    if (!document.getElementById('checklist-control').hidden || document.getElementById('backup-dialog').open) return;
     if (palette.open) { palette.close(); return; }
     for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
     const launch = target => { target.focus(); target.click(); };

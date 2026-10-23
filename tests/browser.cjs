@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
-const publicFiles = ['index.html', 'styles/routine-tools.css', 'routine-tools.js', 'workspace-model.mjs', 'install.js', 'manifest.webmanifest', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png', 'assets/icons/hub-180.png', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
+const publicFiles = ['index.html', 'styles/routine-tools.css', 'routine-tools.js', 'workspace-model.mjs', 'install.js', 'manifest.webmanifest', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png', 'assets/icons/hub-180.png', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'pointer-effects.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ viewport: { width: options.width || 1024, height: 900 }, reducedMotion: options.motion || 'no-preference' });
@@ -139,6 +139,8 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(await page.locator('#routine-reader').isVisible(), false);
       assert.equal(await page.locator('#backup-launch').isDisabled(), true);
       await page.getByLabel('Checklist name', { exact: true }).fill('Unsaved draft');
+      await page.keyboard.press('Control+k');
+      assert.equal(await page.locator('#command-dialog').evaluate(el => el.open), false, 'Search must not discard an editor draft.');
       for (const exit of [() => page.keyboard.press('Escape'), () => page.getByRole('button', {name:'Close routines',exact:true}).click(), () => page.mouse.click(1,1)]) {
         await exit(); await page.waitForSelector('#control-confirm[open]');
         assert.equal(await page.locator('#routines-dialog').evaluate(el => el.open), true);
@@ -218,14 +220,14 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     try {
       await ready(page);
       await page.mouse.move(800, 400); await page.waitForTimeout(50);
-      const pointerX = await page.locator('.core-art').evaluate(el => el.style.getPropertyValue('--eye-x'));
+      const pointerX = await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform);
       assert.notEqual(pointerX, '');
       await page.mouse.move(200, 400); await page.waitForTimeout(50);
-      assert.notEqual(await page.locator('.core-art').evaluate(el => el.style.getPropertyValue('--eye-x')), pointerX);
+      assert.notEqual(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), pointerX);
       await page.locator('[data-icon="projects"]').focus();
-      assert.notEqual(await page.locator('.core-art').evaluate(el => el.style.getPropertyValue('--eye-x')), '');
+      assert.notEqual(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), '');
       await page.locator('.motion-toggle').click();
-      assert.equal(await page.locator('.core-art').evaluate(el => el.style.getPropertyValue('--eye-x')), '');
+      assert.equal(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), '');
       assert.equal(await page.locator('.core-art .eye-focus').evaluate(el => el.getAnimations().length), 0);
       await openRoutines(page);
       assert.equal(await page.locator('.routine-optic .eye-art').count(), 1);
@@ -259,9 +261,9 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.ok(centers.offsets.every(error => error < .5), 'Scanning ring must rotate about the eye center.');
       await openRoutines(page);
       await page.mouse.move(20, 300); await page.waitForTimeout(50);
-      const travelingGaze = await page.locator('.core-flight .eye-art').evaluate(el => el.style.getPropertyValue('--eye-x'));
+      const travelingGaze = await page.locator('.core-flight .eye-gaze').evaluate(el => el.style.transform);
       assert.notEqual(travelingGaze, '');
-      assert.equal(await page.locator('.routine-optic .eye-art').evaluate(el => el.style.getPropertyValue('--eye-x')), travelingGaze, 'Traveling and header eye must share one gaze during handoff.');
+      assert.equal(await page.locator('.routine-optic .eye-gaze').evaluate(el => el.style.transform), travelingGaze, 'Traveling and header eye must share one gaze during handoff.');
       await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
       await page.mouse.move(20, 300); await page.waitForTimeout(350);
       const left = await page.locator('.routine-optic .eye-gaze').evaluate(el => getComputedStyle(el).transform);
@@ -270,6 +272,36 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.notEqual(left, right, 'Header eye must keep tracking the mouse.');
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('pointer effects batch mouse events into one frame and read geometry only once per target', async () => {
+    const { context, page, errors } = await fixture(browser);
+    try {
+      await ready(page);
+      const work = await page.evaluate(async () => {
+        const request = window.requestAnimationFrame;
+        const rect = Element.prototype.getBoundingClientRect;
+        const style = window.getComputedStyle;
+        let frames = 0, reads = 0, styles = 0;
+        window.requestAnimationFrame = callback => { frames++; return request(callback); };
+        Element.prototype.getBoundingClientRect = function() { reads++; return rect.call(this); };
+        window.getComputedStyle = (...args) => { styles++; return style(...args); };
+        try {
+          const target = document.querySelector('.app');
+          for (let index = 0; index < 100; index++) target.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerType: 'mouse', clientX: 150 + index, clientY: 300 }));
+          await new Promise(request);
+          return { frames, reads, styles };
+        } finally {
+          window.requestAnimationFrame = request;
+          Element.prototype.getBoundingClientRect = rect;
+          window.getComputedStyle = style;
+        }
+      });
+      assert.equal(work.frames, 1, 'Mouse events must share one scheduled update.');
+      assert.ok(work.reads <= 2, 'Only the active eye and button need position reads.');
+      assert.equal(work.styles, 0, 'Pointer movement must not request computed styles.');
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });

@@ -45,7 +45,9 @@
   pointer-events: none;
 }
 
-.core-art > .core-energy { transform-origin: 300px 300px; }
+.core-art > .core-energy {
+  transform-origin: 300px 300px;
+}
 
 .routine-optic .core-energy {
   transform-origin: 300px 270px;
@@ -57,7 +59,9 @@
   margin: -12px auto 28px;
 }
 
-.core-signals[hidden] { display: none; }
+.core-signals[hidden] {
+  display: none;
+}
 
 .core-signals-heading {
   display: flex;
@@ -70,7 +74,9 @@
   letter-spacing: .16em;
 }
 
-.core-signals-heading span { color: #87a1b9; }
+.core-signals-heading span {
+  color: #87a1b9;
+}
 
 .core-signals ol {
   display: grid;
@@ -102,7 +108,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-.core-signals li[data-complete="true"] .core-signal-count { color: #b5efff; }
+.core-signals li[data-complete="true"] .core-signal-count {
+  color: #b5efff;
+}
 
 .core-reticle {
   position: absolute;
@@ -271,8 +279,8 @@
 }
 
 .eye-gaze {
-  transform: translate(var(--eye-x, 0px), var(--eye-y, 0px));
-  transition: transform 280ms cubic-bezier(.2, .7, .3, 1);
+  transform: translate(0, 0);
+  transition: transform 180ms cubic-bezier(.2, .7, .3, 1);
 }
 
 .eye-focus, .eye-pupil {
@@ -281,9 +289,18 @@
   animation: optic-focus 9s ease-in-out infinite;
 }
 
-.eye-pupil { animation-name: pupil-focus; }
-.eye-art { overflow: visible; filter: drop-shadow(0 0 7px #129dff80); }
-.eye-idle { animation: hologram-drift 18s ease-in-out infinite; }
+.eye-pupil {
+  animation-name: pupil-focus;
+}
+.eye-art {
+  overflow: visible;
+}
+.hologram-outline {
+  filter: drop-shadow(0 0 7px #129dff80);
+}
+.eye-idle {
+  animation: hologram-drift 18s ease-in-out infinite;
+}
 
 .core:has(.core-launch:hover) .eye-focus,
 .core:has(.core-launch:focus-visible) .eye-focus {
@@ -328,6 +345,7 @@ body[data-core-phase] .core-reticle {
 body[data-core-phase] .core * {
   animation-play-state: paused;
 }
+
 
 /* Responsive adjustment: (max-width: 1050px) and (min-width: 701px). */
 @media (max-width: 1050px) and (min-width: 701px) {

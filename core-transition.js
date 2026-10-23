@@ -5,7 +5,7 @@ function createCoreTransition(panel) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const duration = { open: 880, close: 520 };
   const easing = 'cubic-bezier(.4, 0, .2, 1)';
-  const returnEasing = 'cubic-bezier(.4, 0, .2, 1)';
+  const returnEasing = easing;
   panel.style.setProperty('--core-return-duration', `${duration.close}ms`);
   let animations = [];
   let overlay;
@@ -69,8 +69,7 @@ function createCoreTransition(panel) {
     const gaze = original.querySelector('.eye-gaze');
     if (gaze) {
       const pose = new DOMMatrix(getComputedStyle(gaze).transform);
-      svg.style.setProperty('--eye-x', `${pose.m41}px`);
-      svg.style.setProperty('--eye-y', `${pose.m42}px`);
+      svg.querySelector('.eye-gaze').style.transform = pose.toString();
     }
     return svg;
   }
@@ -140,8 +139,7 @@ function createCoreTransition(panel) {
         const gaze = core.querySelector('.eye-gaze');
         const pose = new DOMMatrix(getComputedStyle(dock.querySelector('.eye-gaze')).transform);
         gaze.style.transition = 'none';
-        core.style.setProperty('--eye-x', `${pose.m41}px`);
-        core.style.setProperty('--eye-y', `${pose.m42}px`);
+        gaze.style.transform = pose.toString();
         getComputedStyle(gaze).transform;
         gaze.style.removeProperty('transition');
       }
