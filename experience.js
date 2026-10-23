@@ -82,21 +82,31 @@
 
   // One render per pointer frame; no continuous JavaScript animation loop.
   const optic = document.querySelector('.core-art');
-  const clearGaze = () => { optic.style.removeProperty('--eye-x'); optic.style.removeProperty('--eye-y'); };
+  const clearGaze = () => {
+    for (const eye of document.querySelectorAll('.eye-art')) {
+      const owner = eye.closest('.core-art') || eye;
+      owner.style.removeProperty('--eye-x'); owner.style.removeProperty('--eye-y');
+    }
+  };
   const aimPoint = (x, y) => {
-    if (!motionAllowed() || document.hidden || document.querySelector('dialog[open]')) return;
-    const center = optic.getBoundingClientRect();
-    optic.style.setProperty('--eye-x', `${Math.max(-13, Math.min(13, (x - center.left - center.width / 2) / 24))}px`);
-    optic.style.setProperty('--eye-y', `${Math.max(-8, Math.min(8, (y - center.top - center.height * .45) / 30))}px`);
+    if (!motionAllowed() || document.hidden) return;
+    const traveling = document.querySelector('.core-flight .eye-art');
+    for (const eye of document.querySelectorAll('.eye-art')) {
+      const rect = (traveling || eye).getBoundingClientRect();
+      if (!rect.width || !traveling && getComputedStyle(eye).visibility === 'hidden') continue;
+      const owner = eye.closest('.core-art') || eye;
+      owner.style.setProperty('--eye-x', `${Math.max(-13, Math.min(13, (x - rect.left - rect.width / 2) / rect.width * 18))}px`);
+      owner.style.setProperty('--eye-y', `${Math.max(-8, Math.min(8, (y - rect.top - rect.height / 2) / rect.height * 12))}px`);
+    }
   };
   const aim = target => { const bounds = target.getBoundingClientRect(); aimPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2); };
   let gazeFrame;
-  document.querySelector('.workspace').addEventListener('pointermove', event => {
-    if (!motionAllowed() || document.hidden || event.pointerType !== 'mouse' || document.querySelector('dialog[open]')) return;
+  document.addEventListener('pointermove', event => {
+    if (!motionAllowed() || document.hidden || event.pointerType !== 'mouse') return;
     cancelAnimationFrame(gazeFrame);
     gazeFrame = requestAnimationFrame(() => aimPoint(event.clientX, event.clientY));
   });
-  document.querySelector('.workspace').addEventListener('pointerleave', () => { cancelAnimationFrame(gazeFrame); clearGaze(); });
+  document.addEventListener('pointerout', event => { if (!event.relatedTarget) { cancelAnimationFrame(gazeFrame); clearGaze(); } });
   reducedMotion.addEventListener('change', clearGaze);
   document.addEventListener('hub:motionchange', clearGaze);
   document.addEventListener('visibilitychange', clearGaze);

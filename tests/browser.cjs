@@ -236,6 +236,44 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
+  await t.test('eye and rings share one center; home, header and traveling eye follow the pointer', async () => {
+    const { context, page, errors } = await fixture(browser);
+    try {
+      await ready(page);
+      const centers = await page.evaluate(() => {
+        const core = document.querySelector('.core-art').getBoundingClientRect();
+        const eye = document.querySelector('.core-art .eye-art').getBoundingClientRect();
+        const scanner = document.querySelector('.core-art .scanner-sweep');
+        const scan = scanner.getAnimations()[0];
+        const halo = document.querySelector('.core-art .eye-art > circle');
+        const anchor = new DOMPoint(300, 270).matrixTransform(halo.getScreenCTM());
+        const offsets = [0, 8000, 16000].map(time => {
+          scan.pause(); scan.currentTime = time;
+          const point = new DOMPoint(300, 270).matrixTransform(scanner.getScreenCTM());
+          return Math.hypot(point.x - anchor.x, point.y - anchor.y);
+        });
+        scan.play();
+        return { x: Math.abs(eye.left + eye.width / 2 - core.left - core.width / 2), y: Math.abs(eye.top + eye.height / 2 - core.top - core.height / 2), offsets };
+      });
+      assert.ok(centers.x < .5 && centers.y < .5, 'Eye must sit at the center of the outer rings.');
+      assert.ok(centers.offsets.every(error => error < .5), 'Scanning ring must rotate about the eye center.');
+      await openRoutines(page);
+      await page.mouse.move(20, 300); await page.waitForTimeout(50);
+      const travelingGaze = await page.locator('.core-flight .eye-art').evaluate(el => el.style.getPropertyValue('--eye-x'));
+      assert.notEqual(travelingGaze, '');
+      assert.equal(await page.locator('.routine-optic .eye-art').evaluate(el => el.style.getPropertyValue('--eye-x')), travelingGaze, 'Traveling and header eye must share one gaze during handoff.');
+      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
+      await page.mouse.move(20, 300); await page.waitForTimeout(350);
+      const left = await page.locator('.routine-optic .eye-gaze').evaluate(el => getComputedStyle(el).transform);
+      await page.mouse.move(1000, 300); await page.waitForTimeout(350);
+      const right = await page.locator('.routine-optic .eye-gaze').evaluate(el => getComputedStyle(el).transform);
+      assert.notEqual(left, right, 'Header eye must keep tracking the mouse.');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
   await t.test('unconfigured private access explains setup and does not download or contact Firebase', async () => {
     const { context, page, requests, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
     try {
@@ -832,13 +870,18 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       }), true);
       const dockError = await page.evaluate(() => {
         for (const animation of document.getAnimations()) {
-          if (animation.effect.target.closest?.('#routines-dialog, .core-flight')) { animation.pause(); animation.currentTime = 879; }
+          if (animation.effect.target.closest?.('#routines-dialog, .core-flight')) { animation.pause(); animation.currentTime = 800; }
+        }
+        const brightness = Number(getComputedStyle(document.querySelector('.core-flight > svg')).opacity) + Number(getComputedStyle(document.querySelector('.routine-optic')).opacity);
+        for (const animation of document.getAnimations()) {
+          if (animation.effect.target.closest?.('#routines-dialog, .core-flight')) animation.currentTime = 879;
         }
         const arriving = document.querySelector('.core-flight .eye-art').getBoundingClientRect();
         const docked = document.querySelector('.routine-optic .eye-art').getBoundingClientRect();
-        return Math.abs(arriving.left - docked.left) + Math.abs(arriving.top - docked.top) + Math.abs(arriving.width - docked.width);
+        return { position: Math.abs(arriving.left - docked.left) + Math.abs(arriving.top - docked.top) + Math.abs(arriving.width - docked.width), brightness };
       });
-      assert.ok(dockError < 1, 'The shared eye must arrive at exactly the header size and position.');
+      assert.ok(dockError.position < 1, 'The shared eye must arrive at exactly the header size and position.');
+      assert.ok(Math.abs(dockError.brightness - 1) < .01, 'Eye brightness must stay continuous through the final handoff.');
       await page.evaluate(() => document.getAnimations().forEach(animation => animation.play()));
       await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
       assert.equal(await page.locator('.core-flight').count(), 0);

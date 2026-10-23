@@ -4,7 +4,7 @@ function createCoreTransition(panel) {
   const dock = panel.querySelector('.routine-optic');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const duration = { open: 880, close: 520 };
-  const easing = 'cubic-bezier(.65, 0, .2, 1)';
+  const easing = 'cubic-bezier(.4, 0, .2, 1)';
   const returnEasing = 'cubic-bezier(.4, 0, .2, 1)';
   panel.style.setProperty('--core-return-duration', `${duration.close}ms`);
   let animations = [];
@@ -60,12 +60,18 @@ function createCoreTransition(panel) {
         node.style.strokeDashoffset = getComputedStyle(originals[index]).strokeDashoffset;
         node.style.transition = 'none';
       }
-      if (originals[index].getAnimations().length || node.classList.contains('eye-gaze')) {
+      if (!node.classList.contains('eye-gaze') && originals[index].getAnimations().length) {
         node.style.transform = getComputedStyle(originals[index]).transform;
         node.style.animation = 'none';
         node.style.transition = 'none';
       }
     });
+    const gaze = original.querySelector('.eye-gaze');
+    if (gaze) {
+      const pose = new DOMMatrix(getComputedStyle(gaze).transform);
+      svg.style.setProperty('--eye-x', `${pose.m41}px`);
+      svg.style.setProperty('--eye-y', `${pose.m42}px`);
+    }
     return svg;
   }
 
@@ -94,7 +100,7 @@ function createCoreTransition(panel) {
     document.body.append(overlay);
     overlay.showPopover();
     const transform = `translate(${destination.left - source.left}px, ${destination.top - source.top}px) scale(${destination.width / source.width})`;
-    if (!opening) svg.style.filter = getComputedStyle(core).filter;
+    svg.style.filter = getComputedStyle(core).filter;
     animate(svg, opening ? [
       { transform: 'none' },
       { transform }
@@ -129,6 +135,16 @@ function createCoreTransition(panel) {
       const { source, folded } = geometry();
       panelSize = [panel.clientWidth, panel.clientHeight];
       if (opening) prepareDock();
+      else {
+        // Return with the gaze the user was seeing in the header.
+        const gaze = core.querySelector('.eye-gaze');
+        const pose = new DOMMatrix(getComputedStyle(dock.querySelector('.eye-gaze')).transform);
+        gaze.style.transition = 'none';
+        core.style.setProperty('--eye-x', `${pose.m41}px`);
+        core.style.setProperty('--eye-y', `${pose.m42}px`);
+        getComputedStyle(gaze).transform;
+        gaze.style.removeProperty('transition');
+      }
       opticFlight(source, opening);
       animate(panel, opening ? [
         { transform: folded, borderRadius: '50%', opacity: 0 },
@@ -145,7 +161,7 @@ function createCoreTransition(panel) {
         easing: opening ? easing : 'ease-out'
       }));
       animate(dock, opening ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], {
-        duration: 180, delay: opening ? 700 : 0
+        duration: opening ? duration.open * .2 : 180, delay: opening ? duration.open * .8 : 0, easing: 'linear'
       });
       Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
         if (generation === current) finish();

@@ -16,7 +16,7 @@
   width: 100%;
   height: 100%;
   overflow: visible;
-  filter: drop-shadow(#1077ff40 0px 0px 32px);
+
   animation: optics-online 1600ms 1300ms var(--ease-arrive) both;
 }
 
@@ -44,6 +44,8 @@
   transform-origin: 300px 270px;
   pointer-events: none;
 }
+
+.core-art > .core-energy { transform-origin: 300px 300px; }
 
 .routine-optic .core-energy {
   transform-origin: 300px 270px;
@@ -213,7 +215,7 @@
 
 .gyro {
   position: absolute;
-  inset: 13% 17% 22%;
+  inset: 17%;
   border: 1px solid #278cff90;
   border-radius: 50%;
   box-shadow: #0066ff24 0px 0px 16px, #0066ff12 0px 0px 16px inset;
@@ -264,6 +266,7 @@
 
 .scanner-sweep {
   transform-origin: 300px 270px;
+  transform-box: view-box;
   animation: optic-scan 32s linear infinite;
 }
 
@@ -273,7 +276,8 @@
 }
 
 .eye-focus, .eye-pupil {
-  transform-origin: 300px 270px;
+  transform-box: fill-box;
+  transform-origin: center;
   animation: optic-focus 9s ease-in-out infinite;
 }
 
@@ -287,16 +291,9 @@
 }
 
 .iris-fibres {
-  transform-origin: 300px 270px;
+  transform-box: fill-box;
+  transform-origin: center;
   animation: optic-calibrate 24s ease-in-out infinite;
-}
-
-.workspace:has(.app:hover) .core-art {
-  filter: drop-shadow(#006bff65 0px 0px 35px);
-}
-
-.workspace:has(.core-launch:hover) .core-art {
-  filter: drop-shadow(#006bff65 0px 0px 35px);
 }
 
 .core-flight {
