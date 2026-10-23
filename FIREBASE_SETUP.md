@@ -1,6 +1,6 @@
 # Checklist sync: activation
 
-The integration is configured for project **the-hub-16a6d**. Google sign-in and an explicit **Sync PC checklists** action are required before personal lists are uploaded. Notes remain browser-only. The setup steps below also document how to connect another project.
+The integration is configured for project **the-hub-16a6d**. Google sign-in and an explicit **Sync PC checklists** action are required before personal lists are uploaded. Existing local notes stay local until **Copy local notes** is confirmed. The setup steps below also document how to connect another project.
 
 To disable the Firebase connection, set `firebaseConfig` to `null` and bump the module query versions described below. This does not delete cloud data or copy later cloud edits back to the original PC file. Export current cloud lists and progress before removing the service; a cloud-to-file export button is not implemented.
 
@@ -57,3 +57,9 @@ The SDK is pinned to version `13.1.0` on Google's CDN. Configured accounts load 
 ## Checklist editing and restore
 
 Deploy the current `firestore.rules` before publishing the editor. Owners can update definitions only by advancing an integer revision by one; legacy definitions without a revision start at zero. Definitions and pruned progress are replaced in a transaction. Restores additionally check that progress has not changed since preview. Existing documents need no migration. Account ownership and progress boolean validation remain enforced; document deletion is denied. Browser regression tests use an isolated fake transport and never contact the configured project.
+
+## Account Notes activation (pending publication)
+
+Publish the full current `firestore.rules` in Firebase Console → Firestore Database → Rules. It preserves existing checklist permissions and adds only `users/<UID>/notes/<version UUID>`, readable by that owner. Active note payloads are limited to `version`, `id`, `parent`, `text` (50,000 characters), a safe integer `updatedAt` and `retired: false`. Versions cannot be changed in place; exact idempotent retries are allowed. Replacing a note creates an immutable successor and replaces its predecessor with `{version: 1, id, retired: true}` in one batch. Retirement removes all previous text and cannot be reversed; concurrent successors remain separate. Account deletion uses the same retirement marker. The listener queries only `retired == false`, so old markers are not downloaded as notes. Physical document deletion is denied. The local pending journal and official persistent SDK queue support offline delivery without transactions.
+
+Before considering activation complete, verify in Rules Playground: owner read/create/retire allowed; anonymous and another UID denied; oversized text/extra fields/bad UUIDs denied; changing an existing version or reactivating a retired ID denied; an identical retry allowed; physical deletion denied. These rules have not yet been published or exercised on the deployed service for Notes. Automated tests isolate Firebase and do not prove deployed rules. Once published, sign into the same account on two devices and confirm note creation/edit/deletion, offline reopening and concurrent-version preservation. Existing local notes are never uploaded by this verification unless explicitly copied.

@@ -13,6 +13,11 @@ function createInstantNotes(panel) {
   const unsaved = new Set();
   const editedHere = new Set();
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const importDialog = document.getElementById('notes-import-dialog');
+  let cloud;
+  let accountId = '';
+  let accountMode = false;
+  let copying;
   let selected;
   let loaded = false;
   let warning = '';
@@ -38,6 +43,8 @@ function createInstantNotes(panel) {
   function renderList() {
     const focused = document.activeElement.closest?.('#note-list button')?.dataset.note;
     const query = search.value.trim().toLocaleLowerCase();
+    const branches = new Map();
+    if (accountMode) for (const note of notes.values()) if (note.parent) branches.set(note.parent, (branches.get(note.parent) || 0) + 1);
     list.replaceChildren();
     for (const note of [...notes.values()].sort((a, b) => b.updatedAt - a.updatedAt)) {
       if (query && !note.text.toLocaleLowerCase().includes(query)) continue;
@@ -48,7 +55,7 @@ function createInstantNotes(panel) {
       const heading = document.createElement('strong');
       heading.textContent = title(note);
       const preview = document.createElement('span');
-      preview.textContent = note.text.trim().split(/\r?\n/).slice(1).join(' ').trim().slice(0, 100) || 'Open and keep writing';
+      preview.textContent = (branches.get(note.parent) > 1 ? 'Concurrent version · ' : '') + (note.text.trim().split(/\r?\n/).slice(1).join(' ').trim().slice(0, 100) || 'Open and keep writing');
       button.append(heading, preview);
       button.addEventListener('click', () => select(note.id));
       list.append(button);
@@ -68,7 +75,7 @@ function createInstantNotes(panel) {
     editor.value = notes.get(id).text;
     updateHeading();
     renderList();
-    tell(unsaved.has(id) ? 'Not saved. Keep this tab open and copy your text before leaving.' : revisions.has(id) ? 'Saved in this browser.' : 'Start typing. Your note saves automatically.', unsaved.has(id));
+    tell(accountMode ? cloud.status : unsaved.has(id) ? 'Not saved. Keep this tab open and copy your text before leaving.' : revisions.has(id) ? 'Saved in this browser.' : 'Start typing. Your note saves automatically.', unsaved.has(id));
     if (panel.open) {
       editor.focus({ preventScroll: true });
       editor.setSelectionRange(editor.value.length, editor.value.length);
@@ -84,6 +91,7 @@ function createInstantNotes(panel) {
   }
 
   function load() {
+    if (accountMode) { refreshCloud(); return; }
     loaded = true;
     try {
       for (let index = 0; index < localStorage.length; index++) {
@@ -108,9 +116,15 @@ function createInstantNotes(panel) {
     if (saved) { select(saved.id); tell('Saved notes loaded from this browser.'); }
     else newNote();
     document.getElementById('notes-source').textContent = personal ? 'PERSONAL / THIS PC' : 'DEMO / THIS BROWSER';
+    document.getElementById('notes-data-note').textContent = 'These local notes stay in this browser. Nothing is sent to your account.';
   }
 
   function store(note) {
+    if (accountMode) {
+      const staged = cloud.stage(note);
+      notes.delete(note.id); notes.set(staged.id, staged);
+      return staged;
+    }
     const originalId = note.id;
     try {
       const current = localStorage.getItem(prefix + note.id);
@@ -167,7 +181,7 @@ function createInstantNotes(panel) {
   document.getElementById('note-delete').addEventListener('click', () => {
     if (!selected || deleteDialog.open) return;
     pendingDelete = { note: { ...notes.get(selected) }, revision: revisions.get(selected) ?? null };
-    document.getElementById('note-delete-description').textContent = `Delete “${title(pendingDelete.note)}” from this browser? You can undo the last deletion until you reload this page or delete another note.`;
+    document.getElementById('note-delete-description').textContent = `Delete “${title(pendingDelete.note)}” ${accountMode ? 'from your account on all devices' : 'from this browser'}? You can undo the last deletion until you reload this page or delete another note. Concurrent edits are kept separately.`;
     deleteDialog.showModal();
   });
   deleteDialog.addEventListener('close', () => { if (!deleteDialog.open) pendingDelete = undefined; });
@@ -177,6 +191,12 @@ function createInstantNotes(panel) {
     pendingDelete = undefined;
     deleteDialog.close();
     try {
+      if (accountMode) {
+        if (JSON.stringify(cloud.notes.get(note.id)) !== JSON.stringify(note)) { tell('This note changed on another device. Review it before deleting.', true); return; }
+        cloud.stage({ ...note, updatedAt: Date.now() }, true);
+        lastDeleted = note; undoDelete.hidden = false;
+        forget(note.id); tell(cloud.status); return;
+      }
       if (localStorage.getItem(prefix + note.id) !== revision) {
         tell('This note changed in another tab. Review it before deleting.', true);
         return;
@@ -199,9 +219,10 @@ function createInstantNotes(panel) {
     undoDelete.hidden = true;
     search.value = '';
     select(restored.id);
-    if (!unsaved.has(restored.id)) tell('Note restored and saved in this browser.');
+    if (!unsaved.has(restored.id)) tell(accountMode ? cloud.status : 'Note restored and saved in this browser.');
   });
   window.addEventListener('storage', event => {
+    if (accountMode) return;
     if (!loaded || (event.key !== null && !event.key.startsWith(prefix))) return;
     if (event.key === null || event.newValue === null) {
       const ids = event.key === null ? [...notes.keys()] : [event.key.slice(prefix.length)];
@@ -247,7 +268,94 @@ function createInstantNotes(panel) {
     } catch { tell('A note from another tab could not be read. Your text is unchanged.', true); }
   });
 
+  function resetView() {
+    loaded = false; selected = undefined; warning = ''; pendingDelete = lastDeleted = copying = undefined;
+    notes.clear(); revisions.clear(); unsaved.clear(); editedHere.clear();
+    editor.value = ''; search.value = ''; list.replaceChildren();
+    document.getElementById('note-name').textContent = 'New note';
+    document.getElementById('note-count').textContent = '0 / 50,000';
+    document.getElementById('note-delete').disabled = true;
+    undoDelete.hidden = true; deleteDialog.close(); importDialog.close();
+    undoDelete.removeAttribute('aria-label');
+    document.getElementById('note-delete-description').textContent = '';
+    document.getElementById('notes-import-description').textContent = '';
+  }
+  function refreshCloud() {
+    if (!cloud) return;
+    const identity = cloud.user?.uid || '';
+    if (identity !== accountId) { accountId = identity; accountMode = Boolean(identity); resetView(); }
+    if (accountMode && cloud.error && !cloud.notes.size) {
+      const message = cloud.error;
+      resetView(); accountMode = false; warning = message;
+    }
+    document.getElementById('notes-account').textContent = !identity ? 'Private access' : accountMode ? 'Account notes' : 'Open account notes';
+    document.getElementById('notes-account').disabled = Boolean(identity && accountMode);
+    document.getElementById('notes-account').hidden = Boolean(identity && accountMode);
+    document.getElementById('notes-local').hidden = !identity || !accountMode;
+    document.getElementById('notes-import').hidden = !identity || !accountMode;
+    document.getElementById('notes-import').disabled = !cloud.ready;
+    document.getElementById('notes-retry').hidden = !accountMode || !cloud.error;
+    document.getElementById('note-new').disabled = accountMode && !cloud.ready;
+    editor.readOnly = accountMode && !cloud.ready;
+    if (!accountMode) { if (panel.open && !loaded) load(); return; }
+    const empty = notes.get(selected);
+    const incoming = cloud.notes;
+    notes.clear(); for (const [id, note] of incoming) notes.set(id, note);
+    if (empty && !empty.text && !incoming.has(empty.id)) notes.set(empty.id, empty);
+    if (!notes.has(selected)) selected = [...notes.values()].sort((a, b) => b.updatedAt - a.updatedAt)[0]?.id;
+    loaded = true;
+    document.getElementById('notes-source').textContent = 'PRIVATE / YOUR ACCOUNT';
+    document.getElementById('notes-data-note').textContent = 'Your account notes sync across devices. Concurrent versions are kept separately.';
+    if (selected) {
+      if (editor.value !== notes.get(selected).text) editor.value = notes.get(selected).text;
+      updateHeading(); renderList();
+    } else if (cloud.ready) newNote();
+    else { editor.value = ''; renderList(); }
+    tell(cloud.status, Boolean(cloud.error));
+    document.getElementById('note-delete').disabled = !cloud.ready || !selected || !notes.get(selected)?.text;
+  }
+  document.getElementById('notes-account').addEventListener('click', () => {
+    if (!cloud?.user) { document.getElementById('account-launch').click(); return; }
+    resetView(); accountMode = true;
+    if (cloud.error) cloud.retry();
+    refreshCloud();
+  });
+  document.getElementById('notes-local').addEventListener('click', () => { resetView(); accountMode = false; refreshCloud(); load(); });
+  document.getElementById('notes-retry').addEventListener('click', () => cloud?.retry());
+  document.getElementById('notes-import').addEventListener('click', () => {
+    if (!cloud?.user || !cloud.ready) return;
+    try {
+      const candidates = [];
+      for (let index = 0; index < localStorage.length; index++) {
+        const key = localStorage.key(index);
+        if (!key?.startsWith(prefix)) continue;
+        const note = parse(localStorage.getItem(key), key.slice(prefix.length));
+        if (!note.deleted && note.text.trim() && ![...cloud.notes.values()].some(saved => saved.text === note.text)) candidates.push(note);
+      }
+      copying = { uid: cloud.user.uid, notes: candidates };
+      document.getElementById('notes-import-description').textContent = `Copy ${candidates.length} saved local note(s) to ${cloud.user.email || 'your Google account'} in Firebase? Local originals stay here. Unedited sample notes are excluded. These copies will sync to devices signed into this account.`;
+      document.getElementById('notes-import-confirm').disabled = !candidates.length;
+      importDialog.showModal();
+    } catch { tell('Local notes could not be read. Nothing was copied or removed.', true); }
+  });
+  document.getElementById('notes-import-confirm').addEventListener('click', () => {
+    if (!copying || copying.uid !== cloud?.user?.uid || !cloud.ready) return;
+    try {
+      if (copying.notes.some(note => JSON.stringify(parse(localStorage.getItem(prefix + note.id), note.id)) !== JSON.stringify(note))) {
+        importDialog.close(); tell('Local notes changed. Open Copy local notes again to review them.', true); return;
+      }
+    } catch { importDialog.close(); tell('Local notes could not be read. Nothing was copied.', true); return; }
+    const copied = copying; copying = undefined; importDialog.close();
+    for (const note of copied.notes) cloud.stage({ ...note, id: crypto.randomUUID(), parent: '', updatedAt: Date.now() });
+    refreshCloud();
+  });
+  importDialog.addEventListener('close', () => { copying = undefined; });
+  import('./cloud-notes.js?v=notes-sync-1').then(module => { cloud = module.createCloudNotes(refreshCloud); refreshCloud(); }).catch(() => {
+    if (panel.open) tell('Account sync could not load. Local notes still work; reopen online to retry.', true);
+  });
+
   function close() {
+    if (accountMode) cloud?.flush();
     if (!panel.open) return;
     if (closing || reducedMotion.matches || document.hidden || document.body.classList.contains('motion-paused') || typeof panel.animate !== 'function') {
       closing?.cancel();

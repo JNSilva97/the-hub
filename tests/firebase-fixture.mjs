@@ -26,11 +26,46 @@ export async function signOut() {
 }
 export const collection = (database, ...path) => ({ path });
 export const doc = collection;
+export const query = reference => reference;
+export const where = () => ({});
+export async function getDoc(reference) {
+  const data = service.docs[reference.path[1]]?.notes?.[reference.path[3]];
+  return { exists: () => Boolean(data), data: () => structuredClone(data) };
+}
 export function onSnapshot(reference, options, next, failed) {
   const listener = { uid: reference.path[1], next, failed };
+  if (reference.path[2] === 'notes') {
+    service.noteListeners.add(listener);
+    queueMicrotask(() => { if (service.noteListeners.has(listener)) service.publish(); });
+    return () => service.noteListeners.delete(listener);
+  }
   service.listener = listener;
   queueMicrotask(() => { if (service.listener === listener) service.publish(); });
   return () => { if (service.listener === listener) service.listener = null; };
+}
+export function writeBatch() {
+  const writes = [];
+  return {
+    set(reference, data) { writes.push({ path: reference.path, data: structuredClone(data) }); },
+    delete(reference) { writes.push({ path: reference.path, deleted: true }); },
+    async commit() {
+      service.noteWrites.push(structuredClone(writes));
+      if (service.rejectNotes) throw new Error('Notes denied.');
+      const commit = () => {
+        for (const write of writes) {
+          const notes = ((service.docs[write.path[1]] ??= {}).notes ??= {});
+          if (write.deleted) delete notes[write.path[3]];
+          else {
+            if (notes[write.path[3]] && !write.data.retired && JSON.stringify(notes[write.path[3]]) !== JSON.stringify(write.data)) throw new Error('Immutable note.');
+            notes[write.path[3]] = write.data;
+          }
+        }
+        service.publish();
+      };
+      if (service.holdNotes) await new Promise(resolve => service.heldNotes.push(() => { commit(); resolve(); }));
+      else commit();
+    }
+  };
 }
 export async function setDoc(reference, patch) {
   service.writes.push({ path: reference.path, patch: structuredClone(patch) });

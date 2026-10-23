@@ -1,13 +1,13 @@
 // Bump this version whenever a public app file changes; install the complete release atomically.
 const prefix = `the-hub:${new URL(self.registration.scope).pathname}:`;
-const cacheName = `${prefix}offline-1`;
+const cacheName = `${prefix}notes-sync-1`;
 const files = [
   './', 'index.html', 'manifest.webmanifest',
   'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css',
   'styles/panels.css', 'styles/routines.css', 'styles/routine-tools.css', 'styles/notes.css', 'styles/motion.css',
   'core-progress.js', 'core-transition.js', 'notes.js', 'interface.js', 'interface-sound.js',
   'pointer-effects.js', 'experience.js', 'install.js', 'routines.js', 'routine-model.mjs',
-  'routine-tools.js', 'workspace-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json',
+  'routine-tools.js', 'workspace-model.mjs', 'cloud.js', 'cloud-notes.js', 'notes-model.mjs', 'firebase-config.mjs', 'routines.demo.json',
   'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2',
   'assets/icons/hub-180.png', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png',
   'https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js',

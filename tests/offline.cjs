@@ -36,7 +36,7 @@ test('offline startup and native queued ticks survive closing; private account d
     if (failInstall && filename === 'styles/core.css') { response.writeHead(503); response.end(); return; }
     response.setHeader('Content-Type', /\.m?js$/.test(filename) ? 'text/javascript' : filename.endsWith('.css') ? 'text/css' : /\.(json|webmanifest)$/.test(filename) ? 'application/json' : filename.endsWith('.png') ? 'image/png' : filename.endsWith('.woff2') ? 'font/woff2' : 'text/html');
     if (filename === 'firebase-config.mjs') response.end('export const firebaseConfig={projectId:"fixture-offline",apiKey:"fixture",appId:"fixture",authDomain:"fixture.invalid"};');
-    else if (filename === 'sw.js') response.end(readFileSync(path.join(root, filename), 'utf8').replace('`${prefix}offline-1`', '`${prefix}offline-' + release + '`'));
+    else if (filename === 'sw.js') response.end(readFileSync(path.join(root, filename), 'utf8').replace(/\$\{prefix\}[^`]+/, '${prefix}offline-' + release));
     else if (filename === 'index.html' && release > 1) response.end(readFileSync(path.join(root, filename), 'utf8').replace('<title>The Hub</title>', `<title>The Hub release ${release}</title>`));
     else response.end(readFileSync(path.join(root, filename)));
   });
@@ -71,6 +71,8 @@ test('offline startup and native queued ticks survive closing; private account d
     await sdk.disableNetwork(db);
     sdk.setDoc(sdk.doc(db, 'users', 'account-a', 'hub', 'routines'), definitions).catch(() => {});
     sdk.setDoc(sdk.doc(db, 'users', 'account-a', 'hub', 'progress'), { checks: {}, optional: {} }).catch(() => {});
+    const noteId = '10000000-0000-4000-8000-000000000001';
+    sdk.setDoc(sdk.doc(db, 'users', 'account-a', 'notes', noteId), {version:1,id:noteId,parent:'',text:'Cached account note',updatedAt:1,retired:false}).catch(() => {});
   }, definitions);
   await page.waitForFunction(() => document.getElementById('routine-name').textContent === 'Offline private fixture');
   await context.setOffline(true);
@@ -91,6 +93,21 @@ test('offline startup and native queued ticks survive closing; private account d
   await page.reload();
   await page.waitForFunction(() => document.getElementById('routine-name').textContent === 'Offline private fixture');
   assert.match(await page.locator('#routine-progress-label').textContent(), /2 of 3/);
+  await page.locator('[data-icon="notes"]').click();
+  await page.waitForFunction(() => document.getElementById('note-text').value === 'Cached account note' && !document.getElementById('note-text').readOnly);
+  await page.locator('#note-text').fill('Account note edited offline');
+  await page.waitForFunction(() => document.getElementById('notes-status').textContent.startsWith('Saved on device.'));
+  await page.close();
+  page = await context.newPage(); await page.goto(origin + '/the-hub/');
+  await page.locator('[data-icon="notes"]').click();
+  await page.waitForFunction(() => document.getElementById('note-text').value === 'Account note edited offline');
+  assert.equal(await page.locator('#note-list button').count(), 1);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(async () => {
+    const sdk = await import('https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js');
+    const previous = await sdk.getDocFromCache(sdk.doc(sdk.getFirestore(), 'users', 'account-a', 'notes', '10000000-0000-4000-8000-000000000001'));
+    return previous.data()?.retired === true && previous.data()?.text === undefined;
+  });
   const cache = await page.evaluate(async () => {
     const keys = await caches.keys(), entries = [];
     for (const key of keys) for (const request of await (await caches.open(key)).keys()) entries.push(request.url);
@@ -104,6 +121,7 @@ test('offline startup and native queued ticks survive closing; private account d
   assert.equal(await page.locator('#routine-name').textContent(), 'Your next move');
   assert.equal(await page.locator('#core-signal-list').textContent().then(text => text.includes('Offline private fixture')), false);
   assert.match(await page.locator('#routine-notice').textContent(), /Open your checklists online once/);
+  assert.equal(await page.locator('#note-text').inputValue(), '');
   assert.deepEqual(errors, []);
   assert.equal(blocked.some(url => url.includes('the-hub-16a6d')), false);
   assert.equal(requests.includes('/the-hub/private/routines.json'), true, 'Loopback may request but must never cache the private file.');

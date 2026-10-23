@@ -78,6 +78,25 @@
   color: #9db8cd;
 }
 
+.notes-account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.notes-account-actions button {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid #376485;
+  background: #07182a;
+  color: #c3e6fb;
+  font: 600 14px var(--font-interface);
+}
+
+.notes-account-actions button:hover:not(:disabled) { background: #103655; border-color: #80cfff; }
+.notes-account-actions button:disabled { opacity: .45; }
+
 .notes-layout {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
@@ -319,6 +338,8 @@
   .notes-source p {
     font-size: 11px;
   }
+
+  .notes-account-actions { margin-left: 0; }
 
   .notes-layout {
     grid-template-columns: minmax(0, 1fr);

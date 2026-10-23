@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="styles/panels.css?v=mobile-1">
   <link rel="stylesheet" href="styles/routines.css?v=mobile-1">
   <link rel="stylesheet" href="styles/routine-tools.css?v=mobile-1">
-  <link rel="stylesheet" href="styles/notes.css?v=control-2">
+  <link rel="stylesheet" href="styles/notes.css?v=notes-sync-1">
   <link rel="stylesheet" href="styles/motion.css?v=perf-2">
 </head>
 <body>
@@ -220,7 +220,7 @@
       <div><div class="panel-eyebrow">THE HUB / CAPTURE</div><h2 id="notes-title">NOTES</h2></div>
       <div class="notes-actions"><button id="note-new" type="button">+ New note</button><form method="dialog"><button class="routine-exit" type="submit" aria-label="Close notes">×</button></form></div>
     </div>
-    <div class="notes-source"><span id="notes-source"></span><p>Your notes stay in this browser. Nothing is published or synced.</p></div>
+    <div class="notes-source"><span id="notes-source"></span><p id="notes-data-note">Local notes stay in this browser.</p><div class="notes-account-actions"><button id="notes-account" type="button">Private access</button><button id="notes-local" type="button" hidden>Local notes</button><button id="notes-import" type="button" hidden>Copy local notes</button><button id="notes-retry" type="button" hidden>Try sync again</button></div></div>
     <div class="notes-layout">
       <aside class="notes-sidebar">
         <label for="notes-search">Find a note</label>
@@ -235,6 +235,10 @@
       </section>
     </div>
     <div class="notes-feedback"><p id="notes-status" class="notes-status" role="status">Ready when you are.</p><button id="note-undo-delete" type="button" hidden>Undo delete</button></div>
+  </dialog>
+  <dialog id="notes-import-dialog" class="restart-dialog" aria-labelledby="notes-import-title" aria-describedby="notes-import-description">
+    <div class="panel-eyebrow">NOTES / COPY TO ACCOUNT</div><h2 id="notes-import-title">Copy local notes?</h2><p id="notes-import-description"></p>
+    <form method="dialog" class="restart-actions"><button class="restart-keep" type="submit" autofocus>Keep local only</button><button id="notes-import-confirm" class="restart-confirm" type="button">Copy to my account</button></form>
   </dialog>
   <dialog id="note-delete-dialog" class="restart-dialog" role="alertdialog" aria-labelledby="note-delete-title" aria-describedby="note-delete-description">
     <div class="panel-eyebrow">NOTES / REMOVE NOTE</div>
@@ -312,7 +316,7 @@
       <button id="account-retry" type="button" hidden>Try again</button>
       <button id="account-logout" type="button" hidden>Sign out</button>
     </div>
-    <p class="account-note">Only checklists and ticks sync. Notes stay in this browser. This device keeps your login and an offline copy of your checklists. Use a personal device. Sign-out hides your account; offline copies remain in browser storage. Clearing site data removes those copies and unsynced ticks. Editing checklist definitions and restoring backups require a connection.</p>
+    <p class="account-note">Checklists and account notes sync privately. Existing local notes are copied only when you choose it. This device keeps your login and offline copies. Use a personal device. Sign-out hides account data; offline copies remain in browser storage. Clearing site data removes those copies and unsynced changes. Editing checklist definitions and restoring backups require a connection.</p>
   </dialog>
   <dialog id="restart-dialog" class="restart-dialog" role="alertdialog" aria-labelledby="restart-title" aria-describedby="restart-description">
     <div class="panel-eyebrow">ROUTINES / RESET CHECKLIST</div>
@@ -334,8 +338,8 @@
   </dialog>
   <script defer src="core-progress.js?v=control-2"></script>
   <script defer src="core-transition.js?v=mobile-1"></script>
-  <script defer src="notes.js?v=notes-2"></script>
-  <script defer src="interface.js?v=offline-1"></script>
+  <script defer src="notes.js?v=notes-sync-1"></script>
+  <script defer src="interface.js?v=notes-sync-1"></script>
   <script defer src="interface-sound.js?v=signal-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>
   <script defer src="experience.js?v=perf-2"></script>

@@ -36,6 +36,33 @@ service cloud.firestore {
         && request.resource.data.checks.values().hasOnly([true, false])
         && request.resource.data.optional.values().hasOnly([true, false]);
     }
-    // Unmatched paths and all document deletions are denied by default.
+    match /users/{uid}/notes/{noteId} {
+      function validNote() {
+        return noteId.matches('^[a-f0-9-]{36}$')
+          && request.resource.data.keys().hasOnly(['version', 'id', 'parent', 'text', 'updatedAt', 'retired'])
+          && request.resource.data.version == 1
+          && request.resource.data.id == noteId
+          && request.resource.data.retired == false
+          && request.resource.data.parent is string
+          && (request.resource.data.parent == '' || request.resource.data.parent.matches('^[a-f0-9-]{36}$'))
+          && request.resource.data.parent != noteId
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 50000
+          && request.resource.data.updatedAt is int
+          && request.resource.data.updatedAt >= 0
+          && request.resource.data.updatedAt <= 9007199254740991;
+      }
+      function retirement() {
+        return noteId.matches('^[a-f0-9-]{36}$')
+          && request.resource.data.keys().hasOnly(['version', 'id', 'retired'])
+          && request.resource.data.version == 1 && request.resource.data.id == noteId
+          && request.resource.data.retired == true;
+      }
+      allow read: if owner(uid);
+      allow create: if owner(uid) && (validNote() || retirement());
+      // Retired IDs never become active again; retirement removes all old text.
+      allow update: if owner(uid) && (request.resource.data == resource.data || retirement());
+    }
+    // Unmatched paths and checklist document deletions are denied by default.
   }
 }

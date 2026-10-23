@@ -29,6 +29,8 @@ let persistent = false;
 let fromCache = true;
 let queued = false;
 const edits = new Map();
+let notesPending = false;
+let notesUnsafe = false;
 
 function syncMessage() {
   if (failure) return failure;
@@ -47,7 +49,7 @@ function render() {
   loginButton.hidden = Boolean(user);
   loginButton.disabled = !auth || setupFailure;
   logoutButton.hidden = !user;
-  logoutButton.disabled = importing || workspaceSaving || pending > 0 || edits.size > 0 || queued;
+  logoutButton.disabled = importing || workspaceSaving || pending > 0 || edits.size > 0 || queued || notesPending;
   importButton.hidden = !user || !ready || routines !== null || !local || Boolean(failure);
   importButton.disabled = importing;
   retryButton.hidden = !firebaseConfig || (!failure && !edits.size);
@@ -58,11 +60,11 @@ function render() {
   if (!firebaseConfig) message = 'Private access is not configured yet. Your existing checklists still work.';
   else if (failure) message = failure;
   else if (!auth) message = 'Connecting to Firebase…';
-  else if (!user) message = 'Sign in to access your private checklists. Notes stay in this browser.';
+  else if (!user) message = 'Sign in to access your private checklists and account notes.';
   else if (failure || !ready || routines || importing) message = syncMessage();
   else message = local ? 'Your account has no checklists yet. Choose “Sync PC checklists” to upload your personal lists and current ticks.'
     : 'Your account has no checklists yet. Open the PC version, sign in and choose “Sync PC checklists”.';
-  status.textContent = message;
+  status.textContent = notesPending ? `${message} Notes are waiting to sync; sign-out unlocks when they finish.` : message;
   status.dataset.warning = String(Boolean(failure) || !navigator.onLine && edits.size > 0);
   const routineNotice = document.getElementById('routine-notice');
   if (document.getElementById('routines-dialog').dataset.source === 'account') {
@@ -160,6 +162,8 @@ async function connect() {
       queued = false;
       ready = false;
       failure = '';
+      notesPending = notesUnsafe = false;
+      document.dispatchEvent(new Event('hub:accountchange'));
       if (user) watchAccount();
       else notify();
     }, () => {
@@ -201,6 +205,7 @@ async function sendEdits(submitted) {
 }
 
 export const cloudWorkspace = {
+  get connection() { return { sdk, database }; },
   get user() { return user; },
   get ready() { return ready; },
   get error() { return failure; },
@@ -310,7 +315,7 @@ loginButton.addEventListener('click', () => {
   }).finally(render);
 });
 logoutButton.addEventListener('click', () => {
-  if (!auth || importing || workspaceSaving || pending || edits.size || queued) return;
+  if (!auth || importing || workspaceSaving || pending || edits.size || queued || notesPending) return;
   sdk.signOut(auth).catch(() => { failure = 'Sign-out did not finish. Try again.'; render(); });
 });
 importButton.addEventListener('click', () => cloudWorkspace.importPC());
@@ -329,7 +334,8 @@ window.addEventListener('online', () => {
 });
 window.addEventListener('offline', render);
 window.addEventListener('beforeunload', event => {
-  if (importing || workspaceSaving || [...edits.values()].some(edit => !edit.durable) || queued && !persistent) { event.preventDefault(); event.returnValue = ''; }
+  if (notesUnsafe || importing || workspaceSaving || [...edits.values()].some(edit => !edit.durable) || queued && !persistent) { event.preventDefault(); event.returnValue = ''; }
 });
+document.addEventListener('hub:notessync', event => { notesPending = event.detail.pending; notesUnsafe = event.detail.unsafe; render(); });
 render();
 connect();

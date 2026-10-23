@@ -8,13 +8,13 @@ Open the homepage and choose **Routines** beneath the optical core. Pick a check
 
 Routines starts in **Field Mode**: one item, a **Mark done** button and a preview of what comes next. **Undo last tick** reverses your last Field Mode tick. Open **Review checklist** to change any tick or include optional sections. Your saved progress is shared between both views.
 
-Choose **Notes** and start typing. Your first line becomes the title, and each edit saves automatically in this browser. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Public sample notes and the PC notebook are separate. Nothing you write is published or synced.
+Choose **Notes** and start typing. Your first line becomes the title and each edit saves automatically. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Signed-out/local notes stay in this browser; public sample notes and the PC notebook are separate. Signed-in **Account notes** sync privately through Firebase after the current notes rules are published. **Local notes** returns to the original notebook. Existing local text is copied only through **Copy local notes** and its account confirmation.
 
 **Delete note** asks for confirmation inside the app. **Keep note**, Escape or clicking outside cancels. After confirming, **Undo delete** recovers the last deleted note until you reload the page or successfully delete another note. Deleting one note leaves the others untouched.
 
 While signed out, the online version uses example checklists. Your real lists load from the PC version at `http://127.0.0.1:8765/` while the local server is running. Those local ticks stay in that browser; account sync is a separate workspace.
 
-**Private access** inside Routines is the entry point for checklist sync. Sign in on the PC and explicitly choose **Sync PC checklists**, then sign into the same account on your phone. See [Firebase setup and verification](FIREBASE_SETUP.md). Notes remain local. On each personal device, open online once, wait for **Settings → Offline app ready**, and open your account lists. You can then reopen and tick offline. **Saved on this device** means ticks are stored locally and will sync when connected; **Progress synced to your account** confirms delivery. Login stays saved until sign-out. Pending writes block sign-out; rejected saves or unavailable storage still require keeping the tab open.
+**Private access** inside Routines is the entry point for checklist sync. Sign in on the PC and explicitly choose **Sync PC checklists**, then sign into the same account on your phone. See [Firebase setup and verification](FIREBASE_SETUP.md). Local notes remain local unless explicitly copied. On each personal device, open online once, wait for **Settings → Offline app ready**, and open your account lists. You can then reopen and tick offline. **Saved on this device** means ticks are stored locally and will sync when connected; **Progress synced to your account** confirms delivery. Login stays saved until sign-out. Pending writes block sign-out; rejected saves or unavailable storage still require keeping the tab open.
 
 Choose **Edit checklist** beside the selected checklist title to edit directly in the checklist panel. Use the separate **Backup** button at the top for portable copies. Save applies edits; removals and backup replacement ask for confirmation. Existing ticks follow renamed or reordered items. If a save fails, keep the draft open and retry. Notes are separate. **Settings → Install** adds The Hub to your home screen when supported; sync still needs a connection.
 
@@ -37,7 +37,8 @@ Choose **Edit checklist** beside the selected checklist title to edit directly i
 | Electronic sound textures, durations and levels | `interface-sound.js` |
 | Checklist appearance | `styles/routines.css` |
 | Notes appearance and mobile writing layout | `styles/notes.css` |
-| Note saving, search, conflict copies and dialog controls | `notes.js` |
+| Local note saving, search and note dialog controls | `notes.js` / `styles/notes.css` |
+| Account-note offline drafts, synchronization and conflict copies | `cloud-notes.js` / `notes-model.mjs` |
 | Loading checklists, ticking items and saving | `routines.js` |
 | Checking data and calculating completion | `routine-model.mjs` |
 | Checklist editor, backup and restore | `routine-tools.js` / `styles/routine-tools.css` |
@@ -77,9 +78,11 @@ Never add the `private` folder to GitHub. It is intentionally ignored. Public te
 
 If browser storage is unavailable, the app says so and keeps ticks for the current visit. Reloading then loses those temporary ticks. Simultaneous changes in two tabs can conflict, so use one tab when actively ticking a list.
 
-Private account offline ticks use Firebase's IndexedDB cache, separate from the public app-file cache. Sign-out hides the account but does not securely erase its cached data. Clearing site data removes offline copies and unsynced changes; keep backups. Offline storage needs a personal device. Checklist definition edits and backup restoration require internet. Notes stay local even when the app opens offline.
+Private account offline ticks and submitted note batches use Firebase's IndexedDB cache, separate from the public app-file cache. Account notes also keep immediate pending drafts in UID-specific browser storage. Sign-out hides account text but does not securely erase cached data. Clearing site data removes offline copies and unsynced changes; keep backups. Offline storage needs a personal device. Checklist definition edits and backup restoration require internet. Local notes never sync automatically.
 
 Notes saves each note separately. If two tabs edit the same text, it preserves local edits as another note. If you see **Not saved**, keep the tab open and copy the draft before leaving. Unreadable stored notes are preserved rather than replaced. Clearing browser data removes saved notes; there is no server backup.
+
+Account notes store each submitted version under a new ID and retire its predecessor in one batch, removing its old text and keeping only an ID marker to prevent stale retries. Two devices editing the same version keep separate copies, identified as **Concurrent version**. New text saves immediately on-device, and a short typing pause sends the batch. Sync resumes when the app is open and connected. **Saved on device** permits closing; **Synced to your account** confirms delivery. Pending account-note saves block normal sign-out. Checklist Backup still contains only checklists, not notes.
 
 ## 5. Make a change safely
 
