@@ -1,5 +1,5 @@
 import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=control-1';
-import { cloudWorkspace } from './cloud.js?v=control-1';
+import { cloudWorkspace } from './cloud.js?v=offline-1';
 import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=control-1';
 import { createRoutineTools } from './routine-tools.js?v=mobile-1';
 
@@ -282,7 +282,7 @@ export async function initialiseRoutines() {
   if (cloudWorkspace.user && !cloudWorkspace.ready) {
     sourceBadge.textContent = 'ACCOUNT';
     document.getElementById('routine-data-note').textContent = 'Private checklists are waiting for your account connection.';
-    notice.textContent = cloudWorkspace.error || 'Loading your private checklists…';
+    notice.textContent = cloudWorkspace.status;
     dialog.dataset.source = 'account';
     dialog.dataset.ready = 'true';
     return;
@@ -325,7 +325,7 @@ export async function initialiseRoutines() {
   }
   sourceBadge.textContent = source === 'account' ? 'PRIVATE / YOUR ACCOUNT' : localOverride ? 'CUSTOM / THIS BROWSER' : source === 'private' ? 'PERSONAL / THIS PC' : 'DEMO / SAMPLE DATA';
   document.getElementById('routine-data-note').textContent = source === 'account' ? 'Your personal checklists. Available on devices signed into your account.' : localOverride ? 'Your edited checklists, saved in this browser. Export a backup to keep a copy.' : source === 'private' ? 'Your real checklists. Loaded only from this PC.' : 'Example checklists. Your personal lists are not on this website.';
-  notice.textContent = source === 'account' ? 'Progress synced to your account.' : localWarning || 'Ticks stay in this browser. Nothing is sent to an account.';
+  notice.textContent = source === 'account' ? cloudWorkspace.status : localWarning || 'Ticks stay in this browser. Nothing is sent to an account.';
   list.replaceChildren();
   for (const [index, routine] of routines.entries()) {
     const card = make('button', 'routine-card');

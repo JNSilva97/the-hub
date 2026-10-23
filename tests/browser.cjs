@@ -12,7 +12,7 @@ const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
 const publicFiles = ['index.html', 'styles/routine-tools.css', 'routine-tools.js', 'workspace-model.mjs', 'install.js', 'manifest.webmanifest', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png', 'assets/icons/hub-180.png', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'pointer-effects.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
-  const context = await browser.newContext({ viewport: { width: options.width || 1024, height: options.height || 900 }, hasTouch: Boolean(options.mobile), isMobile: Boolean(options.mobile), reducedMotion: options.motion || 'no-preference' });
+  const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: options.width || 1024, height: options.height || 900 }, hasTouch: Boolean(options.mobile), isMobile: Boolean(options.mobile), reducedMotion: options.motion || 'no-preference' });
   const requests = [];
   const errors = [];
   const failures = { data: false, module: false, dependency: false, sdk: Boolean(options.sdkFailure) };
@@ -24,7 +24,7 @@ async function fixture(browser, options = {}) {
       publish() {
         if (!this.listener) return;
         const records = Object.entries(this.docs[this.listener.uid] || {});
-        this.listener.next({ empty: !records.length, metadata: { fromCache: this.fromCache }, docs: records.map(([id, data]) => ({ id, data: () => structuredClone(data) })) });
+        this.listener.next({ empty: !records.length, metadata: { fromCache: this.fromCache, hasPendingWrites: Boolean(this.hasPendingWrites) }, docs: records.map(([id, data]) => ({ id, data: () => structuredClone(data) })) });
       }
     };
   }, { documents: options.cloudDocuments || {}, signedIn: options.signedIn !== false, fromCache: Boolean(options.fromCache) });
@@ -438,6 +438,54 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.locator('#account-retry').click();
       await page.waitForFunction(() => !document.getElementById('account-logout').disabled);
       assert.deepEqual(await page.evaluate(() => window.__hubFirebase.docs['account-a'].progress.checks), { [keys[1]]: true, [keys[0]]: true });
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('offline account reads stay honest, restored pending writes block sign-out and reconnect acknowledges sync', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce', firebase: true, fromCache: true, cloudDocuments: {
+      'account-a': { routines: JSON.parse(demo), progress: { checks: {}, optional: {} } }
+    } });
+    try {
+      await ready(page); await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
+      assert.match(await page.locator('#routine-notice').textContent(), /Offline copy/);
+      await context.setOffline(true);
+      await page.evaluate(() => {
+        const service = window.__hubFirebase;
+        service.hasPendingWrites = true;
+        service.docs['account-a'].progress.checks['personal-care/care/item-1'] = true;
+        service.publish();
+      });
+      assert.match(await page.locator('#routine-progress-label').textContent(), /1 of 3/);
+      assert.match(await page.locator('#routine-notice').textContent(), /Saved on this device/);
+      assert.equal(await page.locator('#account-logout').isDisabled(), true);
+      assert.equal(await page.evaluate(() => !dispatchEvent(new Event('beforeunload', { cancelable: true }))), false);
+      await context.setOffline(false);
+      assert.match(await page.locator('#routine-notice').textContent(), /Waiting to sync/);
+      await page.evaluate(() => { const service = window.__hubFirebase; service.hasPendingWrites = false; service.fromCache = false; service.publish(); });
+      assert.match(await page.locator('#routine-notice').textContent(), /Progress synced/);
+      assert.equal(await page.locator('#account-logout').isDisabled(), false);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('unavailable persistent storage never claims offline safety and protects unsaved ticks on exit', async () => {
+    const { context, page, errors } = await fixture(browser, { motion: 'reduce', firebase: true, cloudDocuments: {
+      'account-a': { routines: JSON.parse(demo), progress: { checks: {}, optional: {} } }
+    } });
+    try {
+      await ready(page); await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
+      await page.evaluate(() => { const service = window.__hubFirebase; service.persistenceFailure = true; service.holdWrites = true; service.publish(); });
+      assert.match(await page.locator('#routine-notice').textContent(), /Offline storage unavailable/);
+      await openRoutines(page); await page.locator('#field-complete').click();
+      await page.evaluate(() => {
+        const service = window.__hubFirebase; service.hasPendingWrites = true;
+        service.docs['account-a'].progress.checks['personal-care/care/item-1'] = true; service.publish();
+      });
+      assert.doesNotMatch(await page.locator('#routine-notice').textContent(), /Saved on this device/);
+      assert.equal(await page.evaluate(() => !dispatchEvent(new Event('beforeunload', { cancelable: true }))), true);
+      await page.evaluate(() => { const service = window.__hubFirebase; service.hasPendingWrites = false; service.held.splice(0).forEach(finish => finish()); });
+      await page.waitForFunction(() => !document.getElementById('account-logout').disabled);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });

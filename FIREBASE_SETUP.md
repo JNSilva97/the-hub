@@ -16,7 +16,7 @@ Register a **Web** app and copy its Firebase configuration. These web configurat
 
 In Authentication, enable the **Google** sign-in provider and select the required support email. In authorized domains, add `jnsilva97.github.io`, `127.0.0.1` and `localhost` for the live and PC versions. Use hostnames without paths or ports.
 
-The app uses the official Firebase SDK with browser-session login persistence. It does not save or handle raw tokens itself. The private-access panel displays the signed-in email so you can verify the account before importing lists.
+The app uses the official Firebase SDK with persistent local login (IndexedDB, with browser local storage fallback). It does not save or handle raw tokens itself. Login survives closing so a personal device can reopen offline. The private-access panel displays the signed-in email so you can verify the account before importing lists. Sign-out removes the active account from the interface, but offline database copies remain in browser storage until site data is cleared. Use a trusted personal device.
 
 ## 3. Create and protect Firestore
 
@@ -40,7 +40,9 @@ Open the live site on the phone and sign into the same Google account. Confirm t
 
 Different ticks merge individually rather than replacing the entire progress document. For the same tick changed on two devices, the last write accepted by Firestore wins. This is not a history or backup system.
 
-The app uses an in-memory Firestore cache. While the tab remains open, the SDK can queue writes during a connection loss. Pending or failed edits block normal sign-out and prompt before leaving. **Wait for “Progress synced to your account” before closing or reloading**: a forced close, crash or mobile tab eviction can lose unacknowledged edits. Persistent offline storage and offline page startup are not implemented in this version.
+The app uses `persistentLocalCache` with `persistentMultipleTabManager`. Snapshot metadata distinguishes cached reads and unacknowledged writes from server-confirmed progress. `getPersistentCacheIndexManager` checks that the SDK actually enabled persistence before the UI promises offline safety. **Saved on this device** means the local snapshot contains the edit in the persistent cache; it can be closed and automatically synced later. Pending writes restored from another visit also block sign-out. A rejected write stays in the open tab with a retry warning and exit protection. If persistence is unavailable, keep the tab open until server acknowledgment.
+
+`sw.js` atomically caches only public app assets and the three pinned Firebase SDK modules (their shared app dependency is included). It never caches Firestore/Auth API responses or `/private/`. After the first complete online preparation and account download, the app can start offline at its GitHub Pages scope. A new account with no local cache needs a connection; it never falls back to another account's data. Browser cleanup/eviction can remove queued data. Checklist definition transactions and backup restores require internet; for concurrent writes to the same tick, the last accepted write wins.
 
 ## Code and tests
 
@@ -50,7 +52,7 @@ The app uses an in-memory Firestore cache. While the tab remains open, the SDK c
 - `routines.js`: reuses the existing checklist UI for the account workspace, with local and demo fallback after sign-out.
 - `tests/browser.cjs` and `tests/firebase-fixture.mjs`: isolated transport fixtures for loading, merging, failures, import and sign-out. `tests/routine-model.test.mjs` verifies minimal progress patches and reset behavior.
 
-The SDK is pinned to version `13.1.0` on Google's CDN and loads only when configured. No Analytics library or new desktop packages were installed. See [official web setup](https://firebase.google.com/docs/web/alt-setup), [Google sign-in](https://firebase.google.com/docs/auth/web/google-signin), [Firestore rules](https://firebase.google.com/docs/firestore/security/get-started) and [offline behavior](https://firebase.google.com/docs/firestore/manage-data/enable-offline).
+The SDK is pinned to version `13.1.0` on Google's CDN. Configured accounts load it; offline preparation also caches its public code. No Analytics library or new desktop packages were installed. See [official web setup](https://firebase.google.com/docs/web/alt-setup), [Google sign-in](https://firebase.google.com/docs/auth/web/google-signin), [Firestore rules](https://firebase.google.com/docs/firestore/security/get-started) and [offline behavior](https://firebase.google.com/docs/firestore/manage-data/enable-offline).
 
 ## Checklist editing and restore
 

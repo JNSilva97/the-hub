@@ -52,7 +52,9 @@ On `127.0.0.1`, `localhost` or `[::1]`, the app first checks for `private/routin
 
 Keep the local server bound to loopback. Do not force-add the `private/` directory or copy personal data into public assets. Personal and demo ticks have separate browser-storage keys. Without a configured and signed-in Firebase account, ticks stay in that browser. Clearing browser data clears those local ticks; the original checklist file stays on disk.
 
-**Private access** in Routines opens the account panel. Sign in with Google and explicitly choose **Sync PC checklists** on the loopback version to import personal definitions and progress into an empty account. The same account can then access them from the public site. Demo data and notes are not uploaded. Different ticks merge individually; a failed or pending write stays in the open tab, with a warning and retry. Wait for the synced notice before closing or reloading. This version does not persist pending cloud writes across a forced close or reload.
+**Private access** in Routines opens the account panel. Sign in with Google and explicitly choose **Sync PC checklists** on the loopback version to import personal definitions and progress into an empty account. The same account can then access them from the public site. Demo data and notes are not uploaded. Different ticks merge individually. Login and the last loaded account checklists persist on this personal device; sign-out clears private names and ticks from the interface. Offline database copies remain in browser storage after sign-out, so do not enable this on shared devices.
+
+Open the app online once on each device and wait for **Settings → Offline app ready**, then open your account checklists. Without internet, you can reopen the app, tick or untick items, use optional sections and reset a checklist. **Saved on this device** confirms queued ticks reached persistent storage and may survive closing/reloading; synchronization resumes when connected. **Progress synced to your account** means server confirmation. Different offline ticks merge with other devices; for the same tick, the last write accepted by Firestore wins. If persistent storage is unavailable or a save is rejected, the app warns and protects leaving; keep the tab open and retry. Normal sign-out remains blocked while any writes are pending, including writes restored from a previous visit. Account definition edits and backup restoration still require a connection.
 
 ## Checklist control and backups
 
@@ -68,7 +70,7 @@ Signed-in changes use a Firestore transaction and revision check. Editing preser
 
 Open **Settings → Install**. Supported browsers offer their native installation prompt. Otherwise the app shows instructions: on iPhone/iPad use Safari **Share → Add to Home Screen**; on Android use the browser menu's **Install app / Add to Home screen**. Desktop installation is also available when the browser supports it. The manifest and cube icons use relative URLs for GitHub Pages and loopback hosting.
 
-Installation provides an icon and a standalone window. It does not add offline caching. Account sync requires a connection, and pending cloud writes still require the tab to stay open until synced. An installed app may use a separate browser session, so sign in there if needed.
+Installation provides an icon and a standalone window. Offline startup also works in a normal supported browser tab after its first successful online preparation. An installed app may have separate storage, so open it online and sign in there once too. Google sign-in and initial account downloads require internet. Browser cleanup, private browsing and storage eviction can remove offline data, including unsynced ticks; offline storage is not a backup. The ignored PC file is never put into the service-worker cache; offline private use comes from the signed-in account's database cache.
 
 ## Recovery and saved progress
 
@@ -91,7 +93,7 @@ If a checklist download fails, open **Routines** and select **Try again**. A fai
 
 `core-progress.js` listens for `hub:progress` events from `routines.js`. It does not fetch or store data. It holds the departure ring values while Routines is open, then applies the latest counts after the native dialog closes, so the return artwork meets the home core before the rings fill. An undone completion is removed from the pending home pulse.
 
-`routine-tools.js` owns checklist drafts, backup downloads, restore previews and replacement confirmations. `workspace-model.mjs` validates portable workspaces and prunes progress for removed IDs. Their layout lives in `styles/routine-tools.css`. `install.js` owns installation prompts and instructions; `manifest.webmanifest` and `assets/icons/` contain the app identity.
+`routine-tools.js` owns checklist drafts, backup downloads, restore previews and replacement confirmations. `workspace-model.mjs` validates portable workspaces and prunes progress for removed IDs. Their layout lives in `styles/routine-tools.css`. `install.js` owns installation prompts, service-worker registration and readiness feedback; `manifest.webmanifest` and `assets/icons/` contain the app identity. `sw.js` caches only an explicit list of public app files and the pinned SDK code, never private files or account/API responses. A complete release installs atomically; a failed download leaves the previous release working. Updates wait for existing tabs to close instead of reloading unsaved work.
 
 `cloud.js` owns account state and synchronization. `firebase-config.mjs` is public connection configuration, while `firestore.rules` must be deployed on the service to enforce isolation. The checklist data model calculates the smallest progress patch, and the existing UI renders account, local and demo workspaces. Account changes clear the previous workspace's cards and core readout before loading the next one.
 
@@ -115,6 +117,8 @@ In the repository settings, open **Pages**, choose **Deploy from a branch**, the
 
 Changes pushed to `main` update the live site after GitHub finishes deployment.
 
+Whenever a public app file changes, bump the cache version in `sw.js` as well as relevant script/style import versions. The worker downloads a complete matching release; close all The Hub tabs and reopen to activate a waiting update.
+
 The published site is public. Keep personal records, credentials and private data out of tracked repository files.
 
 ## Check the interface
@@ -133,8 +137,11 @@ For the browser regression suite, make the installed `playwright` package availa
 
 ```sh
 node --test tests/browser.cjs
+node --test tests/offline.cjs
 ```
 
 New checks cover editor IDs, reordering, removal confirmation, backup round-trips, rejected storage writes, account revision conflicts, changed progress at restore time, installation prompts and holographic eye motion. The suite serves intercepted public fixtures without starting a server or reading personal data. It uses real pointer clicks at 320, 390, 768, 1024 and 1440 pixels, keyboard access, the smoke check, quick-access search, replay, Settings, sound opt-in, completion feedback, saved ticks, optional counts, scoped reset, cross-tab edits, failed-load retries, blocked/corrupt storage, reduced motion and separate demo/personal storage. Preview screenshots are ignored by Git. This verifies browser layouts and sound generation; physical phones and speaker volume are not covered.
+
+`tests/offline.cjs` serves public files on a temporary loopback server with a fake identity/project. It downloads the pinned official SDK code, uses real Firestore IndexedDB and the service worker, closes/reopens offline, checks account isolation, and exercises failed/successful atomic app updates. Firebase backend requests are blocked; deployed rules and real cross-device delivery are not exercised. Controller fixtures separately test reconnection acknowledgment and persistent-storage failure warnings.
 
 Pointer effects read the active eye and hovered button positions before writing any styles. A burst of mouse events schedules one frame; transforms update the gaze directly instead of changing inherited variables across the SVG. The glow belongs to the static outline so the moving iris does not redraw a filtered image.

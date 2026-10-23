@@ -210,6 +210,7 @@
       <div class="setting-row"><div><strong>Interface sound</strong><small>Metallic scanner sweeps and digital signals.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
+      <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
     </div>
     <form method="dialog"><button class="close" type="submit">Back to the Hub</button></form>
@@ -311,7 +312,7 @@
       <button id="account-retry" type="button" hidden>Try again</button>
       <button id="account-logout" type="button" hidden>Sign out</button>
     </div>
-    <p class="account-note">Only checklists and ticks sync. Your notes stay in this browser. Sign out on shared devices.</p>
+    <p class="account-note">Only checklists and ticks sync. Notes stay in this browser. This device keeps your login and an offline copy of your checklists. Use a personal device. Sign-out hides your account; offline copies remain in browser storage. Clearing site data removes those copies and unsynced ticks. Editing checklist definitions and restoring backups require a connection.</p>
   </dialog>
   <dialog id="restart-dialog" class="restart-dialog" role="alertdialog" aria-labelledby="restart-title" aria-describedby="restart-description">
     <div class="panel-eyebrow">ROUTINES / RESET CHECKLIST</div>
@@ -334,10 +335,10 @@
   <script defer src="core-progress.js?v=control-2"></script>
   <script defer src="core-transition.js?v=mobile-1"></script>
   <script defer src="notes.js?v=notes-2"></script>
-  <script defer src="interface.js?v=mobile-1"></script>
+  <script defer src="interface.js?v=offline-1"></script>
   <script defer src="interface-sound.js?v=signal-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>
   <script defer src="experience.js?v=perf-2"></script>
-  <script defer src="install.js?v=control-2"></script>
+  <script defer src="install.js?v=offline-1"></script>
 </body>
 </html>

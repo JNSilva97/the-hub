@@ -2,10 +2,15 @@
 const service = window.__hubFirebase;
 export const initializeApp = config => config;
 export const browserSessionPersistence = {};
+export const browserLocalPersistence = {};
+export const indexedDBLocalPersistence = {};
 export const browserPopupRedirectResolver = {};
 export const initializeAuth = () => ({});
 export const initializeFirestore = () => ({});
 export const memoryLocalCache = () => ({});
+export const persistentLocalCache = () => ({});
+export const persistentMultipleTabManager = () => ({});
+export const getPersistentCacheIndexManager = () => service.persistenceFailure ? null : {};
 export class GoogleAuthProvider { setCustomParameters() {} }
 export function onAuthStateChanged(auth, next) {
   service.authListener = next;

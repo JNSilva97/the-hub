@@ -14,7 +14,7 @@ Choose **Notes** and start typing. Your first line becomes the title, and each e
 
 While signed out, the online version uses example checklists. Your real lists load from the PC version at `http://127.0.0.1:8765/` while the local server is running. Those local ticks stay in that browser; account sync is a separate workspace.
 
-**Private access** inside Routines is the entry point for checklist sync. Sign in on the PC and explicitly choose **Sync PC checklists**, then sign into the same account on your phone. See [Firebase setup and verification](FIREBASE_SETUP.md). Notes remain local. A pending or failed cloud save must finish before you close the tab; normal sign-out is blocked until then.
+**Private access** inside Routines is the entry point for checklist sync. Sign in on the PC and explicitly choose **Sync PC checklists**, then sign into the same account on your phone. See [Firebase setup and verification](FIREBASE_SETUP.md). Notes remain local. On each personal device, open online once, wait for **Settings → Offline app ready**, and open your account lists. You can then reopen and tick offline. **Saved on this device** means ticks are stored locally and will sync when connected; **Progress synced to your account** confirms delivery. Login stays saved until sign-out. Pending writes block sign-out; rejected saves or unavailable storage still require keeping the tab open.
 
 Choose **Edit checklist** beside the selected checklist title to edit directly in the checklist panel. Use the separate **Backup** button at the top for portable copies. Save applies edits; removals and backup replacement ask for confirmation. Existing ticks follow renamed or reordered items. If a save fails, keep the draft open and retry. Notes are separate. **Settings → Install** adds The Hub to your home screen when supported; sync still needs a connection.
 
@@ -43,6 +43,7 @@ Choose **Edit checklist** beside the selected checklist title to edit directly i
 | Checklist editor, backup and restore | `routine-tools.js` / `styles/routine-tools.css` |
 | Portable workspace validation and progress pruning | `workspace-model.mjs` |
 | Home-screen installation and app identity | `install.js` / `manifest.webmanifest` / `assets/icons/` |
+| Offline public app files and release updates | `sw.js` |
 | Google login, account state and checklist synchronization | `cloud.js` |
 | Public Firebase web configuration and server access rules | `firebase-config.mjs` / `firestore.rules` |
 | Online example checklists | `routines.demo.json` |
@@ -76,6 +77,8 @@ Never add the `private` folder to GitHub. It is intentionally ignored. Public te
 
 If browser storage is unavailable, the app says so and keeps ticks for the current visit. Reloading then loses those temporary ticks. Simultaneous changes in two tabs can conflict, so use one tab when actively ticking a list.
 
+Private account offline ticks use Firebase's IndexedDB cache, separate from the public app-file cache. Sign-out hides the account but does not securely erase its cached data. Clearing site data removes offline copies and unsynced changes; keep backups. Offline storage needs a personal device. Checklist definition edits and backup restoration require internet. Notes stay local even when the app opens offline.
+
 Notes saves each note separately. If two tabs edit the same text, it preserves local edits as another note. If you see **Not saved**, keep the tab open and copy the draft before leaving. Unreadable stored notes are preserved rather than replaced. Clearing browser data removes saved notes; there is no server backup.
 
 ## 5. Make a change safely
@@ -83,7 +86,7 @@ Notes saves each note separately. If two tabs edit the same text, it preserves l
 1. Edit the file that owns the change.
 2. Preview it locally and try it with the mouse and keyboard.
 3. Run the checks described in `README.md`.
-4. Update asset version strings in `index.html` when publishing changed scripts or styles.
+4. Update affected asset version strings and bump the release cache version in `sw.js` whenever public app files change.
 5. Commit and push the public files; GitHub Pages publishes them.
 
 Projects, Goals, Health, Finance, Calendar and Relationships are still marked as coming later. Routines, Notes and Settings work now.

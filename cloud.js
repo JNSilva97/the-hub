@@ -25,13 +25,29 @@ let pending = 0;
 let importing = false;
 let workspaceSaving = false;
 let revision = 0;
+let persistent = false;
+let fromCache = true;
+let queued = false;
 const edits = new Map();
+
+function syncMessage() {
+  if (failure) return failure;
+  if (importing) return 'Uploading your PC checklists… Keep this tab open.';
+  if (workspaceSaving) return 'Saving your checklists… Keep this tab open.';
+  if (!ready) return navigator.onLine ? 'Loading your account…' : 'Offline. Open your checklists online once on this device before using them offline.';
+  if (pending || edits.size || queued) {
+    if (persistent && [...edits.values()].every(edit => edit.durable)) return 'Saved on this device. Waiting to sync automatically when connected.';
+    return 'Saving your ticks… Keep this tab open until saved on this device.';
+  }
+  if (!navigator.onLine || fromCache) return persistent ? 'Offline copy on this device. Sync will resume automatically when connected.' : 'Offline storage unavailable. Keep this tab open; this copy lasts for this visit only.';
+  return persistent ? 'Progress synced to your account. Offline access enabled on this device.' : 'Progress synced to your account. Offline storage unavailable; keep this tab open while saves are pending.';
+}
 
 function render() {
   loginButton.hidden = Boolean(user);
   loginButton.disabled = !auth || setupFailure;
   logoutButton.hidden = !user;
-  logoutButton.disabled = importing || workspaceSaving || pending > 0 || edits.size > 0;
+  logoutButton.disabled = importing || workspaceSaving || pending > 0 || edits.size > 0 || queued;
   importButton.hidden = !user || !ready || routines !== null || !local || Boolean(failure);
   importButton.disabled = importing;
   retryButton.hidden = !firebaseConfig || (!failure && !edits.size);
@@ -41,22 +57,16 @@ function render() {
   let message;
   if (!firebaseConfig) message = 'Private access is not configured yet. Your existing checklists still work.';
   else if (failure) message = failure;
-  else if (importing) message = 'Uploading your PC checklists… Keep this tab open.';
-  else if (workspaceSaving) message = 'Saving your checklists… Keep this tab open.';
   else if (!auth) message = 'Connecting to Firebase…';
   else if (!user) message = 'Sign in to access your private checklists. Notes stay in this browser.';
-  else if (!ready) message = 'Loading your account…';
-  else if (edits.size && !navigator.onLine) message = 'Waiting for a connection. Keep this tab open to sync your ticks.';
-  else if (pending) message = 'Saving your ticks… Keep this tab open until saved.';
-  else if (edits.size) message = 'Your ticks have not synced. Keep this tab open and choose Try again.';
-  else if (routines) message = 'Checklists synced. Notes stay in this browser.';
+  else if (failure || !ready || routines || importing) message = syncMessage();
   else message = local ? 'Your account has no checklists yet. Choose “Sync PC checklists” to upload your personal lists and current ticks.'
     : 'Your account has no checklists yet. Open the PC version, sign in and choose “Sync PC checklists”.';
   status.textContent = message;
   status.dataset.warning = String(Boolean(failure) || !navigator.onLine && edits.size > 0);
   const routineNotice = document.getElementById('routine-notice');
   if (document.getElementById('routines-dialog').dataset.source === 'account') {
-    routineNotice.textContent = failure || (workspaceSaving || pending || edits.size ? 'Changes not yet synced. Keep this tab open.' : 'Progress synced to your account.');
+    routineNotice.textContent = syncMessage();
   }
 }
 
@@ -93,6 +103,10 @@ function watchAccount() {
       if (!Number.isSafeInteger(incomingRevision) || incomingRevision < 0) throw new Error('Invalid revision.');
       if (incomingRoutines && !saved) throw new Error('Missing progress.');
       const incomingProgress = saved ? parseProgress(JSON.stringify(saved)) : parseProgress(null);
+      persistent = Boolean(sdk.getPersistentCacheIndexManager(database));
+      fromCache = snapshot.metadata.fromCache;
+      queued = Boolean(snapshot.metadata.hasPendingWrites);
+      for (const edit of edits.values()) edit.durable = persistent && incomingProgress[edit.field][edit.key] === edit.value;
       const changed = !ready || failure || JSON.stringify(routines) !== JSON.stringify(incomingRoutines);
       routines = incomingRoutines;
       revision = incomingRevision;
@@ -127,9 +141,9 @@ async function connect() {
     ]);
     sdk = { ...authentication, ...firestore };
     const instance = app.initializeApp(firebaseConfig);
-    // The SDK manages credentials. This visit's login is not retained after the tab closes.
-    auth = sdk.initializeAuth(instance, { persistence: sdk.browserSessionPersistence, popupRedirectResolver: sdk.browserPopupRedirectResolver });
-    database = sdk.initializeFirestore(instance, { localCache: sdk.memoryLocalCache() });
+    // The SDK keeps login and queued ticks on this trusted device; no tokens enter app storage.
+    auth = sdk.initializeAuth(instance, { persistence: [sdk.indexedDBLocalPersistence, sdk.browserLocalPersistence], popupRedirectResolver: sdk.browserPopupRedirectResolver });
+    database = sdk.initializeFirestore(instance, { localCache: sdk.persistentLocalCache({ tabManager: sdk.persistentMultipleTabManager() }) });
     sdk.onAuthStateChanged(auth, incoming => {
       watching?.();
       watching = undefined;
@@ -142,6 +156,8 @@ async function connect() {
       importing = false;
       workspaceSaving = false;
       revision = 0;
+      fromCache = true;
+      queued = false;
       ready = false;
       failure = '';
       if (user) watchAccount();
@@ -177,7 +193,8 @@ async function sendEdits(submitted) {
     }
   } catch {
     if (current !== generation) return;
-    failure = 'Your ticks have not synced. They are kept in this tab. Try again before leaving.';
+    for (const edit of submitted) if (edits.get(`${edit.field}/${edit.key}`)?.sequence === edit.sequence) edit.durable = false;
+    failure = 'Your ticks have not synced. The save was rejected; keep this tab open and try again.';
   } finally {
     if (current === generation) { pending--; render(); }
   }
@@ -191,7 +208,8 @@ export const cloudWorkspace = {
   get routines() { return routines; },
   get progress() { return parseProgress(JSON.stringify(progress)); },
   get revision() { return revision; },
-  get canEdit() { return Boolean(user && ready && !failure && !pending && !edits.size && !importing && !workspaceSaving); },
+  get status() { return syncMessage(); },
+  get canEdit() { return Boolean(user && ready && !failure && !pending && !edits.size && !queued && !importing && !workspaceSaving); },
   async replace(nextRoutines, baseline, restoredProgress) {
     if (!this.canEdit || !navigator.onLine) throw new Error('Wait for your ticks to sync and check your connection before saving.');
     const cleaned = cleanRoutines(nextRoutines);
@@ -232,7 +250,7 @@ export const cloudWorkspace = {
     const patch = getProgressPatch(progress, next);
     const submitted = [];
     for (const [field, values] of Object.entries(patch)) for (const [key, value] of Object.entries(values)) {
-      const edit = { field, key, value, sequence: ++sequence };
+      const edit = { field, key, value, sequence: ++sequence, durable: false };
       edits.set(`${field}/${key}`, edit);
       submitted.push(edit);
     }
@@ -292,7 +310,7 @@ loginButton.addEventListener('click', () => {
   }).finally(render);
 });
 logoutButton.addEventListener('click', () => {
-  if (!auth || importing || workspaceSaving || pending || edits.size) return;
+  if (!auth || importing || workspaceSaving || pending || edits.size || queued) return;
   sdk.signOut(auth).catch(() => { failure = 'Sign-out did not finish. Try again.'; render(); });
 });
 importButton.addEventListener('click', () => cloudWorkspace.importPC());
@@ -304,10 +322,14 @@ retryButton.addEventListener('click', () => {
   else if (user) watchAccount();
   else { failure = ''; render(); }
 });
-window.addEventListener('online', render);
+window.addEventListener('online', () => {
+  if (ready && !pending && edits.size) sendEdits([...edits.values()]);
+  else if (user && !ready) watchAccount();
+  else render();
+});
 window.addEventListener('offline', render);
 window.addEventListener('beforeunload', event => {
-  if (pending || edits.size || importing || workspaceSaving) { event.preventDefault(); event.returnValue = ''; }
+  if (importing || workspaceSaving || [...edits.values()].some(edit => !edit.durable) || queued && !persistent) { event.preventDefault(); event.returnValue = ''; }
 });
 render();
 connect();
