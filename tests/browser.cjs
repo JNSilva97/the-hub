@@ -890,7 +890,8 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
   });
 
   await t.test('core journey opens and returns with focus, clean artwork and no duplicate IDs', async () => {
-    const { context, page, errors } = await fixture(browser, { width: 390 });
+    for (const width of [390, 1440]) {
+    const { context, page, errors } = await fixture(browser, { width });
     try {
       await ready(page);
       await openRoutines(page);
@@ -908,11 +909,19 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         for (const animation of document.getAnimations()) {
           if (animation.effect.target.closest?.('#routines-dialog, .core-flight')) animation.currentTime = 879;
         }
-        const arriving = document.querySelector('.core-flight .eye-art').getBoundingClientRect();
-        const docked = document.querySelector('.routine-optic .eye-art').getBoundingClientRect();
-        return { position: Math.abs(arriving.left - docked.left) + Math.abs(arriving.top - docked.top) + Math.abs(arriving.width - docked.width), brightness };
+        const arriving = document.querySelector('.core-flight .eye-ring').getBoundingClientRect();
+        const docked = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect();
+        const flightRing = document.querySelector('.core-flight .eye-ring');
+        const dockRing = document.querySelector('.routine-optic .eye-ring');
+        const flightBounds = flightRing.getBoundingClientRect();
+        const dockBounds = dockRing.getBoundingClientRect();
+        const ringPosition = Math.abs(flightBounds.left - dockBounds.left) + Math.abs(flightBounds.top - dockBounds.top) + Math.abs(flightBounds.width - dockBounds.width);
+        return { position: Math.abs(arriving.left - docked.left) + Math.abs(arriving.top - docked.top) + Math.abs(arriving.width - docked.width), brightness, ringPosition, ringOpacity: Number(getComputedStyle(dockRing).strokeOpacity), ringStroke: Number.parseFloat(getComputedStyle(dockRing).strokeWidth) * dockRing.getScreenCTM().a };
+
       });
       assert.ok(dockError.position < 1, 'The shared eye must arrive at exactly the header size and position.');
+      assert.ok(dockError.ringPosition < 1 && dockError.ringOpacity > .5, 'The eye ring must remain visible and aligned through the header handoff.');
+      assert.ok(dockError.ringStroke > .4, 'The ring must keep a readable stroke when docked.');
       assert.ok(Math.abs(dockError.brightness - 1) < .01, 'Eye brightness must stay continuous through the final handoff.');
       await page.evaluate(() => document.getAnimations().forEach(animation => animation.play()));
       await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
@@ -926,6 +935,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(await page.locator('#routines-launch').evaluate(el => el === document.activeElement), true);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
+    }
   });
 
   await t.test('return handoff blends behind the title before landing while the backdrop clears', async () => {

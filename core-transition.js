@@ -84,9 +84,13 @@ function createCoreTransition(panel) {
     // A manual popover places decorative artwork above the modal without taking focus.
     if (!('showPopover' in HTMLElement.prototype)) return;
     const target = dock.getBoundingClientRect();
-    const eye = core.querySelector('.eye-art').getBoundingClientRect();
-    const scale = target.width / eye.width;
-    const destination = { left: target.left - (eye.left - source.left) * scale, top: target.top - (eye.top - source.top) * scale, width: source.width * scale };
+    const eye = core.querySelector('.eye-art');
+    const view = eye.viewBox.baseVal;
+    const matrix = eye.getScreenCTM();
+    // A nested SVG reports artwork bounds; docking needs its full viewBox viewport.
+    const origin = new DOMPoint(view.x, view.y).matrixTransform(matrix);
+    const scale = target.width / (view.width * Math.hypot(matrix.a, matrix.b));
+    const destination = { left: target.left - (origin.x - source.left) * scale, top: target.top - (origin.y - source.top) * scale, width: source.width * scale };
     const svg = copyArtwork(core, 'flight');
     svg.removeAttribute('class');
     Object.assign(svg.style, { left: `${source.left}px`, top: `${source.top}px`, width: `${source.width}px`, height: `${source.height}px` });
