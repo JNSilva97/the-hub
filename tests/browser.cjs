@@ -833,8 +833,9 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('return handoff keeps the optic visible while the backdrop clears', async () => {
-    const { context, page } = await fixture(browser);
+  await t.test('return handoff blends behind the title before landing while the backdrop clears', async () => {
+    for (const width of [390, 1440]) {
+    const { context, page } = await fixture(browser, { width });
     try {
       await ready(page);
       await openRoutines(page);
@@ -843,27 +844,44 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       const lateFrame = await page.evaluate(() => {
         const panel = document.getElementById('routines-dialog');
         const artwork = document.querySelector('.core-flight > svg');
-        for (const animation of document.getAnimations()) {
-          if (animation.effect.target.closest?.('#routines-dialog, .core-flight')) {
-            animation.pause();
-            animation.currentTime = 500;
+        let blendError, blendOpacity;
+        for (const sample of [430, 500]) {
+          for (const animation of document.getAnimations()) {
+            if (animation.effect.target.closest?.('#routines-dialog, .core-flight') || animation.effect.target.matches?.('.core-art, .gyro, .core-reticle') && animation.effect.getTiming().duration === 520) {
+              animation.pause();
+              animation.currentTime = sample;
+            }
+          }
+          if (sample === 430) {
+            const front = artwork.getBoundingClientRect();
+            const home = document.querySelector('.core-art').getBoundingClientRect();
+            blendError = Math.abs(front.left - home.left) + Math.abs(front.top - home.top) + Math.abs(front.width - home.width);
+            blendOpacity = Number(getComputedStyle(artwork).opacity) + Number(getComputedStyle(document.querySelector('.core-art')).opacity);
           }
         }
         const returning = artwork.getBoundingClientRect();
         const home = document.querySelector('.core-art').getBoundingClientRect();
         return {
+          blendError, blendOpacity,
           optic: Number(getComputedStyle(artwork).opacity),
+          homeOptic: Number(getComputedStyle(document.querySelector('.core-art')).opacity),
+          homeVisibility: getComputedStyle(document.querySelector('.core-art')).visibility,
           backdrop: Number(getComputedStyle(panel, '::backdrop').opacity),
           positionError: Math.abs(returning.left - home.left) + Math.abs(returning.top - home.top) + Math.abs(returning.width - home.width)
         };
       });
-      assert.equal(lateFrame.optic, 1, 'Returning optic must not fade out before the home core is revealed.');
+      assert.ok(lateFrame.blendError < 1, 'Both layers must stay aligned during blending, without a double image.');
+      assert.ok(Math.abs(lateFrame.blendOpacity - 1) < .01, 'The handoff must keep the optic lit throughout.');
+      assert.equal(lateFrame.optic, 0, 'Front layer must disappear before the end of the return.');
+      assert.equal(lateFrame.homeOptic, 1, 'Home layer must already be visible behind the title.');
+      assert.equal(lateFrame.homeVisibility, 'visible');
       assert.ok(lateFrame.backdrop < .02, 'Backdrop must clear gradually before the native dialog closes.');
-      assert.ok(lateFrame.positionError < 1, 'Returning artwork must meet the home core without a position jump.');
+      assert.ok(lateFrame.positionError < 2, 'Returning artwork must meet the home core without a position jump.');
       await page.evaluate(() => document.getAnimations().forEach(animation => animation.play()));
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       assert.equal(await page.locator('.core-art').evaluate(el => getComputedStyle(el).visibility), 'visible');
     } finally { await context.close(); }
+    }
   });
 
   await t.test('styled restart prompt cancels safely with Escape and backdrop, then confirms by keyboard', async () => {

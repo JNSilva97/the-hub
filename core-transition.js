@@ -5,7 +5,7 @@ function createCoreTransition(panel) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const duration = { open: 880, close: 520 };
   const easing = 'cubic-bezier(.65, 0, .2, 1)';
-  const returnEasing = 'cubic-bezier(.22, 1, .36, 1)';
+  const returnEasing = 'cubic-bezier(.4, 0, .2, 1)';
   panel.style.setProperty('--core-return-duration', `${duration.close}ms`);
   let animations = [];
   let overlay;
@@ -86,10 +86,18 @@ function createCoreTransition(panel) {
       { transform, opacity: 1, offset: .78 },
       { transform, opacity: 0 }
     ] : [
-      { transform, opacity: 0 },
-      { opacity: 1, offset: .2 },
-      { transform: 'none', opacity: 1 }
+      { transform },
+      { transform: 'none' }
     ], { duration: opening ? duration.open : duration.close, easing: opening ? easing : returnEasing });
+    if (!opening) {
+      // Blend into the home layer before landing, so the title never gets a final layer jump.
+      animate(svg, [{ opacity: 0 }, { opacity: 1, offset: .2 }, { opacity: 1, offset: .72 }, { opacity: 0, offset: .94 }, { opacity: 0 }], { duration: duration.close, easing: 'linear' });
+      animate(core, [{ transform, transformOrigin: '0 0' }, { transform: 'none', transformOrigin: '0 0' }], { duration: duration.close, easing: returnEasing });
+      for (const element of [core, ...document.querySelectorAll('.gyro, .core-reticle')]) {
+        const opacity = getComputedStyle(element).opacity;
+        animate(element, [{ visibility: 'visible', opacity: 0 }, { visibility: 'visible', opacity: 0, offset: .72 }, { visibility: 'visible', opacity, offset: .94 }, { visibility: 'visible', opacity }], { duration: duration.close, easing: 'linear' });
+      }
+    }
   }
 
   function play(opening) {
