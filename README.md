@@ -56,6 +56,8 @@ Keep the local server bound to loopback. Do not force-add the `private/` directo
 
 Open the app online once on each device and wait for **Settings → Offline app ready**, then open your account checklists. Without internet, you can reopen the app, tick or untick items, use optional sections and reset a checklist. **Saved on this device** confirms queued ticks reached persistent storage and may survive closing/reloading; synchronization resumes when connected. **Progress synced to your account** means server confirmation. Different offline ticks merge with other devices; for the same tick, the last write accepted by Firestore wins. If persistent storage is unavailable or a save is rejected, the app warns and protects leaving; keep the tab open and retry. Normal sign-out remains blocked while any writes are pending, including writes restored from a previous visit. Account definition edits and backup restoration still require a connection.
 
+Automatic sync runs while The Hub is open and connected. If you close it offline, the queued ticks stay on the device and resume syncing next time you open it online; there is no closed-app background synchronization.
+
 ## Checklist control and backups
 
 On phones, use the compact **Choose checklist** picker beside **Edit checklist**; desktop keeps the sidebar. Both control the same saved checklists and ticks.
