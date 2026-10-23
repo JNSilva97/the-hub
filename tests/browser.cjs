@@ -12,7 +12,7 @@ const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
 const publicFiles = ['index.html', 'styles/routine-tools.css', 'routine-tools.js', 'workspace-model.mjs', 'install.js', 'manifest.webmanifest', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png', 'assets/icons/hub-180.png', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'pointer-effects.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 
 async function fixture(browser, options = {}) {
-  const context = await browser.newContext({ viewport: { width: options.width || 1024, height: 900 }, reducedMotion: options.motion || 'no-preference' });
+  const context = await browser.newContext({ viewport: { width: options.width || 1024, height: options.height || 900 }, hasTouch: Boolean(options.mobile), isMobile: Boolean(options.mobile), reducedMotion: options.motion || 'no-preference' });
   const requests = [];
   const errors = [];
   const failures = { data: false, module: false, dependency: false, sdk: Boolean(options.sdkFailure) };
@@ -64,6 +64,11 @@ async function ready(page, url = origin) {
 async function openRoutines(page) {
   await page.locator('#routines-launch').click({ timeout: 5000 });
   assert.equal(await page.locator('#routines-dialog').evaluate(element => element.open), true);
+}
+
+async function chooseRoutine(page, id) {
+  if (await page.locator('#routine-picker').isVisible()) await page.locator('#routine-picker').selectOption(id);
+  else await page.locator(`[data-routine="${id}"]`).click();
 }
 
 async function reviewChecklist(page) {
@@ -131,7 +136,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
   await t.test('editing stays inside the selected checklist and guards Escape, exit and backdrop; backup stays separate', async () => {
     const { context, page, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
     try {
-      await ready(page); await openRoutines(page); await page.locator('.routine-card').nth(2).click();
+      await ready(page); await openRoutines(page); await page.locator('#routine-picker').selectOption({ index: 2 });
       const name = await page.locator('#routine-name').textContent();
       await page.locator('#control-launch').click();
       assert.equal(await page.getByLabel('Checklist name', { exact: true }).inputValue(), name);
@@ -302,6 +307,53 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(work.frames, 1, 'Mouse events must share one scheduled update.');
       assert.ok(work.reads <= 2, 'Only the active eye and button need position reads.');
       assert.equal(work.styles, 0, 'Pointer movement must not request computed styles.');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('mobile Routines aligns its toolbar and replaces clipped cards with a working checklist picker', async () => {
+    for (const [width, height] of [[320, 640], [390, 740], [430, 860]]) {
+      const { context, page, errors } = await fixture(browser, { width, height, mobile: true, motion: 'reduce' });
+      try {
+        await ready(page); await openRoutines(page);
+        assert.equal(await page.locator('#routine-list').isVisible(), false);
+        assert.equal(await page.locator('#routine-picker').isVisible(), true);
+        const layout = await page.evaluate(() => {
+          const panel = document.getElementById('routines-dialog');
+          const bounds = id => document.getElementById(id).getBoundingClientRect();
+          const backup = bounds('backup-launch'), account = bounds('account-launch'), edit = bounds('control-launch'), picker = bounds('routine-picker');
+          return { width: panel.getBoundingClientRect().width, overflow: panel.scrollWidth > panel.clientWidth, toolbar: Math.abs(backup.y - account.y) + Math.abs(backup.width - account.width), left: Math.abs(backup.left - picker.left), right: Math.abs(account.right - edit.right), touch: [backup, account, edit, picker].every(rect => rect.height >= 44) };
+        });
+        assert.equal(layout.overflow, false);
+        assert.ok(width - layout.width <= 26, 'Mobile dialog must use the available width without the browser default inset.');
+        assert.ok(layout.toolbar < 1 && layout.left < 1 && layout.right < 1, 'Mobile controls must share equal columns and gutters.');
+        assert.equal(layout.touch, true);
+        await page.locator('#routine-picker').selectOption({ index: 2 });
+        assert.equal(await page.locator('#routine-name').textContent(), JSON.parse(demo).routines[2].name);
+        await page.locator('#field-complete').click();
+        await page.locator('#routine-picker').selectOption({ index: 0 });
+        await page.locator('#routine-picker').selectOption({ index: 2 });
+        assert.equal(await page.locator('.check-row input').first().isChecked(), true, 'Switching lists must preserve ticks.');
+        await page.locator('#control-launch').click();
+        assert.equal(await page.locator('#routine-picker').isDisabled(), true);
+        await page.locator('#control-close').click();
+        assert.equal(await page.locator('#routine-picker').isDisabled(), false);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    }
+  });
+
+  await t.test('Routines stops hidden background motion and avoids full-screen backdrop blur', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 390 });
+    try {
+      await ready(page); await openRoutines(page);
+      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
+      assert.equal(await page.locator('.orbit-slow').evaluate(el => getComputedStyle(el).animationPlayState), 'paused');
+      assert.equal(await page.locator('.connections').evaluate(el => getComputedStyle(el.querySelector('path')).animationPlayState), 'paused');
+      assert.equal(await page.locator('#routines-dialog').evaluate(el => getComputedStyle(el, '::backdrop').backdropFilter), 'none');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      assert.equal(await page.locator('.orbit-slow').evaluate(el => getComputedStyle(el).animationPlayState), 'running');
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });
@@ -860,16 +912,16 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await ready(page);
       await openRoutines(page);
       await reviewChecklist(page);
-      await page.locator('[data-routine="workday"]').click();
+      await chooseRoutine(page, 'workday');
       await page.locator('[data-check="workday/work/item-1"]').check();
       await page.locator('[data-group="workday/after-work"]').check();
       assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 6 ready');
-      await page.locator('[data-routine="training"]').click();
+      await chooseRoutine(page, 'training');
       await page.locator('.check-row input').first().check();
       await ready(page);
       await openRoutines(page);
       await reviewChecklist(page);
-      await page.locator('[data-routine="workday"]').click();
+      await chooseRoutine(page, 'workday');
       assert.equal(await page.locator('[data-check="workday/work/item-1"]').isChecked(), true);
       assert.equal(await page.locator('[data-group="workday/after-work"]').isChecked(), true);
       await page.locator('#routine-restart').click();
@@ -881,7 +933,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.getByRole('button', { name: 'Clear ticks', exact: true }).click();
       assert.equal(await page.locator('[data-check="workday/work/item-1"]').isChecked(), false);
       assert.equal(await page.locator('[data-group="workday/after-work"]').isChecked(), true);
-      await page.locator('[data-routine="training"]').click();
+      await chooseRoutine(page, 'training');
       assert.equal(await page.locator('.check-row input').first().isChecked(), true);
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
@@ -1209,11 +1261,11 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         assert.equal(await page.locator('.routine-detail').getAttribute('data-complete'), 'true');
         await page.locator('[data-group="personal-care/extras"]').check();
         assert.equal(await page.locator('#field-title').textContent(), 'Put away toiletries');
-        await page.locator('[data-routine="training"]').click();
+        await chooseRoutine(page, 'training');
         assert.equal(await page.locator('#field-title').textContent(), 'Pack training clothes');
         assert.equal(await page.locator('#field-undo').isVisible(), false);
         await page.locator('#field-complete').click();
-        await page.locator('[data-routine="personal-care"]').click();
+        await chooseRoutine(page, 'personal-care');
         await page.locator('#routine-review > summary').click();
         await page.locator('#routine-restart').click();
         await page.locator('#restart-confirm').click();

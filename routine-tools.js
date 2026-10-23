@@ -6,6 +6,7 @@ export function createRoutineTools(workspace) {
   const backup = document.getElementById('backup-dialog');
   const reader = document.getElementById('routine-reader');
   const navigation = document.getElementById('routine-list');
+  const picker = document.getElementById('routine-picker');
   const editor = document.getElementById('checklist-editor');
   const chooser = document.getElementById('editor-list');
   const message = document.getElementById('control-status');
@@ -91,7 +92,7 @@ export function createRoutineTools(workspace) {
     else exitEditor();
   }
   function exitEditor() {
-    panel.hidden = true; reader.hidden = false; navigation.inert = false;
+    panel.hidden = true; reader.hidden = false; navigation.inert = false; picker.disabled = !picker.options.length;
     document.getElementById('control-launch').hidden = false; document.getElementById('backup-launch').disabled = false;
     if (baseline && draft) workspace.select(draft[chosen]?.id);
     baseline = draft = undefined; editor.replaceChildren(); chooser.replaceChildren();
@@ -123,7 +124,7 @@ export function createRoutineTools(workspace) {
       baseline = workspace.snapshot(); draft = structuredClone(baseline.routines); chosen = Math.max(0, draft.findIndex(routine => routine.id === baseline.selectedId)); epoch++;
       restored = undefined; preview.hidden = true; file.value = '';
       document.getElementById('control-destination').textContent = `Editing ${baseline.destination}. Changes apply when you save. Notes are separate.`;
-      render(); status('Rename, reorder or add items. Existing ticks follow their items.'); panel.hidden = false; reader.hidden = true; navigation.inert = true; document.getElementById('control-launch').hidden = true; document.getElementById('backup-launch').disabled = true; chooser.focus();
+      render(); status('Rename, reorder or add items. Existing ticks follow their items.'); panel.hidden = false; reader.hidden = true; navigation.inert = true; picker.disabled = true; document.getElementById('control-launch').hidden = true; document.getElementById('backup-launch').disabled = true; chooser.focus();
     } catch (error) { document.getElementById('routine-notice').textContent = error.message; }
   });
   document.getElementById('control-close').addEventListener('click', close);

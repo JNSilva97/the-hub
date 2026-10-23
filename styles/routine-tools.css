@@ -55,8 +55,6 @@
 .inline-editor { width: 100%; max-height: none; padding: 0; margin-top: 20px; }
 .inline-editor .routine-exit { width: auto; }
 .inline-editor .control-footer { bottom: 0; }
-.routine-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-.routine-heading h3 { margin: 0; min-width: 0; flex: 1 1 170px; overflow-wrap: anywhere; }
 
 #backup-launch:disabled { opacity: .45; cursor: default; }
 .routine-list[inert] { opacity: .65; }

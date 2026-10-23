@@ -26,7 +26,6 @@
 
 .routines-dialog[data-transition] {
   overflow: hidden;
-  transform-origin: center;
   will-change: transform, opacity;
 }
 
@@ -564,92 +563,167 @@
   font: 600 15px var(--font-interface);
 }
 
-/* Responsive adjustment: (max-width: 700px). */
+.routine-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.routine-heading h3 { margin: 0; min-width: 0; flex: 1 1 170px; overflow-wrap: anywhere; }
+
+/* The native picker replaces the sidebar only on narrow screens. */
+.routine-picker {
+  display: none;
+}
+
 @media (max-width: 700px) {
+  .routines-dialog {
+    width: calc(100% - 24px);
+    max-width: none;
+    max-height: calc(100dvh - 24px);
+    scroll-padding-top: 80px;
+    box-shadow: 0 16px 48px #0009;
+  }
+
+  .routines-header {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
   .routines-identity {
     gap: 10px;
   }
 
   .routine-optic {
-    flex-basis: 40px;
-    width: 40px;
-    height: 40px;
-  }
-
-  .routines-dialog {
-    width: calc(100% - 16px);
-    max-height: calc(100dvh - 20px);
-  }
-
-  .routines-header {
-    padding: 18px 16px;
+    flex-basis: 36px;
+    width: 36px;
+    height: 36px;
   }
 
   .routines-header h2 {
-    font-size: 20px;
-    letter-spacing: 0.09em;
+    font-size: 18px;
+    letter-spacing: .08em;
+  }
+
+  .routines-header .panel-eyebrow {
+    font-size: 8px;
+    line-height: 1.4;
+    letter-spacing: .1em;
+    margin-bottom: 4px;
+  }
+
+  .routines-header form {
+    margin: 0;
+  }
+
+  .routines-header .routine-exit {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
   }
 
   .routines-meta {
-    padding: 13px 16px;
-    gap: 9px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .routine-source, .routines-meta p {
+    grid-column: 1 / -1;
+  }
+
+  .routine-source {
+    justify-self: start;
+    padding: 4px 8px;
+    font-size: 10px;
   }
 
   .routines-meta p {
     font-size: 11px;
-    line-height: 1.6;
+    line-height: 1.4;
+  }
+
+  #backup-launch, #account-launch {
+    width: 100%;
+    margin-left: 0;
+    padding: 8px;
+    font-size: 14px;
   }
 
   .routine-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .routine-list {
-    flex-direction: row;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    padding: 14px;
-    gap: 8px;
-    border-right: 0px;
-    border-bottom: 1px solid #13365c;
-  }
-
-  .routine-card {
-    flex: 0 0 155px;
-    scroll-snap-align: start;
-    padding: 12px;
-  }
-
-  .routine-index {
-    font-size: 9px;
-  }
-
-  .routine-card-name {
-    font-size: 17px;
-  }
-
-  .routine-count {
-    font-size: 8px;
+    display: none;
   }
 
   .routine-detail {
-    padding: 20px 15px;
+    padding: 16px;
   }
 
-  .routine-detail h3 {
-    font-size: 29px;
+  .routine-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
   }
 
-  .field-mode { padding: 18px 16px 10px; }
-  .field-copy { min-height: 170px; }
-  .field-target { gap: 12px; }
-  .field-mark { width: 42px; height: 42px; flex-basis: 42px; }
+  .routine-heading h3 {
+    display: none;
+  }
+
+  .routine-picker {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px;
+    border: 1px solid #3476ae;
+    border-radius: 2px;
+    background: #07192e;
+    color: #e3f4ff;
+    font: 600 17px var(--font-interface);
+    color-scheme: dark;
+  }
+
+  #control-launch {
+    margin: 0;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .routine-detail #routine-description {
+    margin: 8px 0 14px;
+  }
+
+  .routine-progress {
+    margin-bottom: 16px;
+  }
+
+  .field-mode {
+    padding: 16px 14px 8px;
+  }
+
+  .field-copy {
+    min-height: 124px;
+    padding-top: 16px;
+  }
+
+  .field-target {
+    gap: 10px;
+  }
+
+  .field-target h4 {
+    font-size: clamp(24px, 7vw, 28px);
+  }
+
+  .field-mark {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
 
   .check-row {
     font-size: 15px;
   }
 
   .routine-notice {
-    padding: 15px !important;
+    padding: 12px 16px !important;
   }
 }

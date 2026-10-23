@@ -1,10 +1,15 @@
 import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=control-1';
 import { cloudWorkspace } from './cloud.js?v=control-1';
 import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=control-1';
-import { createRoutineTools } from './routine-tools.js?v=control-2';
+import { createRoutineTools } from './routine-tools.js?v=mobile-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
+const picker = document.getElementById('routine-picker');
+picker.addEventListener('change', () => {
+  const routine = routines.find(routine => routine.id === picker.value);
+  if (routine) selectRoutine(routine);
+});
 const content = document.getElementById('routine-content');
 const notice = document.getElementById('routine-notice');
 const sourceBadge = document.getElementById('routine-source');
@@ -176,6 +181,7 @@ fieldUndo.addEventListener('click', () => {
 
 function selectRoutine(routine) {
   selected = routine;
+  picker.value = routine.id;
   fieldKey = undefined;
   lastFieldCheck = undefined;
   fieldAnimation?.cancel();
@@ -254,6 +260,8 @@ export async function initialiseRoutines() {
   pendingRestart = undefined;
   restartDialog.close();
   list.replaceChildren();
+  picker.replaceChildren();
+  picker.disabled = true;
   content.replaceChildren();
   field.hidden = true;
   fieldKey = undefined;
@@ -331,7 +339,12 @@ export async function initialiseRoutines() {
     card.append(make('span', 'routine-count'), track);
     card.addEventListener('click', () => selectRoutine(routine));
     list.append(card);
+    const option = document.createElement('option');
+    option.value = routine.id;
+    option.textContent = routine.name;
+    picker.append(option);
   }
+  picker.disabled = list.inert;
   selectRoutine(routines[0]);
   dialog.dataset.source = source;
   dialog.dataset.ready = 'true';

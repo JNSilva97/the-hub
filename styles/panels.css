@@ -44,8 +44,7 @@ dialog h2 {
 }
 
 dialog::backdrop {
-  background: #01050cce;
-  backdrop-filter: blur(12px) saturate(0.6);
+  background: #01050ce8;
 }
 
 .panel-eyebrow {

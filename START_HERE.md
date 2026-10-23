@@ -54,7 +54,7 @@ Each component has one stylesheet. Its main rules come first and screen-size adj
 
 The intro lasts 3.2 seconds. Its doors open, the optical system appears and the status text moves through three stages. Click or press a key to skip it. **Replay intro** starts it again.
 
-Opening Routines unfolds a circular workspace from the home core while its optical artwork travels into the header. Closing it folds the workspace back toward the core. The two timings are named `open` and `close` near the top of `core-transition.js`; edit them there. The controller tracks opening, open and closing states, so Escape, resizing and navigation can interrupt the animation safely. With motion disabled, the dialog opens immediately.
+Opening Routines fades and slides the panel into place while its optical artwork travels into the header. Closing it sends the eye home while the panel fades out. The two timings are named `open` and `close` near the top of `core-transition.js`; edit them there. The controller tracks opening, open and closing states, so Escape, resizing and navigation can interrupt the animation safely. With motion disabled, the dialog opens immediately.
 
 The outer core rings show checklist progress. The readout beneath the launcher identifies them from outside to inside. They use the same saved ticks and optional sections as Field Mode. `core-progress.js` waits for the return journey to finish before filling the home rings, and pulses only for a new completion. It adds no separate storage or account.
 

@@ -332,7 +332,6 @@
   position: absolute;
   overflow: visible;
   transform-origin: top left;
-  filter: drop-shadow(0 0 22px #168aff65);
 }
 
 body[data-core-phase] .core-art,
@@ -342,10 +341,12 @@ body[data-core-phase] .core-reticle {
 }
 
 /* Preserve the departure frame while the optic is docked in Routines. */
-body[data-core-phase] .core * {
+body[data-core-phase] .workspace *,
+body[data-core-phase] .workspace *::before,
+body[data-core-phase] .workspace *::after,
+body[data-core-phase] .ambient-beam {
   animation-play-state: paused;
 }
-
 
 /* Responsive adjustment: (max-width: 1050px) and (min-width: 701px). */
 @media (max-width: 1050px) and (min-width: 701px) {

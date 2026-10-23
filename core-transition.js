@@ -5,7 +5,6 @@ function createCoreTransition(panel) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const duration = { open: 880, close: 520 };
   const easing = 'cubic-bezier(.4, 0, .2, 1)';
-  const returnEasing = easing;
   panel.style.setProperty('--core-return-duration', `${duration.close}ms`);
   let animations = [];
   let overlay;
@@ -38,30 +37,27 @@ function createCoreTransition(panel) {
     return animation;
   }
 
-  function geometry() {
-    const source = core.getBoundingClientRect();
-    const target = panel.getBoundingClientRect();
-    // Quick access may open Routines while the home core is outside the viewport.
-    const x = Math.max(32, Math.min(innerWidth - 32, source.left + source.width / 2));
-    const y = Math.max(32, Math.min(innerHeight - 32, source.top + source.height / 2));
-    const size = Math.min(source.width * .86, innerWidth - 32, innerHeight - 32);
-    return { source, folded: `translate(${x - target.left - target.width / 2}px, ${y - target.top - target.height / 2}px) scale(${size / target.width}, ${size / target.height})` };
-  }
-
   function copyArtwork(original, prefix) {
     const svg = original.cloneNode(true);
     const originals = [original, ...original.querySelectorAll('*')];
     const copies = [svg, ...svg.querySelectorAll('*')];
+    const poses = new Map();
+    for (const animation of original.getAnimations({ subtree: true })) {
+      const target = animation.effect.target;
+      if (!target.classList.contains('eye-gaze')) poses.set(target, getComputedStyle(target).transform);
+    }
     const ids = new Map();
     for (const node of copies) if (node.id) { ids.set(node.id, `${prefix}-${node.id}`); node.id = `${prefix}-${node.id}`; }
     copies.forEach((node, index) => {
-      for (const attribute of [...node.attributes]) node.setAttribute(attribute.name, attribute.value.replace(/url\(#([^)]+)\)/g, (_, id) => `url(#${ids.get(id) || id})`));
+      for (const attribute of [...node.attributes]) {
+        if (attribute.value.includes('url(#')) node.setAttribute(attribute.name, attribute.value.replace(/url\(#([^)]+)\)/g, (_, id) => `url(#${ids.get(id) || id})`));
+      }
       if (node.classList.contains('core-progress-fill')) {
         node.style.strokeDashoffset = getComputedStyle(originals[index]).strokeDashoffset;
         node.style.transition = 'none';
       }
-      if (!node.classList.contains('eye-gaze') && originals[index].getAnimations().length) {
-        node.style.transform = getComputedStyle(originals[index]).transform;
+      if (poses.has(originals[index])) {
+        node.style.transform = poses.get(originals[index]);
         node.style.animation = 'none';
         node.style.transition = 'none';
       }
@@ -110,12 +106,12 @@ function createCoreTransition(panel) {
     ] : [
       { transform },
       { transform: 'none' }
-    ], { duration: opening ? duration.open : duration.close, easing: opening ? easing : returnEasing });
+    ], { duration: opening ? duration.open : duration.close, easing });
     if (opening) animate(svg, [{ opacity: 1 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: duration.open, easing: 'linear' });
     if (!opening) {
       // Blend into the home layer before landing, so the title never gets a final layer jump.
       animate(svg, [{ opacity: 0 }, { opacity: 1, offset: .2 }, { opacity: 1, offset: .72 }, { opacity: 0, offset: .94 }, { opacity: 0 }], { duration: duration.close, easing: 'linear' });
-      animate(core, [{ transform, transformOrigin: '0 0' }, { transform: 'none', transformOrigin: '0 0' }], { duration: duration.close, easing: returnEasing });
+      animate(core, [{ transform, transformOrigin: '0 0' }, { transform: 'none', transformOrigin: '0 0' }], { duration: duration.close, easing });
       for (const element of [core, ...document.querySelectorAll('.gyro, .core-reticle')]) {
         const opacity = getComputedStyle(element).opacity;
         animate(element, [{ visibility: 'visible', opacity: 0 }, { visibility: 'visible', opacity: 0, offset: .72 }, { visibility: 'visible', opacity, offset: .94 }, { visibility: 'visible', opacity }], { duration: duration.close, easing: 'linear' });
@@ -125,7 +121,7 @@ function createCoreTransition(panel) {
 
   function play(opening) {
     const currentStyle = getComputedStyle(panel);
-    const interrupted = { transform: currentStyle.transform, borderRadius: currentStyle.borderRadius, opacity: currentStyle.opacity };
+    const interrupted = { transform: currentStyle.transform, opacity: currentStyle.opacity };
     const childOpacity = [...panel.children].map(element => getComputedStyle(element).opacity);
     const backdropOpacity = getComputedStyle(panel, '::backdrop').opacity;
     clear();
@@ -135,7 +131,7 @@ function createCoreTransition(panel) {
     document.body.dataset.corePhase = phase;
     const current = generation;
     try {
-      const { source, folded } = geometry();
+      const source = core.getBoundingClientRect();
       panelSize = [panel.clientWidth, panel.clientHeight];
       if (opening) prepareDock();
       else {
@@ -149,17 +145,16 @@ function createCoreTransition(panel) {
       }
       opticFlight(source, opening);
       animate(panel, opening ? [
-        { transform: folded, borderRadius: '50%', opacity: 0 },
-        { opacity: 1, offset: .18 },
-        { transform: 'none', borderRadius: '3px', opacity: 1 }
+        { transform: 'translateY(16px)', opacity: 0 },
+        { transform: 'none', opacity: 1 }
       ] : [
         interrupted,
-        { transform: folded, borderRadius: '50%', opacity: 0 }
-      ], { duration: opening ? duration.open : duration.close, easing: opening ? easing : returnEasing });
+        { transform: 'translateY(12px)', opacity: 0 }
+      ], { duration: opening ? 320 : 180, easing });
       [...panel.children].forEach((element, index) => animate(element, opening ? [
         { opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }
       ] : [{ opacity: childOpacity[index] }, { opacity: 0 }], {
-        duration: opening ? 360 : 130, delay: opening ? 330 + index * 40 : 0,
+        duration: opening ? 180 : 130, delay: opening ? 60 + index * 25 : 0,
         easing: opening ? easing : 'ease-out'
       }));
       animate(dock, opening ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], {

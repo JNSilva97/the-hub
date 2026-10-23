@@ -24,7 +24,7 @@ Each note has its own browser-storage entry. Changes from another tab update the
 
 Optional sound uses three short digital textures: a rising scanner sweep for opening, a falling sweep for closing and a brief signal for selection. Frequency modulation adds metallic sidebands over band-passed data noise, with soft attacks and no bass impact or continuous drone. Turning sound off fades any remaining tail; hidden tabs are silenced. The synthesis and levels live in `interface-sound.js`.
 
-Opening **Routines** unfolds the workspace from the optical core and docks its artwork in the header. Closing it reverses the journey. The opening takes 880 ms and the return 520 ms. Reduced or paused motion opens and closes immediately. Escape during opening reverses the journey; pressing Escape again completes closing immediately. Resizing or hiding the tab finishes the current transition safely.
+Opening **Routines** slides and fades the panel into place in 320 ms while the eye travels to its header in 880 ms. The return takes 520 ms. The panel uses a small translation and opacity, without scaling its contents or animating its corners. Background motion pauses while Routines is open, and the dimmed backdrop uses no blur. Reduced or paused motion opens and closes immediately. Escape during opening reverses the journey; pressing Escape again completes closing immediately. Resizing or hiding the tab finishes the current transition safely.
 
 **Start again** opens a styled confirmation with **Keep progress** focused by default. Escape, clicking outside or choosing Keep progress leaves saved ticks untouched. **Clear ticks** resets only that checklist and returns keyboard focus to its first input. The return animation keeps the traveling optic visible through its handoff to the home core while the modal backdrop fades out.
 
@@ -55,6 +55,8 @@ Keep the local server bound to loopback. Do not force-add the `private/` directo
 **Private access** in Routines opens the account panel. Sign in with Google and explicitly choose **Sync PC checklists** on the loopback version to import personal definitions and progress into an empty account. The same account can then access them from the public site. Demo data and notes are not uploaded. Different ticks merge individually; a failed or pending write stays in the open tab, with a warning and retry. Wait for the synced notice before closing or reloading. This version does not persist pending cloud writes across a forced close or reload.
 
 ## Checklist control and backups
+
+On phones, use the compact **Choose checklist** picker beside **Edit checklist**; desktop keeps the sidebar. Both control the same saved checklists and ticks.
 
 Open **Routines → Edit checklist** to create, rename and reorder checklists, sections and items. IDs stay stable when text or order changes, so saved ticks follow the same items. Optional sections can be switched on or off. Changes apply only with **Save changes**; removing saved items asks for confirmation. A failed save keeps the draft open. Closing a changed draft asks before discarding it.
 
