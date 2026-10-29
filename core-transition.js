@@ -90,6 +90,14 @@ function createCoreTransition(panel) {
     const scale = target.width / (view.width * Math.hypot(matrix.a, matrix.b));
     const destination = { left: target.left - (origin.x - source.left) * scale, top: target.top - (origin.y - source.top) * scale, width: source.width * scale };
     const svg = copyArtwork(core, 'flight');
+    const rings = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    rings.classList.add('flight-rings');
+    for (const child of [...svg.children]) {
+      if (child.tagName.toLowerCase() !== 'defs' && !child.classList.contains('eye-art')) rings.append(child);
+    }
+    svg.insertBefore(rings, svg.querySelector('.eye-art'));
+    rings.style.transformOrigin = '300px 300px';
+    rings.style.transformBox = 'view-box';
     svg.removeAttribute('class');
     Object.assign(svg.style, { left: `${source.left}px`, top: `${source.top}px`, width: `${source.width}px`, height: `${source.height}px` });
     overlay = document.createElement('div');
@@ -101,14 +109,20 @@ function createCoreTransition(panel) {
     document.body.append(overlay);
     overlay.showPopover();
     const transform = `translate(${destination.left - source.left}px, ${destination.top - source.top}px) scale(${destination.width / source.width})`;
+    const compact = `translate(${(source.width - destination.width) / 2}px, ${(source.height - destination.width) / 2}px) scale(${destination.width / source.width})`;
     svg.style.filter = getComputedStyle(core).filter;
     animate(svg, opening ? [
       { transform: 'none' },
+      { transform: compact, offset: .28 },
       { transform }
     ] : [
       { transform },
       { transform: 'none' }
     ], { duration: opening ? duration.travel : duration.close, easing });
+    // Fold the outer frame inside the eye before it approaches the header words.
+    animate(rings, opening ? [{ transform: 'scale(1)' }, { transform: 'scale(.42)' }] : [
+      { transform: 'scale(.42)' }, { transform: 'scale(1)' }
+    ], { duration: opening ? duration.travel * .28 : duration.close, easing });
     // Hold the landed circle before handing its light to the header eye.
     if (opening) animate(svg, [{ opacity: 1 }, { opacity: 0 }], {
       duration: duration.handoff, delay: handoffStart, easing: 'linear'

@@ -1,0 +1,26 @@
+name: UI checks
+on:
+  push:
+    branches: ['codex/compact-pickers-eye']
+  pull_request:
+    paths: ['**/*.js', '**/*.cjs', '**/*.mjs', '**/*.css', 'index.html', '.github/workflows/ui-checks.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install browser test dependencies
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chrome
+      - name: Run browser, Notes, model and offline checks
+        run: node --test tests/browser.cjs tests/notes-sync.cjs tests/notes-model.test.mjs tests/routine-model.test.mjs tests/workspace-model.test.mjs tests/offline.cjs

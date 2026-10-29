@@ -40,16 +40,9 @@
   grid-row: 1;
 }
 .editor-picker-field .checklist-picker {
-  display: contents;
-}
-.editor-picker-field .checklist-picker-toggle {
+  display: block;
   grid-column: 1;
   grid-row: 2;
-}
-.editor-picker-field .checklist-picker-choices {
-  grid-column: 1 / -1;
-  grid-row: 3;
-  margin-top: 0;
 }
 #editor-add-list {
   grid-column: 2;
@@ -78,6 +71,7 @@
   display: none !important;
 }
 .checklist-picker {
+  position: relative;
   min-width: 0;
   width: 100%;
 }
@@ -110,14 +104,23 @@
   cursor: default;
 }
 .checklist-picker-choices {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 5;
+  width: 100%;
   max-height: min(320px, 45dvh);
   overflow-y: auto;
   overscroll-behavior: contain;
-  margin-top: 6px;
+  margin: 0;
   padding: 4px;
   border: 1px solid #3476ae;
   background: #030b16;
   box-shadow: inset 2px 0 #247bbb;
+}
+.checklist-picker-choices[data-side="above"] {
+  top: auto;
+  bottom: calc(100% + 6px);
 }
 .checklist-choice,
 .control-dialog .checklist-choice {
