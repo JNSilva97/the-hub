@@ -2,11 +2,94 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
-const { fixture, ready, openRoutines, browseNotes, demo } = require('./browser-fixture.cjs');
+const { fixture, ready, openRoutines, chooseRoutine, browseNotes, demo } = require('./browser-fixture.cjs');
 
 test('Phone workflows', { timeout: 90000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   t.after(() => browser.close());
+
+  await t.test('phone home exposes working apps in thumb reach and folds unfinished spaces away', async () => {
+    for (const width of [320, 390]) {
+      const { context, page, errors } = await fixture(browser, { width, height: 640, motion: 'reduce' });
+      try {
+        await ready(page);
+        assert.equal(await page.locator('.apps > .app').count(), 2);
+        assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), false);
+        assert.equal(await page.locator('.future-grid .app').count(), 6);
+        assert.equal(await page.locator('.phone-actions').isVisible(), true);
+        for (const button of await page.locator('.phone-actions button').all()) {
+          assert.ok(await button.evaluate(el => { const r = el.getBoundingClientRect(); return r.height >= 44 && r.width >= 44 && r.bottom <= innerHeight; }));
+        }
+        await page.locator('#phone-routines').click();
+        assert.equal(await page.locator('#routines-dialog').evaluate(el => el.open), true);
+        assert.equal(await page.locator('.phone-actions').isVisible(), false);
+        await chooseRoutine(page, 'workday'); await page.locator('#field-complete').click();
+        const next = await page.locator('#field-title').textContent();
+        await page.getByRole('button', { name: 'Close routines', exact: true }).click();
+        await ready(page); await page.locator('#phone-routines').click();
+        assert.equal(await page.locator('#routine-name').textContent(), 'Workday');
+        assert.equal(await page.locator('#field-title').textContent(), next);
+        await page.getByRole('button', { name: 'Close routines', exact: true }).click();
+        await page.locator('#future-spaces > summary').click();
+        assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), true);
+        assert.equal(await page.locator('.future-grid .app-meta').first().textContent(), 'COMING SOON');
+        await page.locator('[data-icon="projects"]').click();
+        assert.match(await page.locator('#app-description').textContent(), /coming later/);
+        await page.locator('#app-dialog .close').click();
+        await page.locator('#phone-settings').click();
+        assert.equal(await page.locator('#interface-settings').isVisible(), true);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    }
+  });
+
+  await t.test('phone note actions stay at the bottom and desktop controls return on resize', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 390, height: 640, motion: 'reduce' });
+    try {
+      await ready(page); await page.locator('#phone-notes').click();
+      assert.equal(await page.locator('#note-new').evaluate(el => el.parentElement.id), 'notes-phone-actions');
+      assert.ok(await page.locator('#note-new').evaluate(el => el.getBoundingClientRect().top > innerHeight / 2));
+      await page.locator('#note-text').fill('Quick capture\nKeep this note.');
+      await page.locator('#notes-browse').click();
+      assert.equal(await page.locator('#notes-browse').getAttribute('aria-expanded'), 'true');
+      assert.equal(await page.locator('#note-text').isVisible(), false);
+      await page.locator('#note-new').click();
+      assert.equal(await page.locator('#notes-library').evaluate(el => el.open), false);
+      assert.equal(await page.locator('#note-text').inputValue(), '');
+      await browseNotes(page); await page.locator('#note-list button').filter({ hasText: 'Quick capture' }).click();
+      assert.equal(await page.locator('#note-text').inputValue(), 'Quick capture\nKeep this note.');
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.waitForFunction(() => document.getElementById('note-new').parentElement.className === 'notes-actions');
+      assert.equal(await page.locator('.apps > .app').count(), 8);
+      assert.equal(await page.locator('#future-spaces').isVisible(), false);
+      assert.equal(await page.locator('#note-new').evaluate(el => el.parentElement.className), 'notes-actions');
+      assert.equal(await page.locator('#notes-library').evaluate(el => el.open), true);
+      await page.setViewportSize({ width: 390, height: 640 });
+      await page.waitForFunction(() => document.getElementById('note-new').parentElement.id === 'notes-phone-actions');
+      assert.equal(await page.locator('#note-new').evaluate(el => el.parentElement.id), 'notes-phone-actions');
+      assert.equal(await page.locator('#notes-library').evaluate(el => el.open), false);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('remembered checklists stay separate for each signed-in account', async () => {
+    const account = () => ({ routines: JSON.parse(demo), progress: { checks: {}, optional: {} } });
+    const { context, page, errors } = await fixture(browser, { width: 390, motion: 'reduce', firebase: true,
+      cloudDocuments: { 'account-a': account(), 'account-b': account() } });
+    try {
+      await ready(page); await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
+      await openRoutines(page); await chooseRoutine(page, 'workday');
+      const changeAccount = uid => page.evaluate(uid => { const service = window.__hubFirebase; service.user = { uid, email: uid + '@example.invalid' }; service.authListener(service.user); }, uid);
+      await changeAccount('account-b');
+      await page.waitForFunction(() => document.getElementById('routine-name').textContent === 'Personal Care');
+      await chooseRoutine(page, 'training');
+      await changeAccount('account-a');
+      await page.waitForFunction(() => document.getElementById('routine-name').textContent === 'Workday');
+      await changeAccount('account-b');
+      await page.waitForFunction(() => document.getElementById('routine-name').textContent === 'Training');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
 
   await t.test('editing hides account navigation, skips unchanged saves and focuses newly added fields', async () => {
     for (const width of [320, 390]) {

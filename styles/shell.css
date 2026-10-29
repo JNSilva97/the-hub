@@ -159,6 +159,11 @@ main {
   pointer-events: none;
 }
 
+.phone-actions,
+.future-spaces {
+  display: none;
+}
+
 .app {
   position: relative;
   display: flex;
@@ -662,6 +667,72 @@ footer {
     grid-template-rows: none;
   }
 
+  .future-spaces:not([hidden]) {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .future-spaces > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 48px;
+    padding: 12px;
+    border: 1px solid #245080;
+    background: #030c18;
+    color: #c8ecff;
+    cursor: pointer;
+    font: 600 16px var(--font-interface);
+    list-style: none;
+  }
+
+  .future-spaces > summary::-webkit-details-marker { display: none; }
+  .future-spaces > summary span { margin-left: auto; color: #90b5cf; font-size: 13px; }
+  .future-spaces > summary::after { content: '⌄'; color: #83d7ff; }
+  .future-spaces[open] > summary::after { content: '⌃'; }
+  .future-spaces > summary:focus-visible { outline: 2px solid #9debff; outline-offset: 3px; }
+
+  .future-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding-top: 12px;
+  }
+
+  .phone-actions {
+    position: fixed;
+    z-index: 4;
+    inset: auto 12px calc(8px + env(safe-area-inset-bottom)) 12px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid #2f80ba;
+    background: #030c18f5;
+    box-shadow: 0 8px 28px #000b;
+  }
+
+  .phone-actions button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 56px;
+    padding: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #cdeeff;
+    font: 600 15px var(--font-interface);
+  }
+
+  .phone-actions button:first-child { border-color: #3476ae; background: #0a2946; }
+  .phone-actions button:hover { background: #103655; }
+  .phone-actions svg { width: 20px; height: 20px; fill: none; stroke: #83d7ff; stroke-width: 1.6; }
+  body:has(dialog[open]) .phone-actions { display: none; }
+
   .app {
     height: 83px;
     padding: 13px 11px;
@@ -717,7 +788,7 @@ footer {
 
   footer {
     margin: 0px 18px;
-    padding: 18px 0px 24px;
+    padding: 18px 0px calc(100px + env(safe-area-inset-bottom));
     letter-spacing: 0.06em;
     gap: 10px;
     font-size: 9px;

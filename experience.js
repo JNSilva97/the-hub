@@ -29,7 +29,7 @@
     if (!event.isTrusted) return;
     const target = event.target.closest('button, input[type="checkbox"]');
     if (!target) return;
-    const kind = target.matches('.app, #routines-launch, #command-launch, #replay-intro, #settings-sound, #routine-restart') || target.closest('#command-results') ? 'open' : target.matches('.routine-exit, .close, .restart-keep') ? 'close' : 'select';
+    const kind = target.matches('.app, #routines-launch, #phone-routines, #phone-notes, #phone-settings, #command-launch, #replay-intro, #settings-sound, #routine-restart') || target.closest('#command-results') ? 'open' : target.matches('.routine-exit, .close, .restart-keep') ? 'close' : 'select';
     playTone(kind);
   });
   document.addEventListener('keydown', event => {

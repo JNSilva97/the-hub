@@ -32,6 +32,7 @@ let selected;
 let state;
 let storageKey;
 let workspaceKey;
+let selectionKey;
 let localOverride = false;
 let storageAvailable = true;
 let loadGeneration = 0;
@@ -180,8 +181,11 @@ fieldUndo.addEventListener('click', () => {
   fieldButton.focus({ preventScroll: true });
 });
 
-function selectRoutine(routine) {
+function selectRoutine(routine, remember = true) {
   selected = routine;
+  if (remember && selectionKey) {
+    try { localStorage.setItem(selectionKey, routine.id); } catch { /* Optional navigation state must never block a checklist. */ }
+  }
   picker.value = routine.id;
   routinePicker.refresh();
   fieldKey = undefined;
@@ -257,6 +261,7 @@ restartDialog.addEventListener('close', () => { if (!restartDialog.open) pending
 
 export async function initialiseRoutines() {
   const current = ++loadGeneration;
+  selectionKey = undefined;
   routines = [];
   selected = undefined;
   pendingRestart = undefined;
@@ -308,6 +313,7 @@ export async function initialiseRoutines() {
   routines = loadedRoutines;
   storageKey = `thehub:routines:${source}:v1`;
   workspaceKey = `thehub:workspace:${source}:v1`;
+  selectionKey = source === 'account' ? `thehub:selection:account:${cloudWorkspace.user.uid}:v1` : `thehub:selection:${source}:v1`;
   localOverride = false;
   storageAvailable = true;
   try {
@@ -348,7 +354,9 @@ export async function initialiseRoutines() {
     picker.append(option);
   }
   picker.disabled = list.inert;
-  selectRoutine(routines[0]);
+  let remembered;
+  try { remembered = localStorage.getItem(selectionKey); } catch { /* A blocked preference store does not affect progress. */ }
+  selectRoutine(routines.find(routine => routine.id === remembered) || routines[0], false);
   dialog.dataset.source = source;
   dialog.dataset.ready = 'true';
 }

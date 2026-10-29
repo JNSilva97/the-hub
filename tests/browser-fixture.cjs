@@ -84,9 +84,15 @@ async function reviewChecklist(page) {
 }
 
 async function browseNotes(page) {
-  if (await page.locator('#notes-library > summary').isVisible() && !await page.locator('#notes-library').evaluate(element => element.open)) {
-    await page.locator('#notes-library > summary').click();
+  if (await page.locator('#notes-browse').isVisible() && !await page.locator('#notes-library').evaluate(element => element.open)) {
+    await page.locator('#notes-browse').click();
   }
 }
 
-module.exports = { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, reviewChecklist, browseNotes };
+async function showFutureSpaces(page) {
+  if (await page.locator('#future-spaces > summary').isVisible() && !await page.locator('#future-spaces').evaluate(element => element.open)) {
+    await page.locator('#future-spaces > summary').click();
+  }
+}
+
+module.exports = { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, reviewChecklist, browseNotes, showFutureSpaces };

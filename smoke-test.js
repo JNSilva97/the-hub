@@ -3,6 +3,9 @@ async function testHub() {
   function assert(condition, message) {
     if (!condition) throw new Error(message);
   }
+  const future = document.getElementById('future-spaces');
+  const futureWasOpen = future?.open;
+  if (future && !future.hidden) future.open = true;
   const apps = [...document.querySelectorAll('.app')];
   const dialog = document.getElementById('app-dialog');
   const access = document.querySelector('.access-sequence');
@@ -61,5 +64,6 @@ async function testHub() {
   for (let attempt = 0; routines.open && attempt < 30; attempt++) await new Promise(resolve => setTimeout(resolve, 50));
   assert(!routines.open, 'Routines did not close.');
   assert(document.activeElement === routinesLauncher, 'Focus did not return to Routines.');
+  if (future) future.open = futureWasOpen;
   return { passed: true, apps: apps.length + 1, checklists: 5, source: routines.dataset.source, viewport: `${innerWidth}x${innerHeight}` };
 }
