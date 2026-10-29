@@ -248,12 +248,12 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       try {
         await ready(page); await openRoutines(page);
         assert.equal(await page.locator('#routine-list').isVisible(), false);
-        assert.equal(await page.locator('#routine-picker-menu').isVisible(), true);
+        assert.equal(await page.locator('#routine-picker-menu .checklist-picker-toggle').isVisible(), true);
         assert.equal(await page.locator('#routine-picker').isVisible(), false);
         const layout = await page.evaluate(() => {
           const panel = document.getElementById('routines-dialog');
           const bounds = id => document.getElementById(id).getBoundingClientRect();
-          const backup = bounds('backup-launch'), account = bounds('account-launch'), edit = bounds('control-launch'), picker = bounds('routine-picker-menu');
+          const backup = bounds('backup-launch'), account = bounds('account-launch'), edit = bounds('control-launch'), picker = document.querySelector('#routine-picker-menu .checklist-picker-toggle').getBoundingClientRect();
           return { width: panel.getBoundingClientRect().width, overflow: panel.scrollWidth > panel.clientWidth, toolbar: Math.abs(backup.y - account.y) + Math.abs(backup.width - account.width), left: Math.abs(backup.left - picker.left), right: Math.abs(account.right - edit.right), touch: [backup, account, edit, picker].every(rect => rect.height >= 44) };
         });
         assert.equal(layout.overflow, false);
@@ -270,6 +270,38 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         assert.equal(await page.locator('#routine-picker').isDisabled(), true);
         await page.locator('#control-close').click();
         assert.equal(await page.locator('#routine-picker').isDisabled(), false);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    }
+  });
+
+  await t.test('expanded menus span the toolbar without moving its action button', async () => {
+    for (const width of [320, 390, 430, 1440]) {
+      const { context, page, errors } = await fixture(browser, { width, height: 850, motion: 'reduce' });
+      try {
+        await ready(page); await openRoutines(page);
+        async function checkToolbar(toolbar, picker, action) {
+          const measure = () => page.evaluate(({ toolbar, picker, action }) => {
+            const parent = document.querySelector(toolbar).getBoundingClientRect();
+            const button = document.querySelector(action).getBoundingClientRect();
+            const toggle = document.querySelector(picker + ' .checklist-picker-toggle').getBoundingClientRect();
+            const choices = document.querySelector(picker + ' .checklist-picker-choices').getBoundingClientRect();
+            return { x: button.left - parent.left, y: button.top - parent.top,
+              width: button.width, aligned: Math.abs(button.top - toggle.top),
+              menuLeft: Math.abs(choices.left - parent.left), menuRight: Math.abs(choices.right - parent.right),
+              below: choices.top >= Math.max(button.bottom, toggle.bottom), overflow: parent.width < choices.width };
+          }, { toolbar, picker, action });
+          const before = await measure();
+          await page.locator(picker + ' .checklist-picker-toggle').click();
+          const after = await measure();
+          assert.ok(Math.abs(before.x - after.x) < 1 && Math.abs(before.y - after.y) < 1, 'Opening choices must not shift the action button.');
+          assert.ok(after.aligned < 1 && Math.abs(before.width - after.width) < 1, 'Action and picker must stay on the same row.');
+          assert.ok(after.menuLeft < 1 && after.menuRight < 1 && after.below && !after.overflow, 'Choices must fill a separate row beneath both controls.');
+          await page.locator(picker + ' .checklist-choice').last().click();
+        }
+        if (width < 700) await checkToolbar('.routine-heading', '#routine-picker-menu', '#control-launch');
+        await page.locator('#control-launch').click();
+        await checkToolbar('.editor-toolbar', '#editor-list-menu', '#editor-add-list');
         assert.deepEqual(errors, []);
       } finally { await context.close(); }
     }
@@ -996,6 +1028,45 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(await page.locator('#routines-launch').evaluate(el => el === document.activeElement), true);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
+    }
+  });
+
+  await t.test('opening eye lands and holds at full brightness before the header handoff', async () => {
+    for (const width of [390, 1440]) {
+      const { context, page, errors } = await fixture(browser, { width });
+      try {
+        await ready(page); await openRoutines(page);
+        const result = await page.evaluate(() => {
+          const artwork = document.querySelector('.core-flight > svg');
+          const flight = artwork.getAnimations();
+          const movement = flight.find(animation => animation.effect.getKeyframes().some(frame => frame.transform));
+          const fade = flight.find(animation => animation.effect.getKeyframes().some(frame => frame.opacity !== undefined));
+          const landing = movement.effect.getComputedTiming().endTime;
+          const handoff = fade.effect.getTiming().delay;
+          const animations = document.getAnimations().filter(animation => animation.effect.target.closest?.('#routines-dialog, .core-flight'));
+          const frames = [landing + 20, handoff - 20, handoff + fade.effect.getTiming().duration / 2].map(time => {
+            for (const animation of animations) { animation.pause(); animation.currentTime = time; }
+            const ring = artwork.querySelector('.eye-ring').getBoundingClientRect();
+            const dock = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect();
+            return { transform: getComputedStyle(artwork).transform, opacity: Number(getComputedStyle(artwork).opacity),
+              dockOpacity: Number(getComputedStyle(document.querySelector('.routine-optic')).opacity),
+              error: Math.abs(ring.left - dock.left) + Math.abs(ring.top - dock.top) + Math.abs(ring.width - dock.width) };
+          });
+          for (const animation of animations) animation.play();
+          return { hold: handoff - landing, frames };
+        });
+        assert.ok(result.hold >= 100, 'The landed circle must pause visibly before fading.');
+        assert.equal(result.frames[0].transform, result.frames[1].transform);
+        for (const frame of result.frames.slice(0, 2)) {
+          assert.equal(frame.opacity, 1); assert.equal(frame.dockOpacity, 0);
+          assert.ok(frame.error < 1, 'The settled circle must match the header eye.');
+        }
+        assert.ok(Math.abs(result.frames[2].opacity + result.frames[2].dockOpacity - 1) < .01);
+        assert.ok(result.frames[2].opacity > 0 && result.frames[2].opacity < 1);
+        await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
+        assert.equal(await page.locator('.core-flight').count(), 0);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
     }
   });
 

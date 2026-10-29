@@ -23,15 +23,38 @@
 .control-backup input[type="file"] { display: block; max-width: 100%; margin-top: 8px; color: #a8cde6; }
 .control-backup label { display: block; margin-top: 16px; }
 .control-backup #restore-preview { border-top: 1px solid #315471; margin-top: 14px; padding-top: 8px; }
-.editor-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 18px; }
+.editor-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px 12px;
+  margin-bottom: 18px;
+}
 .editor-picker-field {
-  flex: 1;
-  min-width: 150px;
+  display: contents;
   color: #9ab8d0;
   font-size: 13px;
 }
+.editor-picker-field > span {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
 .editor-picker-field .checklist-picker {
-  margin-top: 8px;
+  display: contents;
+}
+.editor-picker-field .checklist-picker-toggle {
+  grid-column: 1;
+  grid-row: 2;
+}
+.editor-picker-field .checklist-picker-choices {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin-top: 0;
+}
+#editor-add-list {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: stretch;
 }
 .editor-details { display: grid; gap: 14px; }
 #checklist-editor label:not(.editor-optional) { display: grid; gap: 7px; min-width: 0; }

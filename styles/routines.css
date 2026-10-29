@@ -661,6 +661,7 @@
   .routine-heading {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
     gap: 10px;
   }
 
@@ -669,13 +670,23 @@
   }
 
   .routine-picker {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    align-self: start;
+    display: contents;
+  }
+
+  .routine-picker > .checklist-picker-toggle {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .routine-picker > .checklist-picker-choices {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: 0;
   }
 
   #control-launch {
+    grid-column: 2;
+    grid-row: 1;
     margin: 0;
     padding: 8px 10px;
     font-size: 13px;

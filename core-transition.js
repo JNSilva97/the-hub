@@ -3,7 +3,9 @@ function createCoreTransition(panel) {
   const core = document.querySelector('.core-art');
   const dock = panel.querySelector('.routine-optic');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const duration = { open: 880, close: 520 };
+  const duration = { travel: 720, settle: 140, handoff: 220, close: 520 };
+  duration.open = duration.travel + duration.settle + duration.handoff;
+  const handoffStart = duration.travel + duration.settle;
   const easing = 'cubic-bezier(.4, 0, .2, 1)';
   panel.style.setProperty('--core-return-duration', `${duration.close}ms`);
   let animations = [];
@@ -106,8 +108,11 @@ function createCoreTransition(panel) {
     ] : [
       { transform },
       { transform: 'none' }
-    ], { duration: opening ? duration.open : duration.close, easing });
-    if (opening) animate(svg, [{ opacity: 1 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: duration.open, easing: 'linear' });
+    ], { duration: opening ? duration.travel : duration.close, easing });
+    // Hold the landed circle before handing its light to the header eye.
+    if (opening) animate(svg, [{ opacity: 1 }, { opacity: 0 }], {
+      duration: duration.handoff, delay: handoffStart, easing: 'linear'
+    });
     if (!opening) {
       // Blend into the home layer before landing, so the title never gets a final layer jump.
       animate(svg, [{ opacity: 0 }, { opacity: 1, offset: .2 }, { opacity: 1, offset: .72 }, { opacity: 0, offset: .94 }, { opacity: 0 }], { duration: duration.close, easing: 'linear' });
@@ -158,7 +163,7 @@ function createCoreTransition(panel) {
         easing: opening ? easing : 'ease-out'
       }));
       animate(dock, opening ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], {
-        duration: opening ? duration.open * .2 : 180, delay: opening ? duration.open * .8 : 0, easing: 'linear'
+        duration: opening ? duration.handoff : 180, delay: opening ? handoffStart : 0, easing: 'linear'
       });
       Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
         if (generation === current) finish();
