@@ -1035,7 +1035,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     }
   });
 
-  await t.test('opening eye lands and holds at full brightness before the header handoff', async () => {
+  await t.test('opening eye shrinks and crossfades immediately on arrival', async () => {
     for (const width of [390, 1440]) {
       const { context, page, errors } = await fixture(browser, { width });
       try {
@@ -1048,7 +1048,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
           const landing = movement.effect.getComputedTiming().endTime;
           const handoff = fade.effect.getTiming().delay;
           const animations = document.getAnimations().filter(animation => animation.effect.target.closest?.('#routines-dialog, .core-flight'));
-          const frames = [landing + 20, handoff - 20, handoff + fade.effect.getTiming().duration / 2].map(time => {
+          const frames = [landing, handoff + fade.effect.getTiming().duration / 2].map(time => {
             for (const animation of animations) { animation.pause(); animation.currentTime = time; }
             const ring = artwork.querySelector('.eye-ring').getBoundingClientRect();
             const dock = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect();
@@ -1064,18 +1064,18 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
           const earlyWidth = artwork.querySelector('.eye-ring').getBoundingClientRect().width;
           const dockWidth = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect().width;
           for (const animation of animations) animation.play();
-          return { hold: handoff - landing, frames, earlyWidth, dockWidth };
+          return { pause: handoff - landing, frames, earlyWidth, dockWidth };
         });
-        assert.ok(result.hold >= 100, 'The landed circle must pause visibly before fading.');
+        assert.equal(result.pause, 0, 'The header handoff must start immediately on arrival.');
         assert.equal(result.frames[0].transform, result.frames[1].transform);
         assert.ok(Math.abs(result.earlyWidth - result.dockWidth) < 1, 'The travelling eye must shrink before approaching the header.');
-        for (const frame of result.frames.slice(0, 2)) {
+        for (const frame of result.frames.slice(0, 1)) {
           assert.equal(frame.opacity, 1); assert.equal(frame.dockOpacity, 0);
-          assert.ok(frame.error < 1, 'The settled circle must match the header eye.');
+          assert.ok(frame.error < 1, 'The arriving circle must match the header eye.');
           assert.ok(frame.frameFits && frame.clearsTitle, 'Outer rings must fold inside the icon and clear the words.');
         }
-        assert.ok(Math.abs(result.frames[2].opacity + result.frames[2].dockOpacity - 1) < .01);
-        assert.ok(result.frames[2].opacity > 0 && result.frames[2].opacity < 1);
+        assert.ok(Math.abs(result.frames[1].opacity + result.frames[1].dockOpacity - 1) < .01);
+        assert.ok(result.frames[1].opacity > 0 && result.frames[1].opacity < 1);
         await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
         assert.equal(await page.locator('.core-flight').count(), 0);
         assert.deepEqual(errors, []);

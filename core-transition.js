@@ -3,9 +3,9 @@ function createCoreTransition(panel) {
   const core = document.querySelector('.core-art');
   const dock = panel.querySelector('.routine-optic');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const duration = { travel: 720, settle: 140, handoff: 220, close: 520 };
-  duration.open = duration.travel + duration.settle + duration.handoff;
-  const handoffStart = duration.travel + duration.settle;
+  const duration = { travel: 720, handoff: 220, close: 520 };
+  duration.open = duration.travel + duration.handoff;
+  const handoffStart = duration.travel;
   const easing = 'cubic-bezier(.4, 0, .2, 1)';
   panel.style.setProperty('--core-return-duration', `${duration.close}ms`);
   let animations = [];
@@ -123,7 +123,7 @@ function createCoreTransition(panel) {
     animate(rings, opening ? [{ transform: 'scale(1)' }, { transform: 'scale(.42)' }] : [
       { transform: 'scale(.42)' }, { transform: 'scale(1)' }
     ], { duration: opening ? duration.travel * .28 : duration.close, easing });
-    // Hold the landed circle before handing its light to the header eye.
+    // Crossfade into the header as soon as the compact eye arrives.
     if (opening) animate(svg, [{ opacity: 1 }, { opacity: 0 }], {
       duration: duration.handoff, delay: handoffStart, easing: 'linear'
     });

@@ -1,6 +1,6 @@
 // Bump this version whenever a public app file changes; install the complete release atomically.
 const prefix = `the-hub:${new URL(self.registration.scope).pathname}:`;
-const cacheName = `${prefix}compact-3`;
+const cacheName = `${prefix}flow-4`;
 const files = [
   './', 'index.html', 'manifest.webmanifest',
   'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css',
