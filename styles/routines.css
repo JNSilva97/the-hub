@@ -566,7 +566,7 @@
 .routine-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .routine-heading h3 { margin: 0; min-width: 0; flex: 1 1 170px; overflow-wrap: anywhere; }
 
-/* The native picker replaces the sidebar only on narrow screens. */
+/* The themed picker replaces the sidebar only on narrow screens. */
 .routine-picker {
   display: none;
 }
@@ -672,14 +672,7 @@
     display: block;
     width: 100%;
     min-width: 0;
-    min-height: 44px;
-    padding: 8px;
-    border: 1px solid #3476ae;
-    border-radius: 2px;
-    background: #07192e;
-    color: #e3f4ff;
-    font: 600 17px var(--font-interface);
-    color-scheme: dark;
+    align-self: start;
   }
 
   #control-launch {

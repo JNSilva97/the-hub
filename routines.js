@@ -1,11 +1,12 @@
 import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=control-1';
 import { cloudWorkspace } from './cloud.js?v=notes-sync-1';
 import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=control-1';
-import { createRoutineTools } from './routine-tools.js?v=mobile-1';
+import { createRoutineTools, createChecklistPicker } from './routine-tools.js?v=picker-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
 const picker = document.getElementById('routine-picker');
+const routinePicker = createChecklistPicker(picker);
 picker.addEventListener('change', () => {
   const routine = routines.find(routine => routine.id === picker.value);
   if (routine) selectRoutine(routine);
@@ -182,6 +183,7 @@ fieldUndo.addEventListener('click', () => {
 function selectRoutine(routine) {
   selected = routine;
   picker.value = routine.id;
+  routinePicker.refresh();
   fieldKey = undefined;
   lastFieldCheck = undefined;
   fieldAnimation?.cancel();
@@ -260,6 +262,7 @@ export async function initialiseRoutines() {
   pendingRestart = undefined;
   restartDialog.close();
   list.replaceChildren();
+  routinePicker.close();
   picker.replaceChildren();
   picker.disabled = true;
   content.replaceChildren();

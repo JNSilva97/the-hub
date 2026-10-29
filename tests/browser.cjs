@@ -67,7 +67,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
   await t.test('editing stays inside the selected checklist and guards Escape, exit and backdrop; backup stays separate', async () => {
     const { context, page, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
     try {
-      await ready(page); await openRoutines(page); await page.locator('#routine-picker').selectOption({ index: 2 });
+      await ready(page); await openRoutines(page); await chooseRoutine(page, JSON.parse(demo).routines[2].id);
       const name = await page.locator('#routine-name').textContent();
       await page.locator('#control-launch').click();
       assert.equal(await page.getByLabel('Checklist name', { exact: true }).inputValue(), name);
@@ -248,22 +248,23 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       try {
         await ready(page); await openRoutines(page);
         assert.equal(await page.locator('#routine-list').isVisible(), false);
-        assert.equal(await page.locator('#routine-picker').isVisible(), true);
+        assert.equal(await page.locator('#routine-picker-menu').isVisible(), true);
+        assert.equal(await page.locator('#routine-picker').isVisible(), false);
         const layout = await page.evaluate(() => {
           const panel = document.getElementById('routines-dialog');
           const bounds = id => document.getElementById(id).getBoundingClientRect();
-          const backup = bounds('backup-launch'), account = bounds('account-launch'), edit = bounds('control-launch'), picker = bounds('routine-picker');
+          const backup = bounds('backup-launch'), account = bounds('account-launch'), edit = bounds('control-launch'), picker = bounds('routine-picker-menu');
           return { width: panel.getBoundingClientRect().width, overflow: panel.scrollWidth > panel.clientWidth, toolbar: Math.abs(backup.y - account.y) + Math.abs(backup.width - account.width), left: Math.abs(backup.left - picker.left), right: Math.abs(account.right - edit.right), touch: [backup, account, edit, picker].every(rect => rect.height >= 44) };
         });
         assert.equal(layout.overflow, false);
         assert.ok(width - layout.width <= 26, 'Mobile dialog must use the available width without the browser default inset.');
         assert.ok(layout.toolbar < 1 && layout.left < 1 && layout.right < 1, 'Mobile controls must share equal columns and gutters.');
         assert.equal(layout.touch, true);
-        await page.locator('#routine-picker').selectOption({ index: 2 });
+        await chooseRoutine(page, JSON.parse(demo).routines[2].id);
         assert.equal(await page.locator('#routine-name').textContent(), JSON.parse(demo).routines[2].name);
         await page.locator('#field-complete').click();
-        await page.locator('#routine-picker').selectOption({ index: 0 });
-        await page.locator('#routine-picker').selectOption({ index: 2 });
+        await chooseRoutine(page, JSON.parse(demo).routines[0].id);
+        await chooseRoutine(page, JSON.parse(demo).routines[2].id);
         assert.equal(await page.locator('.check-row input').first().isChecked(), true, 'Switching lists must preserve ticks.');
         await page.locator('#control-launch').click();
         assert.equal(await page.locator('#routine-picker').isDisabled(), true);
@@ -272,6 +273,35 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         assert.deepEqual(errors, []);
       } finally { await context.close(); }
     }
+  });
+
+  await t.test('themed checklist menus support keyboard dismissal and retain editor drafts when switching', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 390, motion: 'reduce' });
+    try {
+      await ready(page); await openRoutines(page);
+      const trigger = page.locator('#routine-picker-menu .checklist-picker-toggle');
+      await trigger.focus(); await page.keyboard.press('ArrowDown');
+      assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
+      assert.equal(await page.locator('#routine-picker-menu .checklist-choice[aria-pressed="true"]').evaluate(el => el === document.activeElement), true);
+      await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
+      assert.equal(await page.locator('#routine-name').textContent(), JSON.parse(demo).routines[1].name);
+      await trigger.click(); await page.keyboard.press('Escape');
+      assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
+      assert.equal(await page.locator('#routines-dialog').evaluate(el => el.open), true);
+      assert.equal(await trigger.evaluate(el => el === document.activeElement), true);
+      await page.locator('#control-launch').click();
+      const editorTrigger = page.locator('#editor-list-menu .checklist-picker-toggle');
+      await page.getByLabel('Checklist name', { exact: true }).fill('Renamed draft');
+      assert.equal(await editorTrigger.textContent(), 'Renamed draft');
+      await editorTrigger.click(); await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#control-confirm').evaluate(el => el.open), false);
+      await editorTrigger.click(); await page.locator('#editor-list-menu .checklist-choice').first().click();
+      await editorTrigger.click(); await page.locator('#editor-list-menu .checklist-choice').nth(1).click();
+      assert.equal(await page.getByLabel('Checklist name', { exact: true }).inputValue(), 'Renamed draft');
+      assert.equal(await page.locator('#routines-dialog').evaluate(el => el.scrollWidth > el.clientWidth), false);
+      assert.equal(await page.evaluate(() => localStorage.getItem('thehub:workspace:demo:v1')), null);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
   });
 
   await t.test('Routines stops hidden background motion and avoids full-screen backdrop blur', async () => {
