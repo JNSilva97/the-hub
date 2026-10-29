@@ -151,6 +151,34 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
+  await t.test('Settings identifies the release and checks updates without reloading drafts', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 390, motion: 'reduce' });
+    try {
+      await context.addInitScript(() => {
+        const registration = {
+          active: { state: 'activated' }, waiting: null, installing: null,
+          addEventListener() {},
+          async update() {
+            window.__hubUpdateChecks = (window.__hubUpdateChecks || 0) + 1;
+            if (window.__hubUpdateFails) throw new Error('Offline fixture');
+            this.waiting = { state: 'installed' };
+          }
+        };
+        Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
+      });
+      await ready(page); await page.locator('[data-icon="settings"]').click();
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.10.29.5');
+      await page.locator('#check-updates').click();
+      assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
+      assert.match(await page.locator('#offline-status').textContent(), /installed app/);
+      await page.evaluate(() => { window.__hubUpdateFails = true; });
+      await page.locator('#check-updates').click();
+      assert.match(await page.locator('#offline-status').textContent(), /Reconnect and try again/);
+      assert.equal(await page.locator('#check-updates').isEnabled(), true);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
   await t.test('holographic eye tracks pointer and module focus, stays identical in Routines and respects motion preferences', async () => {
     const { context, page, errors } = await fixture(browser);
     try {
@@ -1035,7 +1063,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     }
   });
 
-  await t.test('opening eye shrinks and crossfades immediately on arrival', async () => {
+  await t.test('opening eye finishes fading while still moving into the header', async () => {
     for (const width of [390, 1440]) {
       const { context, page, errors } = await fixture(browser, { width });
       try {
@@ -1047,8 +1075,9 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
           const fade = flight.find(animation => animation.effect.getKeyframes().some(frame => frame.opacity !== undefined));
           const landing = movement.effect.getComputedTiming().endTime;
           const handoff = fade.effect.getTiming().delay;
+          const fadeEnd = fade.effect.getComputedTiming().endTime;
           const animations = document.getAnimations().filter(animation => animation.effect.target.closest?.('#routines-dialog, .core-flight'));
-          const frames = [landing, handoff + fade.effect.getTiming().duration / 2].map(time => {
+          const frames = [handoff, (handoff + landing) / 2, landing].map(time => {
             for (const animation of animations) { animation.pause(); animation.currentTime = time; }
             const ring = artwork.querySelector('.eye-ring').getBoundingClientRect();
             const dock = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect();
@@ -1064,18 +1093,21 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
           const earlyWidth = artwork.querySelector('.eye-ring').getBoundingClientRect().width;
           const dockWidth = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect().width;
           for (const animation of animations) animation.play();
-          return { pause: handoff - landing, frames, earlyWidth, dockWidth };
+          return { landing, handoff, fadeEnd, frames, earlyWidth, dockWidth };
         });
-        assert.equal(result.pause, 0, 'The header handoff must start immediately on arrival.');
-        assert.equal(result.frames[0].transform, result.frames[1].transform);
-        assert.ok(Math.abs(result.earlyWidth - result.dockWidth) < 1, 'The travelling eye must shrink before approaching the header.');
-        for (const frame of result.frames.slice(0, 1)) {
-          assert.equal(frame.opacity, 1); assert.equal(frame.dockOpacity, 0);
-          assert.ok(frame.error < 1, 'The arriving circle must match the header eye.');
-          assert.ok(frame.frameFits && frame.clearsTitle, 'Outer rings must fold inside the icon and clear the words.');
+        assert.ok(result.handoff < result.landing, 'Crossfade must start before movement stops.');
+        assert.equal(result.fadeEnd, result.landing, 'No parked fade may remain after arrival.');
+        assert.notEqual(result.frames[0].transform, result.frames[1].transform, 'The eye must keep moving during the fade.');
+        assert.notEqual(result.frames[1].transform, result.frames[2].transform);
+        assert.ok(Math.abs(result.earlyWidth - result.dockWidth) < 1, 'The travelling eye must shrink early.');
+        for (const frame of result.frames) {
+          assert.ok(Math.abs(frame.opacity + frame.dockOpacity - 1) < .01, 'Brightness must stay continuous.');
+          assert.ok(frame.frameFits && frame.clearsTitle, 'Outer rings must remain compact and clear the title.');
         }
-        assert.ok(Math.abs(result.frames[1].opacity + result.frames[1].dockOpacity - 1) < .01);
+        assert.equal(result.frames[0].opacity, 1); assert.equal(result.frames[0].dockOpacity, 0);
         assert.ok(result.frames[1].opacity > 0 && result.frames[1].opacity < 1);
+        assert.equal(result.frames[2].opacity, 0); assert.equal(result.frames[2].dockOpacity, 1);
+        assert.ok(result.frames[2].error < 1, 'The arriving eye must match the header icon.');
         await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
         assert.equal(await page.locator('.core-flight').count(), 0);
         assert.deepEqual(errors, []);

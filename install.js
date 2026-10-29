@@ -25,15 +25,25 @@
   });
   render();
   const offline = document.getElementById('offline-status');
+  const checkUpdates = document.getElementById('check-updates');
   if (!('serviceWorker' in navigator) || !window.isSecureContext) {
     offline.textContent = 'Offline startup is unavailable in this browser. Open The Hub over HTTPS.';
     return;
   }
   navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(registration => {
     function showStatus() {
-      if (registration.waiting) offline.textContent = 'An app update is ready. Close all The Hub tabs and reopen to apply it.';
+      if (registration.waiting) offline.textContent = 'An app update is ready. Close all The Hub browser tabs and the installed app, then reopen to apply it.';
+      else if (registration.installing) offline.textContent = 'Downloading the app update… Keep The Hub open until it is ready.';
       else if (registration.active?.state === 'activated') offline.textContent = 'Offline app ready. Open your account checklists online once to keep them on this device.';
     }
+    checkUpdates.disabled = false;
+    checkUpdates.addEventListener('click', async () => {
+      checkUpdates.disabled = true;
+      offline.textContent = 'Checking for app updates…';
+      try { await registration.update(); showStatus(); }
+      catch { offline.textContent = 'Could not check for updates. Reconnect and try again.'; }
+      finally { checkUpdates.disabled = false; }
+    });
     function watchInstall() {
       const worker = registration.installing;
       worker?.addEventListener('statechange', () => {
