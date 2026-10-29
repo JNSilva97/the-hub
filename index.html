@@ -16,10 +16,10 @@
   <link rel="stylesheet" href="styles/core.css?v=mobile-1">
   <link rel="stylesheet" href="styles/access.css?v=control-2">
   <link rel="stylesheet" href="styles/panels.css?v=mobile-1">
-  <link rel="stylesheet" href="styles/routines.css?v=compact-3">
+  <link rel="stylesheet" href="styles/routines.css?v=free-9">
   <link rel="stylesheet" href="styles/routine-tools.css?v=phone-7">
   <link rel="stylesheet" href="styles/notes.css?v=daily-8">
-  <link rel="stylesheet" href="styles/motion.css?v=perf-2">
+  <link rel="stylesheet" href="styles/motion.css?v=free-9">
 </head>
 <body>
   <div class="cityscape" aria-hidden="true"><div class="city-buildings"></div><div class="city-horizon"></div></div>
@@ -218,7 +218,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Metallic scanner sweeps and digital signals.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.10.29.8</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.10.29.9</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -275,20 +275,8 @@
         <div class="routine-heading"><select id="routine-picker" class="routine-picker" aria-label="Choose checklist" disabled></select><h3 id="routine-name">Your next move</h3><button id="control-launch" type="button">Edit checklist</button></div><div id="routine-reader"><p id="routine-description">Choose a checklist to begin.</p>
         <div class="routine-progress-row"><span id="routine-progress-label" class="routine-progress-label" role="status">Ready when you are.</span><button id="routine-restart" class="routine-restart" type="button" disabled>Start again</button></div>
         <div id="routine-progress" class="routine-progress" role="progressbar" aria-label="Checklist completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
-        <section id="field-mode" class="field-mode" aria-label="Field Mode" hidden>
-          <div class="field-heading"><span>FIELD MODE</span><span id="field-position"></span></div>
-          <div class="field-copy" aria-live="polite" aria-atomic="true">
-            <p id="field-group" class="field-group"></p>
-            <div class="field-target"><svg class="field-mark" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="27"/><path class="field-crosshair" d="M32 14v10m0 16v10M14 32h10m16 0h10"/><path class="field-check" d="m20 32 8 8 16-17"/></svg><h4 id="field-title"></h4></div>
-            <p id="field-next" class="field-next"></p>
-          </div>
-          <button id="field-complete" class="field-complete" type="button" aria-describedby="field-title">Mark done <span aria-hidden="true">↗</span></button>
-          <div class="field-receipt"><span id="field-receipt"></span><button id="field-undo" type="button" hidden>Undo last tick</button></div>
-        </section>
-        <details id="routine-review" class="routine-review">
-          <summary>Review checklist <span>All items &amp; optional sections</span></summary>
-          <div id="routine-content"></div>
-        </details>
+        <p class="checklist-hint">Tick things off in any order.</p>
+        <div id="routine-content"></div>
         </div>
         <section id="checklist-control" class="control-dialog inline-editor" hidden aria-labelledby="control-title">
           <div class="command-heading"><h2 id="control-title">EDIT CHECKLIST</h2><button id="control-close" class="routine-exit" type="button" aria-label="Back to checklist">Back</button></div>
@@ -352,7 +340,7 @@
   <script defer src="core-progress.js?v=control-2"></script>
   <script defer src="core-transition.js?v=staged-6"></script>
   <script defer src="notes.js?v=daily-8"></script>
-  <script defer src="interface.js?v=daily-8"></script>
+  <script defer src="interface.js?v=free-9"></script>
   <script defer src="interface-sound.js?v=signal-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>
   <script defer src="experience.js?v=daily-8"></script>

@@ -1,4 +1,4 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=control-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, getProgress, restartRoutine } from './routine-model.mjs?v=control-1';
 import { cloudWorkspace } from './cloud.js?v=notes-sync-1';
 import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=control-1';
 import { createRoutineTools, createChecklistPicker } from './routine-tools.js?v=phone-7';
@@ -15,17 +15,6 @@ const content = document.getElementById('routine-content');
 const notice = document.getElementById('routine-notice');
 const sourceBadge = document.getElementById('routine-source');
 const restartDialog = document.getElementById('restart-dialog');
-const field = document.getElementById('field-mode');
-const fieldButton = document.getElementById('field-complete');
-const fieldUndo = document.getElementById('field-undo');
-const review = document.getElementById('routine-review');
-let fieldKey;
-let lastFieldCheck;
-let fieldAnimation;
-const fieldReducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-fieldReducedMotion.addEventListener('change', () => fieldAnimation?.cancel());
-document.addEventListener('hub:motionchange', () => fieldAnimation?.cancel());
-document.addEventListener('visibilitychange', () => { if (document.hidden) fieldAnimation?.cancel(); });
 let pendingRestart;
 let routines = [];
 let selected;
@@ -122,64 +111,8 @@ function updateProgress() {
   bar.setAttribute('aria-valuenow', progress.percent);
   bar.firstElementChild.style.transform = `scaleX(${progress.percent / 100})`;
   document.getElementById('routine-restart').disabled = !Object.entries(state.checks).some(([key, checked]) => key.startsWith(`${selected.id}/`) && checked);
-  updateField(progress);
   document.dispatchEvent(new CustomEvent('hub:progress', { detail: signals }));
 }
-
-function updateField(progress) {
-  const items = getActiveItems(selected, state);
-  const remaining = items.filter(item => state.checks[item.key] !== true);
-  const next = remaining[0];
-  const previousKey = fieldKey;
-  fieldKey = next?.key;
-  field.hidden = false;
-  const position = next ? items.findIndex(item => item.key === fieldKey) + 1 : progress.done;
-  document.getElementById('field-position').textContent = `${String(position).padStart(2, '0')} / ${String(progress.total).padStart(2, '0')}`;
-  document.getElementById('field-group').textContent = next ? next.group : progress.total ? 'CHECKLIST COMPLETE' : 'NO ACTIVE ITEMS';
-  document.getElementById('field-title').textContent = next?.label || (progress.total ? 'All set. You’re ready.' : 'Choose your checklist extras.');
-  document.getElementById('field-next').textContent = remaining[1] ? `Up next: ${remaining[1].label}` : next ? 'Last item. You’re nearly there.' : progress.total ? 'Everything on this checklist is taken care of.' : 'Open the checklist below to include an optional section.';
-  fieldButton.firstChild.textContent = next ? 'Mark done ' : 'Review checklist ';
-  const canUndo = lastFieldCheck && state.checks[lastFieldCheck.key] === true;
-  fieldUndo.hidden = !canUndo;
-  document.getElementById('field-receipt').textContent = canUndo ? `Done: ${lastFieldCheck.label}` : 'One thing at a time.';
-  for (const input of content.querySelectorAll('input[data-check]')) {
-    input.closest('.check-row').dataset.next = String(input.dataset.check === fieldKey);
-  }
-  if (previousKey && previousKey !== fieldKey) {
-    fieldAnimation?.cancel();
-    if (!document.hidden && !fieldReducedMotion.matches && !document.body.classList.contains('motion-paused') && typeof field.animate === 'function') {
-      fieldAnimation = field.querySelector('.field-copy').animate([{ opacity: .3, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.16, 1, .3, 1)' });
-    }
-  }
-}
-
-fieldButton.addEventListener('click', () => {
-  if (!selected) return;
-  if (!fieldKey) {
-    review.open = true;
-    review.querySelector('summary').focus();
-    return;
-  }
-  state = latestProgress();
-  const item = getActiveItems(selected, state).find(item => item.key === fieldKey);
-  // A second tab may have disabled this optional section since it was displayed.
-  if (item && state.checks[item.key] !== true) {
-    state.checks[item.key] = true;
-    lastFieldCheck = item;
-    save();
-  }
-  updateProgress();
-});
-
-fieldUndo.addEventListener('click', () => {
-  if (!lastFieldCheck) return;
-  state = latestProgress();
-  state.checks[lastFieldCheck.key] = false;
-  lastFieldCheck = undefined;
-  save();
-  updateProgress();
-  fieldButton.focus({ preventScroll: true });
-});
 
 function selectRoutine(routine, remember = true) {
   selected = routine;
@@ -188,9 +121,6 @@ function selectRoutine(routine, remember = true) {
   }
   picker.value = routine.id;
   routinePicker.refresh();
-  fieldKey = undefined;
-  lastFieldCheck = undefined;
-  fieldAnimation?.cancel();
   for (const button of list.children) button.setAttribute('aria-pressed', String(button.dataset.routine === routine.id));
   document.getElementById('routine-name').textContent = routine.name;
   document.getElementById('routine-description').textContent = routine.description;
@@ -254,8 +184,7 @@ document.getElementById('restart-confirm').addEventListener('click', () => {
   state = restartRoutine(routine, latestProgress());
   save();
   selectRoutine(selected);
-  if (review.open) content.querySelector('input')?.focus();
-  else fieldButton.focus({ preventScroll: true });
+  content.querySelector('input')?.focus();
 });
 restartDialog.addEventListener('close', () => { if (!restartDialog.open) pendingRestart = undefined; });
 
@@ -271,11 +200,7 @@ export async function initialiseRoutines() {
   picker.replaceChildren();
   picker.disabled = true;
   content.replaceChildren();
-  field.hidden = true;
-  fieldKey = undefined;
-  lastFieldCheck = undefined;
-  fieldAnimation?.cancel();
-  for (const id of ['field-group', 'field-title', 'field-next', 'field-receipt', 'field-position', 'restart-description']) document.getElementById(id).textContent = '';
+  document.getElementById('restart-description').textContent = '';
   content.closest('.routine-detail').dataset.complete = 'false';
   document.getElementById('routine-name').textContent = 'Your next move';
   document.getElementById('routine-description').textContent = 'Choose a checklist to begin.';

@@ -337,11 +337,6 @@ body.window-hidden ::after {
   100% { opacity: 1; transform: none; clip-path: inset(0); }
 }
 
-@keyframes field-lock {
-  0% { transform: scale(.8) rotate(-30deg); opacity: .3; }
-  100% { transform: none; opacity: 1; }
-}
-
 @keyframes section-arrive {
   0% {
     opacity: 0;

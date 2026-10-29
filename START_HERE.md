@@ -6,7 +6,7 @@ The app has three parts: HTML puts things on the screen, CSS makes them look and
 
 Open the homepage and choose **Routines** beneath the optical core. Pick a checklist and tick its items. **Find anything** opens a search box that can take you straight to a checklist. **Settings** controls animation and optional sound.
 
-Routines starts in **Field Mode**: one item, a **Mark done** button and a preview of what comes next. **Undo last tick** reverses your last Field Mode tick. Open **Review checklist** to change any tick or include optional sections. Your saved progress is shared between both views.
+Routines shows the full checklist as soon as you open it. Tick things off in whichever order suits you. Checked rows stay where they are, and tapping one again clears its tick. Optional section switches are right in the list. Progress saves automatically.
 
 Choose **Notes** and start typing. Your first line becomes the title and each edit saves automatically. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Signed-out/local notes stay in this browser; public sample notes and the PC notebook are separate. Signed-in **Account notes** sync privately through Firebase after the current notes rules are published. **Local notes** returns to the original notebook. Existing local text is copied only through **Copy local notes** and its account confirmation.
 
@@ -58,7 +58,7 @@ The intro lasts 3.2 seconds. Its doors open, the optical system appears and the 
 
 Opening Routines fades and slides the panel into place while its optical artwork travels into the header. Closing it sends the eye home while the panel fades out. The two timings are named `open` and `close` near the top of `core-transition.js`; edit them there. The controller tracks opening, open and closing states, so Escape, resizing and navigation can interrupt the animation safely. With motion disabled, the dialog opens immediately.
 
-The outer core rings show checklist progress. The readout beneath the launcher identifies them from outside to inside. They use the same saved ticks and optional sections as Field Mode. `core-progress.js` waits for the return journey to finish before filling the home rings, and pulses only for a new completion. It adds no separate storage or account.
+The outer core rings show checklist progress. The readout beneath the launcher identifies them from outside to inside. They use the same saved ticks and optional sections as the checklist. `core-progress.js` waits for the return journey to finish before filling the home rings, and pulses only for a new completion. It adds no separate storage or account.
 
 The holographic eye is the `.eye-art` SVG in `index.html`. `core-transition.js` copies that same eye into the Routines header, preserving its pose and keeping SVG IDs unique. `styles/core.css` styles it, `styles/motion.css` defines its gentle drift and glow, and `pointer-effects.js` aims every visible eye toward the pointer, including the Routines header and traveling copy, or a keyboard-focused module. Pointer updates use a single scheduled frame, with no continuous JavaScript animation loop.
 
