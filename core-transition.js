@@ -3,9 +3,8 @@ function createCoreTransition(panel) {
   const core = document.querySelector('.core-art');
   const dock = panel.querySelector('.routine-optic');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const duration = { travel: 720, handoff: 120, close: 520 };
-  duration.open = duration.travel;
-  const handoffStart = duration.travel - duration.handoff;
+  const duration = { shrink: 200, travel: 480, close: 520 };
+  duration.open = duration.shrink + duration.travel;
   const easing = 'cubic-bezier(.4, 0, .2, 1)';
   panel.style.setProperty('--core-return-duration', `${duration.close}ms`);
   let animations = [];
@@ -112,21 +111,23 @@ function createCoreTransition(panel) {
     const compact = `translate(${(source.width - destination.width) / 2}px, ${(source.height - destination.width) / 2}px) scale(${destination.width / source.width})`;
     svg.style.filter = getComputedStyle(core).filter;
     animate(svg, opening ? [
-      { transform: 'none' },
-      { transform: compact, offset: .28 },
+      { transform: 'none', easing },
+      { transform: compact, offset: duration.shrink / duration.open, easing },
       { transform }
     ] : [
       { transform },
       { transform: 'none' }
-    ], { duration: opening ? duration.travel : duration.close, easing });
-    // Fold the outer frame inside the eye before it approaches the header words.
+    ], { duration: opening ? duration.open : duration.close, easing: opening ? 'linear' : easing });
+    // Shrink and remove the decorative frame before the eye starts travelling.
     animate(rings, opening ? [{ transform: 'scale(1)' }, { transform: 'scale(.42)' }] : [
       { transform: 'scale(.42)' }, { transform: 'scale(1)' }
-    ], { duration: opening ? duration.travel * .28 : duration.close, easing });
-    // Blend during the final approach so no stationary fade remains after arrival.
-    if (opening) animate(svg, [{ opacity: 1 }, { opacity: 0 }], {
-      duration: duration.handoff, delay: handoffStart, easing: 'linear'
-    });
+    ], { duration: opening ? duration.shrink : duration.close, easing });
+    if (opening) {
+      svg.style.opacity = '1';
+      animate(rings, [{ opacity: 1 }, { opacity: 0 }], {
+        duration: 80, delay: duration.shrink - 80, easing: 'linear'
+      });
+    }
     if (!opening) {
       // Blend into the home layer before landing, so the title never gets a final layer jump.
       animate(svg, [{ opacity: 0 }, { opacity: 1, offset: .2 }, { opacity: 1, offset: .72 }, { opacity: 0, offset: .94 }, { opacity: 0 }], { duration: duration.close, easing: 'linear' });
@@ -176,8 +177,9 @@ function createCoreTransition(panel) {
         duration: opening ? 180 : 130, delay: opening ? 60 + index * 25 : 0,
         easing: opening ? easing : 'ease-out'
       }));
-      animate(dock, opening ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], {
-        duration: opening ? duration.handoff : 180, delay: opening ? handoffStart : 0, easing: 'linear'
+      // Reveal the matching header eye only when the fully visible flight lands.
+      animate(dock, opening ? [{ opacity: 0 }, { opacity: 0 }] : [{ opacity: 1 }, { opacity: 0 }], {
+        duration: opening ? duration.open : 180, easing: 'linear'
       });
       Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
         if (generation === current) finish();

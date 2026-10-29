@@ -167,7 +167,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.10.29.5');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.10.29.6');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -1063,53 +1063,51 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     }
   });
 
-  await t.test('opening eye finishes fading while still moving into the header', async () => {
+  await t.test('the circle disappears at the centre before the visible eye travels to the header', async () => {
     for (const width of [390, 1440]) {
       const { context, page, errors } = await fixture(browser, { width });
       try {
         await ready(page); await openRoutines(page);
         const result = await page.evaluate(() => {
           const artwork = document.querySelector('.core-flight > svg');
-          const flight = artwork.getAnimations();
-          const movement = flight.find(animation => animation.effect.getKeyframes().some(frame => frame.transform));
-          const fade = flight.find(animation => animation.effect.getKeyframes().some(frame => frame.opacity !== undefined));
-          const landing = movement.effect.getComputedTiming().endTime;
-          const handoff = fade.effect.getTiming().delay;
-          const fadeEnd = fade.effect.getComputedTiming().endTime;
+          const rings = artwork.querySelector('.flight-rings');
+          const movement = artwork.getAnimations().find(animation => animation.effect.getKeyframes().some(frame => frame.transform));
+          const timing = movement.effect.getTiming();
+          const shrinkEnd = movement.effect.getKeyframes()[1].offset * timing.duration;
+          const ringFade = rings.getAnimations().find(animation => animation.effect.getKeyframes().some(frame => frame.opacity !== undefined));
+          const fadeEnd = ringFade.effect.getComputedTiming().endTime;
           const animations = document.getAnimations().filter(animation => animation.effect.target.closest?.('#routines-dialog, .core-flight'));
-          const frames = [handoff, (handoff + landing) / 2, landing].map(time => {
+          const times = [shrinkEnd / 2, shrinkEnd, shrinkEnd + 1, (shrinkEnd + timing.duration) / 2, timing.duration - 1];
+          const frames = times.map(time => {
             for (const animation of animations) { animation.pause(); animation.currentTime = time; }
-            const ring = artwork.querySelector('.eye-ring').getBoundingClientRect();
+            const eye = artwork.querySelector('.eye-ring').getBoundingClientRect();
             const dock = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect();
-            const frame = artwork.querySelector('.flight-rings').getBoundingClientRect();
-            const title = document.querySelector('.routines-header h2').getBoundingClientRect();
-            return { transform: getComputedStyle(artwork).transform, opacity: Number(getComputedStyle(artwork).opacity),
+            return { x: eye.left + eye.width / 2, y: eye.top + eye.height / 2, width: eye.width,
+              transform: getComputedStyle(artwork).transform, eyeOpacity: Number(getComputedStyle(artwork).opacity),
+              frameOpacity: Number(getComputedStyle(rings).opacity),
               dockOpacity: Number(getComputedStyle(document.querySelector('.routine-optic')).opacity),
-              frameFits: frame.width <= document.querySelector('.routine-optic').getBoundingClientRect().width + 1,
-              clearsTitle: frame.right <= title.left || frame.bottom <= title.top || frame.top >= title.bottom,
-              error: Math.abs(ring.left - dock.left) + Math.abs(ring.top - dock.top) + Math.abs(ring.width - dock.width) };
+              error: Math.abs(eye.left - dock.left) + Math.abs(eye.top - dock.top) + Math.abs(eye.width - dock.width),
+              dockWidth: dock.width };
           });
-          for (const animation of animations) animation.currentTime = landing * .45;
-          const earlyWidth = artwork.querySelector('.eye-ring').getBoundingClientRect().width;
-          const dockWidth = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect().width;
           for (const animation of animations) animation.play();
-          return { landing, handoff, fadeEnd, frames, earlyWidth, dockWidth };
+          return { fadeEnd, shrinkEnd, frames };
         });
-        assert.ok(result.handoff < result.landing, 'Crossfade must start before movement stops.');
-        assert.equal(result.fadeEnd, result.landing, 'No parked fade may remain after arrival.');
-        assert.notEqual(result.frames[0].transform, result.frames[1].transform, 'The eye must keep moving during the fade.');
-        assert.notEqual(result.frames[1].transform, result.frames[2].transform);
-        assert.ok(Math.abs(result.earlyWidth - result.dockWidth) < 1, 'The travelling eye must shrink early.');
-        for (const frame of result.frames) {
-          assert.ok(Math.abs(frame.opacity + frame.dockOpacity - 1) < .01, 'Brightness must stay continuous.');
-          assert.ok(frame.frameFits && frame.clearsTitle, 'Outer rings must remain compact and clear the title.');
+        assert.ok(result.fadeEnd <= result.shrinkEnd, 'The outer circle must vanish before the sideways trip.');
+        assert.ok(Math.abs(result.frames[0].x - result.frames[1].x) < 1 && Math.abs(result.frames[0].y - result.frames[1].y) < 1, 'Shrinking must happen in place.');
+        assert.ok(result.frames[0].width > result.frames[1].width, 'The eye must shrink before moving.');
+        assert.ok(Math.abs(result.frames[1].width - result.frames[1].dockWidth) < 1);
+        assert.equal(result.frames[0].frameOpacity, 1);
+        for (const frame of result.frames.slice(2)) {
+          assert.equal(frame.frameOpacity, 0, 'The circle must stay gone during travel.');
+          assert.equal(frame.eyeOpacity, 1, 'The eye must never disappear in the middle of the trip.');
+          assert.equal(frame.dockOpacity, 0, 'Only one eye may be visible before landing.');
         }
-        assert.equal(result.frames[0].opacity, 1); assert.equal(result.frames[0].dockOpacity, 0);
-        assert.ok(result.frames[1].opacity > 0 && result.frames[1].opacity < 1);
-        assert.equal(result.frames[2].opacity, 0); assert.equal(result.frames[2].dockOpacity, 1);
-        assert.ok(result.frames[2].error < 1, 'The arriving eye must match the header icon.');
+        assert.notEqual(result.frames[2].transform, result.frames[3].transform);
+        assert.notEqual(result.frames[3].transform, result.frames[4].transform);
+        assert.ok(result.frames[4].error < 1, 'The visible eye must land precisely on the header icon.');
         await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
         assert.equal(await page.locator('.core-flight').count(), 0);
+        assert.equal(await page.locator('.routine-optic').evaluate(el => Number(getComputedStyle(el).opacity)), 1);
         assert.deepEqual(errors, []);
       } finally { await context.close(); }
     }
