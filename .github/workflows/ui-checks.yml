@@ -22,5 +22,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install --with-deps chrome
-      - name: Run browser, Notes, model and offline checks
-        run: node --test tests/browser.cjs tests/notes-sync.cjs tests/notes-model.test.mjs tests/routine-model.test.mjs tests/workspace-model.test.mjs tests/offline.cjs
+      - name: Verify offline restart
+        run: node --test tests/offline.cjs
+      - name: Run browser, Notes and model checks
+        run: node --test tests/browser.cjs tests/notes-sync.cjs tests/notes-model.test.mjs tests/routine-model.test.mjs tests/workspace-model.test.mjs

@@ -84,7 +84,21 @@ test('offline startup and native queued ticks survive closing; private account d
   await page.close();
   page = await context.newPage();
   await page.goto(origin + '/the-hub/?v=offline-test');
-  await page.waitForFunction(() => document.getElementById('routine-name').textContent === 'Offline private fixture');
+  try {
+    await page.waitForFunction(() => document.getElementById('routine-name').textContent === 'Offline private fixture');
+  } catch (error) {
+    console.log('Offline restart diagnostics', JSON.stringify({
+      errors, blocked, requests,
+      page: await page.evaluate(() => ({
+        title: document.title,
+        source: document.getElementById('routine-source')?.textContent,
+        notice: document.getElementById('routine-notice')?.textContent,
+        note: document.getElementById('routine-data-note')?.textContent,
+        controller: navigator.serviceWorker.controller?.scriptURL
+      }))
+    }));
+    throw error;
+  }
   await page.locator('#routines-launch').click();
   assert.match(await page.locator('#routine-progress-label').textContent(), /1 of 3/);
   assert.match(await page.locator('#routine-notice').textContent(), /Saved on this device/);

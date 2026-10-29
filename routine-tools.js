@@ -98,7 +98,6 @@ export function createChecklistPicker(select) {
   const fieldset = select.closest('fieldset');
   if (fieldset) observer.observe(fieldset, { attributes: true, attributeFilter: ['disabled'] });
   dialog?.addEventListener('close', () => close());
-  dialog?.addEventListener('scroll', () => close(), { passive: true });
   window.addEventListener('resize', () => close());
   refresh();
   return { refresh, close, focus: () => trigger.focus() };
