@@ -728,7 +728,6 @@ footer {
     font: 600 15px var(--font-interface);
   }
 
-  .phone-actions button:first-child { border-color: #3476ae; background: #0a2946; }
   .phone-actions button:hover { background: #103655; }
   .phone-actions svg { width: 20px; height: 20px; fill: none; stroke: #83d7ff; stroke-width: 1.6; }
   body:has(dialog[open]) .phone-actions { display: none; }

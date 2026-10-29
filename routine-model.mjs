@@ -33,15 +33,14 @@ export function parseProgress(raw) {
 export const groupKey = (routine, group) => `${routine.id}/${group.id}`;
 export const itemKey = (routine, group, item) => `${groupKey(routine, group)}/${item.id}`;
 
-export function getActiveItems(routine, state) {
-  return routine.groups.flatMap(group => group.optional && state.optional[groupKey(routine, group)] !== true ? [] :
-    group.items.map(item => ({ key: itemKey(routine, group, item), label: item.label, group: group.title })));
-}
-
 export function getProgress(routine, state) {
-  const items = getActiveItems(routine, state);
-  const total = items.length;
-  const done = items.filter(item => state.checks[item.key] === true).length;
+  let done = 0;
+  let total = 0;
+  for (const group of routine.groups) {
+    if (group.optional && state.optional[groupKey(routine, group)] !== true) continue;
+    total += group.items.length;
+    for (const item of group.items) if (state.checks[itemKey(routine, group, item)] === true) done++;
+  }
   return { done, total, percent: total ? Math.round(done / total * 100) : 0 };
 }
 

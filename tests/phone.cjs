@@ -43,6 +43,29 @@ test('Phone workflows', { timeout: 90000 }, async t => {
     }
   });
 
+  await t.test('phone navigation and quick access work even when atmosphere effects fail to load', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 390, motion: 'reduce' });
+    try {
+      await context.route('**/experience.js*', route => route.abort());
+      await ready(page);
+      await page.locator('#phone-settings').click();
+      assert.equal(await page.locator('#interface-settings').isVisible(), true);
+      assert.equal(await page.locator('#app-description').textContent(), 'Set the atmosphere of your terminal.');
+      await page.locator('#app-dialog .close').click();
+      await page.locator('#phone-notes').click();
+      await page.locator('#note-text').fill('Navigation still works');
+      await page.keyboard.press('Control+k');
+      await page.locator('#command-search').fill('Workday'); await page.keyboard.press('Enter');
+      assert.equal(await page.locator('#routine-name').textContent(), 'Workday');
+      await page.getByRole('button', { name: 'Close routines', exact: true }).click();
+      await page.keyboard.press('Control+k');
+      await page.locator('#command-search').fill('Projects'); await page.keyboard.press('Enter');
+      assert.match(await page.locator('#app-description').textContent(), /coming later/);
+      assert.equal(await page.locator('#interface-settings').isVisible(), false);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
   await t.test('phone note actions stay at the bottom and desktop controls return on resize', async () => {
     const { context, page, errors } = await fixture(browser, { width: 390, height: 640, motion: 'reduce' });
     try {

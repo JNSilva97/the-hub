@@ -29,10 +29,10 @@ Choose **Edit checklist** beside the selected checklist title to edit directly i
 | Opening sequence and doors | `styles/access.css` |
 | Dialogs, search and Settings appearance | `styles/panels.css` |
 | Keyframes, pausing and reduced motion | `styles/motion.css` |
-| Clock, opening dialogs and loading recovery | `interface.js` |
+| App routing, phone navigation, search, clock and loading recovery | `interface.js` |
 | Core-to-Routines transformation and return | `core-transition.js` |
 | Checklist rings, home progress readout and completion pulses | `core-progress.js` |
-| Search, intro replay and sound triggers | `experience.js` |
+| Intro replay, sound triggers and atmosphere | `experience.js` |
 | Eye tracking and pointer light | `pointer-effects.js` |
 | Electronic sound textures, durations and levels | `interface-sound.js` |
 | Checklist appearance | `styles/routines.css` |

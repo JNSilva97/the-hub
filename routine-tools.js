@@ -46,7 +46,6 @@ export function createChecklistPicker(select) {
         close(true);
         select.value = option.value;
         select.dispatchEvent(new Event('change', { bubbles: true }));
-        refresh();
       });
       return button;
     });

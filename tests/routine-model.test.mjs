@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { validateRoutines, parseProgress, getActiveItems, getProgress, restartRoutine, getProgressPatch } from '../routine-model.mjs';
+import { validateRoutines, parseProgress, getProgress, restartRoutine, getProgressPatch } from '../routine-model.mjs';
 
 const demo = JSON.parse(readFileSync(new URL('../routines.demo.json', import.meta.url), 'utf8'));
 const work = validateRoutines(demo).find(routine => routine.id === 'workday');
@@ -30,15 +30,8 @@ test('restart clears one routine and preserves other lists and optional choices'
   assert.equal(state.checks['workday/work/item-1'], true);
 });
 
-test('active items follow checklist order and exclude disabled extras', () => {
-  const state = parseProgress(null);
-  assert.deepEqual(getActiveItems(work, state).map(item => item.key), work.groups[0].items.map(item => `workday/work/${item.id}`));
-  state.optional['workday/after-work'] = true;
-  const items = getActiveItems(work, state);
-  assert.equal(items.length, 6);
-  assert.deepEqual(items[4], { key: 'workday/after-work/item-1', label: 'Pack a spare top', group: 'After-work activity' });
+test('a checklist with no enabled items is not complete and reports zero progress', () => {
   const optionalOnly = { ...work, groups: [work.groups[1]] };
-  assert.deepEqual(getActiveItems(optionalOnly, parseProgress(null)), []);
   assert.deepEqual(getProgress(optionalOnly, parseProgress(null)), { done: 0, total: 0, percent: 0 });
 });
 

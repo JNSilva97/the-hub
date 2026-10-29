@@ -89,7 +89,8 @@ If a checklist download fails, open **Routines** and select **Try again**. A fai
 ## Code layout
 
 - `index.html` — accessible screen structure, icons and dialogs.
-- `interface.js` / `experience.js` — screen controls, clock, loading recovery, quick access, intro replay and Settings.
+- `interface.js` — app routing, phone navigation, quick access, clock and loading recovery.
+- `experience.js` — intro replay, sound and visual atmosphere. Pointer lighting and gaze live in `pointer-effects.js`.
 - `pointer-effects.js` — eye tracking and button lighting, batched into one frame.
 - `routines.js` — checklist loading, rendering and browser storage. Component styles live in `styles/`.
 - `routine-model.mjs` — data validation, progress calculations and scoped reset.
