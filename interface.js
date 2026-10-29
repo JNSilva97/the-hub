@@ -53,6 +53,30 @@ for (const button of document.querySelectorAll('.app')) {
   });
 }
 
+// Phone navigation reaches the existing actions without changing modal or draft handling.
+const phoneLayout = matchMedia('(max-width: 700px)');
+const appGrid = document.querySelector('.apps');
+const appButtons = [...appGrid.querySelectorAll('.app')];
+const futureSpaces = document.getElementById('future-spaces');
+const futureGrid = futureSpaces.querySelector('.future-grid');
+const futureApps = appButtons.filter(button => !['notes', 'settings'].includes(button.dataset.icon));
+for (const button of futureApps) {
+  const label = button.querySelector('.app-meta');
+  label.textContent = 'COMING SOON';
+  label.removeAttribute('aria-hidden');
+}
+function arrangePhoneApps() {
+  futureSpaces.hidden = !phoneLayout.matches;
+  if (phoneLayout.matches) futureApps.forEach(button => futureGrid.append(button));
+  else { appButtons.forEach(button => appGrid.append(button)); futureSpaces.open = false; }
+}
+phoneLayout.addEventListener('change', arrangePhoneApps);
+arrangePhoneApps();
+document.getElementById('phone-routines').addEventListener('click', () => routinesLauncher.click());
+for (const icon of ['notes', 'settings']) {
+  document.getElementById(`phone-${icon}`).addEventListener('click', () => document.querySelector(`.app[data-icon="${icon}"]`).click());
+}
+
 routinesLauncher.addEventListener('click', () => {
   routineTransition.open();
 });

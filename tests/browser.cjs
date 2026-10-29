@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
-const { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, reviewChecklist, browseNotes } = require('./browser-fixture.cjs');
+const { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, reviewChecklist, browseNotes, showFutureSpaces } = require('./browser-fixture.cjs');
 
 test('The Hub browser regressions', { timeout: 240000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -167,7 +167,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.10.29.7');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.10.29.8');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -188,6 +188,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.notEqual(pointerX, '');
       await page.mouse.move(200, 400); await page.waitForTimeout(50);
       assert.notEqual(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), pointerX);
+      await showFutureSpaces(page);
       await page.locator('[data-icon="projects"]').focus();
       assert.notEqual(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), '');
       await page.locator('.motion-toggle').click();
@@ -630,6 +631,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         assert.equal(await page.locator('#routines-launch').evaluate(element => document.activeElement === element), true);
         await page.keyboard.press('Enter');
         await page.getByRole('button', { name: 'Close routines' }).click();
+        await showFutureSpaces(page);
         for (const app of await page.locator('.app').all()) {
           await app.click();
           const notes = await app.getAttribute('data-icon') === 'notes';
@@ -1327,6 +1329,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(await page.evaluate(() => window.toneCount), tones);
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
+      await showFutureSpaces(page);
       await page.locator('[data-icon="projects"]').click();
       assert.equal(await page.locator('#interface-settings').isVisible(), false);
       assert.deepEqual(errors, []);

@@ -16,10 +16,31 @@ function createInstantNotes(panel) {
   const localRecovery = new Map();
   const library = document.getElementById('notes-library');
   const mobile = matchMedia('(max-width: 700px)');
-  library.open = !mobile.matches;
-  mobile.addEventListener('change', () => { library.open = !mobile.matches; });
-  library.addEventListener('toggle', () => {
+  const browse = document.getElementById('notes-browse');
+  const newButton = document.getElementById('note-new');
+  const headingActions = panel.querySelector('.notes-actions');
+  const phoneActions = document.getElementById('notes-phone-actions');
+  function updateBrowse() {
     library.querySelector('summary').textContent = library.open && mobile.matches ? 'Back to note' : 'Browse notes';
+    browse.textContent = library.open ? 'Back to note' : 'All notes';
+    browse.setAttribute('aria-expanded', String(library.open));
+  }
+  function arrangeNoteActions() {
+    library.open = !mobile.matches;
+    if (mobile.matches) phoneActions.append(newButton);
+    else headingActions.insertBefore(newButton, headingActions.querySelector('form'));
+    updateBrowse();
+  }
+  arrangeNoteActions();
+  mobile.addEventListener('change', arrangeNoteActions);
+  library.addEventListener('toggle', updateBrowse);
+  browse.addEventListener('click', () => {
+    library.open = !library.open;
+    updateBrowse();
+    if (library.open) {
+      search.value = ''; renderList();
+      (list.querySelector('[aria-pressed="true"]') || list.querySelector('button'))?.focus();
+    } else editor.focus({ preventScroll: true });
   });
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const importDialog = document.getElementById('notes-import-dialog');
@@ -84,7 +105,7 @@ function createInstantNotes(panel) {
     editor.value = notes.get(id).text;
     updateHeading();
     renderList();
-    if (mobile.matches) library.open = false;
+    if (mobile.matches) { library.open = false; updateBrowse(); }
     tell(accountMode ? cloud.status : unsaved.has(id) ? 'Not saved. Keep this tab open and copy your text before leaving.' : revisions.has(id) ? 'Saved in this browser.' : 'Start typing. Your note saves automatically.', unsaved.has(id));
     if (panel.open) {
       editor.focus({ preventScroll: true });
@@ -324,6 +345,7 @@ function createInstantNotes(panel) {
     document.getElementById('notes-import').disabled = !cloud.ready;
     document.getElementById('notes-retry').hidden = !accountMode || !cloud.error;
     document.getElementById('note-new').disabled = accountMode && !cloud.ready;
+    browse.disabled = accountMode && !cloud.ready;
     editor.readOnly = accountMode && !cloud.ready;
     if (!accountMode) { if (panel.open && !loaded) load(); return; }
     const empty = notes.get(selected);
@@ -412,7 +434,7 @@ function createInstantNotes(panel) {
       closing?.cancel();
       closing = undefined;
       if (!loaded) load();
-      if (mobile.matches) library.open = false;
+      if (mobile.matches) { library.open = false; updateBrowse(); }
       if (!panel.open) panel.showModal();
       editor.focus({ preventScroll: true });
       editor.setSelectionRange(editor.value.length, editor.value.length);

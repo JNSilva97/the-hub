@@ -314,6 +314,8 @@
 
 }
 
+.notes-phone-actions { display: none; }
+
 @media (max-width: 700px) {
   .notes-dialog {
     width: calc(100% - 16px);
@@ -339,6 +341,25 @@
     font-size: 15px;
   }
 
+  .notes-phone-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  #notes-browse {
+    min-height: 44px;
+    padding: 10px;
+    border: 1px solid #376485;
+    background: #07182a;
+    color: #c3e6fb;
+    font: 600 15px var(--font-interface);
+  }
+
+  #notes-browse:hover { border-color: #80cfff; background: #103655; }
+  #notes-browse:disabled { opacity: .45; }
+
   .notes-source {
     padding: 10px 16px;
     gap: 5px;
@@ -359,22 +380,6 @@
     height: auto;
   }
 
-  .notes-library > summary {
-    display: list-item;
-    min-height: 44px;
-    padding: 12px 16px;
-    border-bottom: 1px solid #183855;
-    background: #061321;
-    color: #b3d8ef;
-    font: 600 15px var(--font-interface);
-    cursor: pointer;
-  }
-
-  .notes-library > summary:focus-visible {
-    outline: 2px solid #8adaff;
-    outline-offset: -2px;
-  }
-
   .notes-layout:has(.notes-library[open]) {
     grid-template-rows: minmax(0, 1fr);
   }
@@ -385,7 +390,7 @@
 
   .notes-library[open] { height: 100%; }
 
-  .notes-library[open] .notes-sidebar { height: calc(100% - 44px); }
+  .notes-library[open] .notes-sidebar { height: 100%; }
 
   .notes-sidebar {
     height: 154px;
@@ -440,6 +445,7 @@
   }
 
   .notes-status {
+    flex-basis: 120px;
     font-size: 11px;
   }
 
