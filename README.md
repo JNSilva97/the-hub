@@ -16,7 +16,7 @@ The eye is a translucent neon-blue hologram with an illuminated iris, fine radia
 
 The home core has one progress ring per checklist, ordered from the outside in. The readout names each ring and shows its saved count. Completing a list pulses the docked core; returning home fills the rings and sends a blue pulse through the main core. Undo and reset update the same rings, while loading existing completions stays quiet. Motion controls and reduced-motion preferences also apply here.
 
-**Instant Notes** opens directly into a plain-text editor. Its first line becomes the note title, **New note** starts another, and search matches the whole text. Notes have a 50,000-character limit. Signed-out/local notes save immediately in this browser; the public local notebook starts with samples and the PC notebook starts blank. Public and loopback notes use separate storage namespaces. Local notes are never automatically uploaded.
+**Instant Notes** opens directly into a plain-text editor. Its first line becomes the note title, **New note** starts another, and search matches the whole text. On phones, **Browse notes** opens a searchable list; selecting a note returns to writing with more room for the keyboard. Notes have a 50,000-character limit. Signed-out/local notes save immediately in this browser; the public local notebook starts with samples and the PC notebook starts blank. Public and loopback notes use separate storage namespaces. Local notes are never automatically uploaded. Failed local saves are kept in memory across notebook/account switches for the current page visit, and leaving the page requests confirmation. This recovery is not persistent storage; keep the tab open and copy important unsaved text.
 
 **Account Notes activation:** publish the current `firestore.rules` before account notes can synchronize. The app reports missing access rules and keeps the local notebook available with **Local notes**. No new package or service is required.
 
@@ -68,7 +68,7 @@ Automatic sync runs while The Hub is open and connected. If you close it offline
 
 On phones, use the compact **Choose checklist** picker beside **Edit checklist**; desktop keeps the sidebar. Both control the same saved checklists and ticks.
 
-Open **Routines → Edit checklist** to create, rename and reorder checklists, sections and items. IDs stay stable when text or order changes, so saved ticks follow the same items. Optional sections can be switched on or off. Changes apply only with **Save changes**; removing saved items asks for confirmation. A failed save keeps the draft open. Closing a changed draft asks before discarding it.
+Open **Routines → Edit checklist** to create, rename and reorder checklists, sections and items. IDs stay stable when text or order changes, so saved ticks follow the same items. Optional sections can be switched on or off. Changes apply only with **Save changes**; removing saved items asks for confirmation. A failed save keeps the draft open. Closing a changed draft asks before discarding it. The editor hides account navigation and duplicate checklist controls while editing. New items, sections and checklists focus their name field immediately; Save changes is disabled until something changes.
 
 The separate **Backup** button at the top of Routines downloads a portable JSON file containing saved checklist definitions and ticks. Notes, account credentials and unsaved drafts are excluded. Opening a backup validates its format and size (up to 2 MB), then shows counts and the destination before a second replacement confirmation. Export a copy before restoring if you need the old version. Restore rejects ticks changed since the preview; reopen the file to review the latest destination.
 
@@ -144,7 +144,7 @@ node --test tests/routine-model.test.mjs tests/workspace-model.test.mjs
 For the browser regression suite, make the installed `playwright` package available to Node.js and use a system Chrome installation:
 
 ```sh
-node --test tests/browser.cjs
+node --test tests/browser.cjs tests/phone.cjs
 node --test tests/offline.cjs
 node --test tests/notes-model.test.mjs tests/notes-sync.cjs
 ```

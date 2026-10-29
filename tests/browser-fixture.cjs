@@ -83,4 +83,10 @@ async function reviewChecklist(page) {
   if (!await page.locator('#routine-review').evaluate(element => element.open)) await page.locator('#routine-review > summary').click();
 }
 
-module.exports = { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, reviewChecklist };
+async function browseNotes(page) {
+  if (await page.locator('#notes-library > summary').isVisible() && !await page.locator('#notes-library').evaluate(element => element.open)) {
+    await page.locator('#notes-library > summary').click();
+  }
+}
+
+module.exports = { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, reviewChecklist, browseNotes };

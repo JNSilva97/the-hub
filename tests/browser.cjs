@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
-const { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, reviewChecklist } = require('./browser-fixture.cjs');
+const { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, reviewChecklist, browseNotes } = require('./browser-fixture.cjs');
 
 test('The Hub browser regressions', { timeout: 240000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -167,7 +167,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.10.29.6');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.10.29.7');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -665,8 +665,10 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         assert.match(await page.locator('#notes-status').textContent(), /^Saved/);
         await page.locator('#note-new').click();
         await page.locator('#note-text').fill('Second idea\nRemember the training bag.');
+        await browseNotes(page);
         await page.locator('#notes-search').fill('blue city');
         assert.equal(await page.locator('#note-list button').count(), 1);
+        await browseNotes(page);
         await page.locator('#note-list button').click();
         assert.equal(await page.locator('#note-text').inputValue(), 'First idea\nA blue city after dark.');
         await page.locator('#note-text').evaluate(el => { el.setSelectionRange(0, 0); });
@@ -681,6 +683,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         await page.locator('#command-search').fill('Notes');
         await page.keyboard.press('Enter');
         assert.equal(await page.locator('#note-text').inputValue(), 'New First idea\nA blue city after dark.');
+        await browseNotes(page);
         await page.locator('#notes-search').fill('no-such-note');
         assert.equal(await page.locator('#notes-empty').isVisible(), true);
         assert.equal(await page.locator('#note-text').inputValue(), 'New First idea\nA blue city after dark.');
@@ -708,6 +711,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         const original = await page.evaluate(key => localStorage.getItem(key), key);
         await page.locator('#note-new').click();
         await page.locator('#note-text').fill('Keep this note\nThis text must stay unchanged.');
+        await browseNotes(page);
         await page.locator(`#note-list [data-note="${id}"]`).click();
         await page.locator('#note-delete').click();
         assert.equal(await page.locator('#note-delete-dialog .restart-keep').evaluate(el => el === document.activeElement), true);
@@ -733,18 +737,24 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         await page.locator('#note-delete-confirm').click();
         await ready(page);
         await page.locator('[data-icon="notes"]').click();
+        await browseNotes(page);
         await page.locator('#notes-search').fill('Delete this draft');
         assert.equal(await page.locator('#note-list button').count(), 0);
+        await browseNotes(page);
         await page.locator('#notes-search').fill('Nightfall ideas');
+        await browseNotes(page);
         await page.locator('#note-list button').click();
         await page.locator('#note-delete').click();
         assert.equal(await page.locator('#note-delete-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
         await page.locator('#note-delete-confirm').click();
         await ready(page);
         await page.locator('[data-icon="notes"]').click();
+        await browseNotes(page);
         await page.locator('#notes-search').fill('Nightfall ideas');
         assert.equal(await page.locator('#note-list button').count(), 0, 'Deleted sample notes must stay deleted too.');
+        await browseNotes(page);
         await page.locator('#notes-search').fill('Keep this note');
+        await browseNotes(page);
         await page.locator('#note-list button').click();
         assert.equal(await page.locator('#note-text').inputValue(), 'Keep this note\nThis text must stay unchanged.');
         assert.equal(await page.locator('#notes-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
