@@ -266,7 +266,7 @@ export async function initialiseRoutines() {
     card.type = 'button';
     card.dataset.routine = routine.id;
     card.setAttribute('aria-pressed', 'false');
-    card.append(make('span', 'routine-index', `0${index + 1} / CHECKLIST`), make('span', 'routine-card-name', routine.name));
+    card.append(make('span', 'routine-index', `${String(index + 1).padStart(2, '0')} / CHECKLIST`), make('span', 'routine-card-name', routine.name));
     const track = make('span', 'routine-mini-track');
     track.setAttribute('aria-hidden', 'true');
     track.append(make('span', 'routine-mini-fill'));

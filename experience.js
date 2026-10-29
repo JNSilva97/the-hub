@@ -1,4 +1,4 @@
-// Decorative effects and quick access. Checklist data stays in routines.js.
+// Intro, sound and atmosphere. Navigation lives in interface.js.
 (() => {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const motionAllowed = () => !reducedMotion.matches && !document.body.classList.contains('motion-paused');
@@ -55,10 +55,6 @@
     document.getElementById('settings-motion-note').textContent = reducedMotion.matches ? 'Reduced motion is enabled on your device.' : 'Optical rings and interface transitions.';
     replay.disabled = !motionAllowed();
     replay.title = replay.disabled ? 'Enable motion to replay the intro' : 'Replay the opening sequence';
-    if (!motionAllowed()) document.querySelectorAll('.app').forEach(app => {
-      app.style.removeProperty('--spot-x');
-      app.style.removeProperty('--spot-y');
-    });
   }
   replay.addEventListener('click', () => {
     if (!motionAllowed()) return;
@@ -80,75 +76,5 @@
     skyline.append(tower);
   });
 
-  for (const app of document.querySelectorAll('.app')) {
-    app.addEventListener('click', () => {
-      const settings = app.dataset.icon === 'settings';
-      document.getElementById('interface-settings').hidden = !settings;
-      document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : app.dataset.icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Routines.';
-    });
-  }
-
-  const palette = document.getElementById('command-dialog');
-  const search = document.getElementById('command-search');
-  const results = document.getElementById('command-results');
-  let commands = [];
-  function renderResults() {
-    results.replaceChildren();
-    const query = search.value.trim().toLocaleLowerCase();
-    for (const command of commands.filter(item => `${item.name} ${item.kind}`.toLocaleLowerCase().includes(query))) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      const label = document.createElement('span');
-      label.textContent = command.name;
-      const kind = document.createElement('small');
-      kind.textContent = command.kind;
-      button.append(label, kind);
-      button.addEventListener('click', () => {
-        palette.close();
-        command.run();
-      });
-      results.append(button);
-    }
-    document.getElementById('command-empty').hidden = results.children.length > 0;
-  }
-  function openPalette() {
-    if (!document.getElementById('checklist-control').hidden || document.getElementById('backup-dialog').open) return;
-    if (palette.open) { palette.close(); return; }
-    for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
-    const launch = target => { target.focus(); target.click(); };
-    const routines = document.getElementById('routines-launch');
-    commands = [{ name: 'Routines', kind: 'Checklists', run: () => launch(routines) }];
-    for (const card of document.querySelectorAll('.routine-card')) commands.push({
-      name: card.querySelector('.routine-card-name').textContent,
-      kind: 'Checklist', run: () => { launch(routines); card.click(); }
-    });
-    for (const app of document.querySelectorAll('.app')) commands.push({
-      name: app.querySelector('.app-name').textContent, kind: app.dataset.icon === 'settings' ? 'Interface' : app.dataset.icon === 'notes' ? 'Notebook' : 'Coming soon', run: () => launch(app)
-    });
-    search.value = '';
-    renderResults();
-    palette.showModal();
-    search.focus();
-  }
-  document.getElementById('command-launch').addEventListener('click', openPalette);
-  search.addEventListener('input', renderResults);
-  document.addEventListener('keydown', event => {
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && !event.altKey) {
-      event.preventDefault();
-      openPalette();
-    }
-  });
-  palette.addEventListener('keydown', event => {
-    const buttons = [...results.children];
-    if (['ArrowDown', 'ArrowUp'].includes(event.key) && buttons.length) {
-      event.preventDefault();
-      const index = buttons.indexOf(document.activeElement);
-      const next = index === -1 ? (event.key === 'ArrowDown' ? 0 : buttons.length - 1) : (index + (event.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length;
-      buttons[next].focus();
-    } else if (event.key === 'Enter' && event.target === search) {
-      event.preventDefault();
-      buttons[0]?.click();
-    }
-  });
   document.addEventListener('visibilitychange', () => document.body.classList.toggle('window-hidden', document.hidden));
 })();

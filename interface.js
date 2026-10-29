@@ -44,14 +44,18 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-for (const button of document.querySelectorAll('.app')) {
-  button.addEventListener('click', () => {
-    if (button.dataset.icon === 'notes' && instantNotes) { instantNotes.open(); return; }
-    document.getElementById('app-title').textContent = button.querySelector('.app-name').textContent;
-    document.getElementById('app-icon').replaceChildren(button.querySelector('.tile').cloneNode(true));
-    dialog.showModal();
-  });
+// App routing belongs here; visual effects only observe the resulting clicks.
+function openApp(button) {
+  const icon = button.dataset.icon;
+  if (icon === 'notes' && instantNotes) { instantNotes.open(); return; }
+  const settings = icon === 'settings';
+  document.getElementById('app-title').textContent = button.querySelector('.app-name').textContent;
+  document.getElementById('app-icon').replaceChildren(button.querySelector('.tile').cloneNode(true));
+  document.getElementById('interface-settings').hidden = !settings;
+  document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Routines.';
+  dialog.showModal();
 }
+for (const button of document.querySelectorAll('.app')) button.addEventListener('click', () => openApp(button));
 
 // Phone navigation reaches the existing actions without changing modal or draft handling.
 const phoneLayout = matchMedia('(max-width: 700px)');
@@ -120,3 +124,69 @@ retryButton.addEventListener('click', () => {
   else loadRoutines();
 });
 loadRoutines();
+
+// Search uses the same launchers as the homepage and phone actions.
+(() => {
+  const palette = document.getElementById('command-dialog');
+  const search = document.getElementById('command-search');
+  const results = document.getElementById('command-results');
+  let commands = [];
+  function renderResults() {
+    results.replaceChildren();
+    const query = search.value.trim().toLocaleLowerCase();
+    for (const command of commands.filter(item => `${item.name} ${item.kind}`.toLocaleLowerCase().includes(query))) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      const label = document.createElement('span');
+      label.textContent = command.name;
+      const kind = document.createElement('small');
+      kind.textContent = command.kind;
+      button.append(label, kind);
+      button.addEventListener('click', () => {
+        palette.close();
+        command.run();
+      });
+      results.append(button);
+    }
+    document.getElementById('command-empty').hidden = results.children.length > 0;
+  }
+  function openPalette() {
+    if (!document.getElementById('checklist-control').hidden || document.getElementById('backup-dialog').open) return;
+    if (palette.open) { palette.close(); return; }
+    for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
+    const launch = target => { target.focus(); target.click(); };
+    const routines = document.getElementById('routines-launch');
+    commands = [{ name: 'Routines', kind: 'Checklists', run: () => launch(routines) }];
+    for (const card of document.querySelectorAll('.routine-card')) commands.push({
+      name: card.querySelector('.routine-card-name').textContent,
+      kind: 'Checklist', run: () => { launch(routines); card.click(); }
+    });
+    for (const app of document.querySelectorAll('.app')) commands.push({
+      name: app.querySelector('.app-name').textContent, kind: app.dataset.icon === 'settings' ? 'Interface' : app.dataset.icon === 'notes' ? 'Notebook' : 'Coming soon', run: () => launch(app)
+    });
+    search.value = '';
+    renderResults();
+    palette.showModal();
+    search.focus();
+  }
+  document.getElementById('command-launch').addEventListener('click', openPalette);
+  search.addEventListener('input', renderResults);
+  document.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && !event.altKey) {
+      event.preventDefault();
+      openPalette();
+    }
+  });
+  palette.addEventListener('keydown', event => {
+    const buttons = [...results.children];
+    if (['ArrowDown', 'ArrowUp'].includes(event.key) && buttons.length) {
+      event.preventDefault();
+      const index = buttons.indexOf(document.activeElement);
+      const next = index === -1 ? (event.key === 'ArrowDown' ? 0 : buttons.length - 1) : (index + (event.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length;
+      buttons[next].focus();
+    } else if (event.key === 'Enter' && event.target === search) {
+      event.preventDefault();
+      buttons[0]?.click();
+    }
+  });
+})();
