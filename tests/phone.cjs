@@ -1,0 +1,102 @@
+// Public fixtures only: exercise short phone viewports and failure recovery.
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { chromium } = require('playwright');
+const { fixture, ready, openRoutines, browseNotes, demo } = require('./browser-fixture.cjs');
+
+test('Phone workflows', { timeout: 90000 }, async t => {
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  t.after(() => browser.close());
+
+  await t.test('editing hides account navigation, skips unchanged saves and focuses newly added fields', async () => {
+    for (const width of [320, 390]) {
+      const { context, page, errors } = await fixture(browser, { width, height: 600, motion: 'reduce', firebase: true,
+        cloudDocuments: { 'account-a': { routines: JSON.parse(demo), progress: { checks: { 'personal-care/care/item-1': true }, optional: {} } } } });
+      try {
+        await ready(page);
+        await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
+        await openRoutines(page); await page.locator('#control-launch').click();
+        assert.equal(await page.locator('#account-launch').isVisible(), false);
+        assert.equal(await page.locator('.routine-heading').isVisible(), false);
+        assert.equal(await page.locator('#editor-save').isDisabled(), true);
+        const unchanged = await page.evaluate(() => JSON.stringify(window.__hubFirebase.docs));
+        await page.locator('#editor-save').evaluate(button => button.click());
+        assert.equal(await page.evaluate(() => JSON.stringify(window.__hubFirebase.docs)), unchanged);
+        await page.locator('.editor-section').first().getByRole('button', { name: '+ Add item', exact: true }).click();
+        assert.equal(await page.evaluate(() => document.activeElement.value), 'New item');
+        assert.equal(await page.evaluate(() => document.activeElement.selectionEnd), 'New item'.length);
+        await page.keyboard.type('Added from my phone');
+        assert.equal(await page.locator('#editor-save').isEnabled(), true);
+        assert.match(await page.locator('#control-status').textContent(), /Unsaved changes/);
+        await page.getByRole('button', { name: '+ Add section', exact: true }).click();
+        assert.equal(await page.evaluate(() => document.activeElement.value), 'New section');
+        await page.keyboard.type('Phone section');
+        await page.locator('#editor-add-list').click();
+        assert.equal(await page.evaluate(() => document.activeElement.value), 'New checklist');
+        await page.keyboard.type('Phone list');
+        await page.locator('#editor-save').click();
+        await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
+        assert.equal(await page.locator('#editor-save').isDisabled(), true);
+        assert.equal(await page.evaluate(() => window.__hubFirebase.docs['account-a'].progress.checks['personal-care/care/item-1']), true);
+        assert.equal(await page.evaluate(() => window.__hubFirebase.docs['account-a'].routines.routines.at(-1).name), 'Phone list');
+        await page.locator('#control-close').click();
+        assert.equal(await page.locator('#account-launch').isVisible(), true);
+        assert.equal(await page.locator('#routine-reader').isVisible(), true);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    }
+  });
+
+  await t.test('short phone viewports support writing, browsing and returning to local and account notes', async () => {
+    for (const width of [320, 390]) for (const account of [false, true]) {
+      const { context, page, errors } = await fixture(browser, { width, height: 440, motion: 'reduce', firebase: account });
+      try {
+        await ready(page); await page.locator('[data-icon="notes"]').click();
+        await page.waitForFunction(() => !document.getElementById('note-text').readOnly);
+        assert.equal(await page.locator('#notes-library').evaluate(el => el.open), false);
+        assert.ok(await page.locator('#note-text').evaluate(el => el.getBoundingClientRect().height) >= 90, 'Writing must remain usable with a short viewport.');
+        await page.locator('#note-text').fill('First phone note\nKeep this thought.');
+        if (account) await page.waitForFunction(() => document.getElementById('notes-status').textContent === 'Synced to your account.');
+        await page.locator('#note-new').click();
+        await page.locator('#note-text').fill('Second phone note\nAnother thought.');
+        if (account) await page.waitForFunction(() => document.getElementById('notes-status').textContent === 'Synced to your account.');
+        await browseNotes(page);
+        assert.equal(await page.locator('#note-text').isVisible(), false);
+        assert.equal(await page.locator('#notes-search').evaluate(el => getComputedStyle(el).fontSize), '16px');
+        await page.locator('#notes-search').fill('First phone');
+        assert.equal(await page.locator('#note-list button').count(), 1);
+        await page.locator('#note-list button').click();
+        assert.equal(await page.locator('#notes-library').evaluate(el => el.open), false);
+        assert.equal(await page.locator('#note-text').inputValue(), 'First phone note\nKeep this thought.');
+        assert.equal(await page.locator('#notes-dialog').evaluate(el => el.scrollWidth > el.clientWidth), false);
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    }
+  });
+
+  await t.test('failed local saves survive notebook switching without replacing a saved version or uploading text', async () => {
+    const originalId = 'a0000000-0000-4000-8000-000000000001';
+    const original = { version: 1, id: originalId, text: 'Saved local\nOriginal text', updatedAt: 1 };
+    const { context, page, errors } = await fixture(browser, { width: 390, motion: 'reduce', firebase: true, signedIn: false });
+    try {
+      await context.addInitScript(note => localStorage.setItem('thehub:notes:demo:v1:' + note.id, JSON.stringify(note)), original);
+      await ready(page); await page.locator('[data-icon="notes"]').click();
+      await page.evaluate(() => { window.originalSetItem = Storage.prototype.setItem; Storage.prototype.setItem = () => { throw new Error('Storage full'); }; });
+      await page.locator('#note-text').fill('Unsaved local draft');
+      assert.equal(await page.evaluate(() => !dispatchEvent(new Event('beforeunload', { cancelable: true }))), true);
+      await page.evaluate(() => { const service = window.__hubFirebase; service.user = { uid: 'account-a', email: 'test@example.invalid' }; service.authListener(service.user); });
+      await page.waitForFunction(() => document.getElementById('notes-source').textContent.includes('YOUR ACCOUNT'));
+      await page.locator('#notes-local').click();
+      assert.equal(await page.locator('#note-text').inputValue(), 'Unsaved local draft');
+      assert.match(await page.locator('#notes-status').textContent(), /Not saved/);
+      assert.equal(await page.evaluate(id => JSON.parse(localStorage.getItem('thehub:notes:demo:v1:' + id)).text, originalId), original.text);
+      await page.evaluate(() => { Storage.prototype.setItem = window.originalSetItem; });
+      await page.locator('#note-text').fill('Recovered local draft');
+      assert.match(await page.locator('#notes-status').textContent(), /^Saved/);
+      assert.equal(await page.evaluate(() => !dispatchEvent(new Event('beforeunload', { cancelable: true }))), false);
+      assert.equal(await page.evaluate(() => window.__hubFirebase.noteWrites.length), 0);
+      assert.equal(await page.evaluate(id => JSON.parse(localStorage.getItem('thehub:notes:demo:v1:' + id)).text, originalId), original.text);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+});

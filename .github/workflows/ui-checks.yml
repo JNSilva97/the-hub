@@ -25,4 +25,4 @@ jobs:
       - name: Verify offline restart
         run: node --test tests/offline.cjs
       - name: Run browser, Notes and model checks
-        run: node --test tests/browser.cjs tests/notes-sync.cjs tests/notes-model.test.mjs tests/routine-model.test.mjs tests/workspace-model.test.mjs
+        run: node --test tests/browser.cjs tests/phone.cjs tests/notes-sync.cjs tests/notes-model.test.mjs tests/routine-model.test.mjs tests/workspace-model.test.mjs

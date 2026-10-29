@@ -12,6 +12,15 @@ function createInstantNotes(panel) {
   const revisions = new Map();
   const unsaved = new Set();
   const editedHere = new Set();
+  // Keep failed local saves in this tab even when switching accounts or notebooks.
+  const localRecovery = new Map();
+  const library = document.getElementById('notes-library');
+  const mobile = matchMedia('(max-width: 700px)');
+  library.open = !mobile.matches;
+  mobile.addEventListener('change', () => { library.open = !mobile.matches; });
+  library.addEventListener('toggle', () => {
+    library.querySelector('summary').textContent = library.open && mobile.matches ? 'Back to note' : 'Browse notes';
+  });
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const importDialog = document.getElementById('notes-import-dialog');
   let cloud;
@@ -75,6 +84,7 @@ function createInstantNotes(panel) {
     editor.value = notes.get(id).text;
     updateHeading();
     renderList();
+    if (mobile.matches) library.open = false;
     tell(accountMode ? cloud.status : unsaved.has(id) ? 'Not saved. Keep this tab open and copy your text before leaving.' : revisions.has(id) ? 'Saved in this browser.' : 'Start typing. Your note saves automatically.', unsaved.has(id));
     if (panel.open) {
       editor.focus({ preventScroll: true });
@@ -105,6 +115,14 @@ function createInstantNotes(panel) {
         } catch { warning = 'Some saved notes could not be read. Their stored data is unchanged.'; }
       }
     } catch { warning = 'Storage is unavailable. Keep this tab open and copy your text before leaving.'; }
+    for (const [id, draft] of [...localRecovery]) {
+      let recovered = draft;
+      if (revisions.has(id) && notes.get(id)?.text !== draft.text) {
+        recovered = { ...draft, id: crypto.randomUUID() };
+        localRecovery.delete(id); localRecovery.set(recovered.id, recovered);
+      }
+      notes.set(recovered.id, recovered); unsaved.add(recovered.id);
+    }
     const saved = [...notes.values()].sort((a, b) => b.updatedAt - a.updatedAt)[0];
     if (!personal) {
       const samples = ['A place for your next idea\nCapture a thought, a plan or something to remember. These are sample notes; your edits stay in this browser.', 'Nightfall ideas\nA city after dark. Blue light. A clear next move.'];
@@ -113,7 +131,7 @@ function createInstantNotes(panel) {
         if (!revisions.has(id)) notes.set(id, { version: 1, id, text, updatedAt: 0 });
       }
     }
-    if (saved) { select(saved.id); tell('Saved notes loaded from this browser.'); }
+    if (saved) { select(saved.id); if (!unsaved.has(saved.id)) tell('Saved notes loaded from this browser.'); }
     else newNote();
     document.getElementById('notes-source').textContent = personal ? 'PERSONAL / THIS PC' : 'DEMO / THIS BROWSER';
     document.getElementById('notes-data-note').textContent = 'These local notes stay in this browser. Nothing is sent to your account.';
@@ -150,6 +168,9 @@ function createInstantNotes(panel) {
       tell('Not saved. Keep this tab open and copy your text before leaving.', true);
     }
     if (note.id !== originalId) { unsaved.delete(originalId); editedHere.delete(originalId); }
+    localRecovery.delete(originalId);
+    if (unsaved.has(note.id)) localRecovery.set(note.id, { ...note });
+    else localRecovery.delete(note.id);
     editedHere.add(note.id);
     notes.set(note.id, note);
     return note;
@@ -167,6 +188,7 @@ function createInstantNotes(panel) {
   document.getElementById('note-new').addEventListener('click', newNote);
 
   function forget(id) {
+    if (!accountMode) localRecovery.delete(id);
     notes.delete(id);
     unsaved.delete(id);
     editedHere.delete(id);
@@ -227,7 +249,7 @@ function createInstantNotes(panel) {
     if (event.key === null || event.newValue === null) {
       const ids = event.key === null ? [...notes.keys()] : [event.key.slice(prefix.length)];
       for (const id of ids) {
-        if (notes.has(id)) unsaved.add(id);
+        if (notes.has(id)) { unsaved.add(id); localRecovery.set(id, { ...notes.get(id) }); }
         revisions.delete(id);
       }
       tell('Saved notes were cleared in another tab. Your open copies are kept here. Copy your text before leaving.', true);
@@ -266,6 +288,12 @@ function createInstantNotes(panel) {
       updateHeading();
       renderList();
     } catch { tell('A note from another tab could not be read. Your text is unchanged.', true); }
+  });
+
+  window.addEventListener('beforeunload', event => {
+    if ([...localRecovery.values()].some(note => note.text)) {
+      event.preventDefault(); event.returnValue = '';
+    }
   });
 
   function resetView() {
@@ -384,6 +412,7 @@ function createInstantNotes(panel) {
       closing?.cancel();
       closing = undefined;
       if (!loaded) load();
+      if (mobile.matches) library.open = false;
       if (!panel.open) panel.showModal();
       editor.focus({ preventScroll: true });
       editor.setSelectionRange(editor.value.length, editor.value.length);

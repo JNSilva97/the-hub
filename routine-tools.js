@@ -117,11 +117,25 @@ export function createRoutineTools(workspace) {
   const preview = document.getElementById('restore-preview');
   const confirmation = document.getElementById('control-confirm');
   const file = document.getElementById('backup-file');
+  const routinesDialog = document.getElementById('routines-dialog');
+  const saveButton = document.getElementById('editor-save');
   let baseline, draft, chosen = 0, restored, busy = false, epoch = 0, confirmAction, backupIdentity;
   const id = prefix => `${prefix}-${crypto.randomUUID()}`;
   const item = () => ({ id: id('i'), label: 'New item' });
   const group = () => ({ id: id('g'), title: 'New section', optional: false, items: [item()] });
   const dirty = () => baseline && draft && JSON.stringify(draft) !== JSON.stringify(baseline.routines);
+  function updateSave(announce = false) {
+    const changed = Boolean(dirty());
+    saveButton.disabled = busy || !changed;
+    if (!busy && draft && (announce || ['No unsaved changes.', 'Unsaved changes.'].includes(message.textContent) || changed && message.textContent.startsWith('Saved.'))) {
+      message.textContent = changed ? 'Unsaved changes.' : 'No unsaved changes.';
+    }
+  }
+  function focusField(element) {
+    const field = element?.querySelector('input:not([type="checkbox"])');
+    field?.focus();
+    field?.select();
+  }
   const status = text => { (backup.open ? document.getElementById('backup-status') : message).textContent = text; };
   const button = (text, action, label = text) => {
     const node = document.createElement('button');
@@ -133,7 +147,7 @@ export function createRoutineTools(workspace) {
     const wrapper = document.createElement('label');
     const caption = document.createElement('span'); caption.textContent = label;
     const node = document.createElement('input'); node.value = value; node.maxLength = 240; node.required = true;
-    node.addEventListener('input', () => change(node.value));
+    node.addEventListener('input', () => { change(node.value); updateSave(true); });
     wrapper.append(caption, node);
     return wrapper;
   }
@@ -170,7 +184,7 @@ export function createRoutineTools(workspace) {
       card.append(input('Section title', section.title, value => { section.title = value; }));
       const optional = document.createElement('label'); optional.className = 'editor-optional';
       const toggle = document.createElement('input'); toggle.type = 'checkbox'; toggle.checked = section.optional;
-      toggle.addEventListener('change', () => { section.optional = toggle.checked; });
+      toggle.addEventListener('change', () => { section.optional = toggle.checked; updateSave(true); });
       optional.append(toggle, document.createTextNode('Optional section'));
       card.append(optional, actions(routine.groups, sectionIndex, 'section', render));
       section.items.forEach((entry, index) => {
@@ -178,12 +192,16 @@ export function createRoutineTools(workspace) {
         row.append(input(`Item ${index + 1}`, entry.label, value => { entry.label = value; }), actions(section.items, index, 'item', render));
         card.append(row);
       });
-      const add = button('+ Add item', () => { section.items.push(item()); render(); });
+      const add = button('+ Add item', () => {
+        section.items.push(item()); render();
+        focusField(editor.querySelectorAll('.editor-section')[sectionIndex].querySelector('.editor-item:last-of-type'));
+      });
       add.disabled = section.items.length >= 100; card.append(add); editor.append(card);
     });
-    const add = button('+ Add section', () => { routine.groups.push(group()); render(); });
+    const add = button('+ Add section', () => { routine.groups.push(group()); render(); focusField(editor.querySelector('.editor-section:last-of-type')); });
     add.disabled = routine.groups.length >= 12; editor.append(add);
     document.getElementById('editor-add-list').disabled = draft.length >= 20;
+    updateSave();
   }
   function ask(title, description, label, action) {
     document.getElementById('control-confirm-title').textContent = title;
@@ -198,6 +216,7 @@ export function createRoutineTools(workspace) {
   }
   function exitEditor() {
     editorPicker.close();
+    delete routinesDialog.dataset.editing;
     panel.hidden = true; reader.hidden = false; navigation.inert = false; picker.disabled = !picker.options.length;
     document.getElementById('control-launch').hidden = false; document.getElementById('backup-launch').disabled = false;
     if (baseline && draft) workspace.select(draft[chosen]?.id);
@@ -223,18 +242,17 @@ export function createRoutineTools(workspace) {
       restored = undefined; preview.hidden = true; file.value = ''; if (draft) { chosen = Math.min(chosen, draft.length - 1); render(); }
       status('Saved. Your checklists and ticks are ready.');
     } catch (error) { if (current === epoch) status(error.message || 'Could not save. Your draft is still here.'); }
-    finally { busy = false; panel.removeAttribute('aria-busy'); document.getElementById('control-fields').disabled = false; document.getElementById('backup-fields').disabled = false; }
+    finally { busy = false; panel.removeAttribute('aria-busy'); document.getElementById('control-fields').disabled = false; document.getElementById('backup-fields').disabled = false; updateSave(); }
   }
   document.getElementById('control-launch').addEventListener('click', () => {
     try {
       baseline = workspace.snapshot(); draft = structuredClone(baseline.routines); chosen = Math.max(0, draft.findIndex(routine => routine.id === baseline.selectedId)); epoch++;
       restored = undefined; preview.hidden = true; file.value = '';
-      document.getElementById('control-destination').textContent = `Editing ${baseline.destination}. Changes apply when you save. Notes are separate.`;
-      render(); status('Rename, reorder or add items. Existing ticks follow their items.'); panel.hidden = false; reader.hidden = true; navigation.inert = true; picker.disabled = true; document.getElementById('control-launch').hidden = true; document.getElementById('backup-launch').disabled = true; editorPicker.focus();
+      document.getElementById('control-destination').textContent = baseline.account ? 'Saved changes sync to your account.' : 'Changes save in this browser.';
+      render(); status('No unsaved changes.'); panel.hidden = false; reader.hidden = true; navigation.inert = true; picker.disabled = true; document.getElementById('control-launch').hidden = true; document.getElementById('backup-launch').disabled = true; routinesDialog.dataset.editing = 'true'; editorPicker.focus();
     } catch (error) { document.getElementById('routine-notice').textContent = error.message; }
   });
   document.getElementById('control-close').addEventListener('click', close);
-  const routinesDialog = document.getElementById('routines-dialog');
   routinesDialog.addEventListener('cancel', event => { if (!panel.hidden) { event.preventDefault(); event.stopImmediatePropagation(); close(); } }, true);
   routinesDialog.addEventListener('click', event => {
     if (panel.hidden) return;
@@ -259,8 +277,9 @@ export function createRoutineTools(workspace) {
   confirmation.addEventListener('close', () => { if (!confirmation.open) confirmAction = undefined; });
   document.getElementById('control-confirm-yes').addEventListener('click', () => { const action = confirmAction; confirmAction = undefined; confirmation.close(); action?.(); });
   chooser.addEventListener('change', () => { chosen = Number(chooser.value); render(); });
-  document.getElementById('editor-add-list').addEventListener('click', () => { draft.push({ id: id('r'), name: 'New checklist', description: 'Your next steps.', groups: [group()] }); chosen = draft.length - 1; render(); });
-  document.getElementById('editor-save').addEventListener('click', () => {
+  document.getElementById('editor-add-list').addEventListener('click', () => { draft.push({ id: id('r'), name: 'New checklist', description: 'Your next steps.', groups: [group()] }); chosen = draft.length - 1; render(); focusField(editor.querySelector('.editor-details')); });
+  saveButton.addEventListener('click', () => {
+    if (busy || !dirty()) return;
     if (![...editor.querySelectorAll('input')].every(input => input.reportValidity())) return;
     let cleaned;
     try { cleaned = cleanRoutines(draft); } catch { status('Use 1–20 checklists, 1–12 sections per list and 1–100 items per section. Every text field needs 1–240 characters.'); return; }

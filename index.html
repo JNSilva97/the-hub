@@ -2,7 +2,7 @@
 <html lang="en-GB">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
   <meta name="theme-color" content="#010205">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="styles/access.css?v=control-2">
   <link rel="stylesheet" href="styles/panels.css?v=mobile-1">
   <link rel="stylesheet" href="styles/routines.css?v=compact-3">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=compact-3">
-  <link rel="stylesheet" href="styles/notes.css?v=notes-sync-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=phone-7">
+  <link rel="stylesheet" href="styles/notes.css?v=phone-7">
   <link rel="stylesheet" href="styles/motion.css?v=perf-2">
 </head>
 <body>
@@ -209,7 +209,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Metallic scanner sweeps and digital signals.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.10.29.6</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.10.29.7</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -223,12 +223,15 @@
     </div>
     <div class="notes-source"><span id="notes-source"></span><p id="notes-data-note">Local notes stay in this browser.</p><div class="notes-account-actions"><button id="notes-account" type="button">Private access</button><button id="notes-local" type="button" hidden>Local notes</button><button id="notes-import" type="button" hidden>Copy local notes</button><button id="notes-retry" type="button" hidden>Try sync again</button></div></div>
     <div class="notes-layout">
+      <details id="notes-library" class="notes-library" open>
+      <summary>Browse notes</summary>
       <aside class="notes-sidebar">
         <label for="notes-search">Find a note</label>
-        <input id="notes-search" type="search" placeholder="Search your notes…" autocomplete="off">
+        <input id="notes-search" type="search" placeholder="Search your notes…" autocomplete="off" enterkeyhint="search">
         <nav id="note-list" class="note-list" aria-label="Notes"></nav>
         <p id="notes-empty" hidden>No matches. Try another word or start a new note.</p>
       </aside>
+      </details>
       <section class="note-editor" aria-label="Note editor">
         <div class="note-editor-heading"><span id="note-name">New note</span><div class="note-tools"><span id="note-count">0 / 50,000</span><button id="note-delete" type="button" disabled>Delete note</button></div></div>
         <label class="note-editor-label" for="note-text">Your note · the first line becomes its title</label>
@@ -279,7 +282,7 @@
         </details>
         </div>
         <section id="checklist-control" class="control-dialog inline-editor" hidden aria-labelledby="control-title">
-          <div class="command-heading"><h2 id="control-title">EDIT CHECKLIST</h2><button id="control-close" class="routine-exit" type="button" aria-label="Finish editing">Done</button></div>
+          <div class="command-heading"><h2 id="control-title">EDIT CHECKLIST</h2><button id="control-close" class="routine-exit" type="button" aria-label="Back to checklist">Back</button></div>
           <p id="control-destination"></p>
           <fieldset id="control-fields">
             <div class="editor-toolbar"><div class="editor-picker-field"><span id="editor-list-label">Your checklists</span><select id="editor-list" aria-label="Choose checklist to edit" aria-labelledby="editor-list-label"></select></div><button id="editor-add-list" type="button">+ New checklist</button></div>
@@ -339,8 +342,8 @@
   </dialog>
   <script defer src="core-progress.js?v=control-2"></script>
   <script defer src="core-transition.js?v=staged-6"></script>
-  <script defer src="notes.js?v=notes-sync-1"></script>
-  <script defer src="interface.js?v=compact-3"></script>
+  <script defer src="notes.js?v=phone-7"></script>
+  <script defer src="interface.js?v=phone-7"></script>
   <script defer src="interface-sound.js?v=signal-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>
   <script defer src="experience.js?v=perf-2"></script>
