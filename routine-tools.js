@@ -23,6 +23,7 @@ export function createChecklistPicker(select) {
   trigger.setAttribute('aria-expanded', 'false');
   container.append(trigger, choices);
   const disabled = () => select.matches(':disabled') || !select.options.length;
+  const dialog = select.closest('dialog');
   function close(restoreFocus = false) {
     choices.hidden = true;
     trigger.setAttribute('aria-expanded', 'false');
@@ -57,6 +58,16 @@ export function createChecklistPicker(select) {
     refresh();
     choices.hidden = false;
     trigger.setAttribute('aria-expanded', 'true');
+    const anchor = trigger.getBoundingClientRect();
+    const bounds = dialog?.getBoundingClientRect();
+    const header = dialog?.querySelector('.routines-header')?.getBoundingClientRect();
+    const ceiling = Math.max(bounds?.top || 0, header?.bottom || 0) + 8;
+    const floor = Math.min(window.innerHeight, bounds?.bottom || window.innerHeight) - 8;
+    const below = floor - anchor.bottom - 6;
+    const above = anchor.top - ceiling - 6;
+    const side = below < 144 && above > below ? 'above' : 'below';
+    choices.dataset.side = side;
+    choices.style.maxHeight = `${Math.max(48, Math.min(320, side === 'above' ? above : below))}px`;
   }
   trigger.addEventListener('click', () => { if (choices.hidden) open(); else close(); });
   container.addEventListener('keydown', event => {
@@ -86,7 +97,8 @@ export function createChecklistPicker(select) {
   observer.observe(select, { childList: true, subtree: true, characterData: true, attributes: true });
   const fieldset = select.closest('fieldset');
   if (fieldset) observer.observe(fieldset, { attributes: true, attributeFilter: ['disabled'] });
-  select.closest('dialog')?.addEventListener('close', () => close());
+  dialog?.addEventListener('close', () => close());
+  window.addEventListener('resize', () => close());
   refresh();
   return { refresh, close, focus: () => trigger.focus() };
 }

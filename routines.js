@@ -1,7 +1,7 @@
 import { validateRoutines, parseProgress, groupKey, itemKey, getActiveItems, getProgress, restartRoutine } from './routine-model.mjs?v=control-1';
 import { cloudWorkspace } from './cloud.js?v=notes-sync-1';
 import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=control-1';
-import { createRoutineTools, createChecklistPicker } from './routine-tools.js?v=picker-1';
+import { createRoutineTools, createChecklistPicker } from './routine-tools.js?v=compact-3';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');

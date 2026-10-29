@@ -275,7 +275,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     }
   });
 
-  await t.test('expanded menus span the toolbar without moving its action button', async () => {
+  await t.test('dropdowns stay under the select bar without moving buttons or content', async () => {
     for (const width of [320, 390, 430, 1440]) {
       const { context, page, errors } = await fixture(browser, { width, height: 850, motion: 'reduce' });
       try {
@@ -286,17 +286,21 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
             const button = document.querySelector(action).getBoundingClientRect();
             const toggle = document.querySelector(picker + ' .checklist-picker-toggle').getBoundingClientRect();
             const choices = document.querySelector(picker + ' .checklist-picker-choices').getBoundingClientRect();
+            const content = document.querySelector(toolbar).nextElementSibling.getBoundingClientRect();
             return { x: button.left - parent.left, y: button.top - parent.top,
               width: button.width, aligned: Math.abs(button.top - toggle.top),
-              menuLeft: Math.abs(choices.left - parent.left), menuRight: Math.abs(choices.right - parent.right),
-              below: choices.top >= Math.max(button.bottom, toggle.bottom), overflow: parent.width < choices.width };
+              contentY: content.top - parent.top, height: parent.height,
+              menuLeft: Math.abs(choices.left - toggle.left), menuRight: Math.abs(choices.right - toggle.right),
+              separated: choices.top >= toggle.bottom || choices.bottom <= toggle.top,
+              overflow: choices.left < parent.left || choices.right > parent.right };
           }, { toolbar, picker, action });
           const before = await measure();
           await page.locator(picker + ' .checklist-picker-toggle').click();
           const after = await measure();
           assert.ok(Math.abs(before.x - after.x) < 1 && Math.abs(before.y - after.y) < 1, 'Opening choices must not shift the action button.');
           assert.ok(after.aligned < 1 && Math.abs(before.width - after.width) < 1, 'Action and picker must stay on the same row.');
-          assert.ok(after.menuLeft < 1 && after.menuRight < 1 && after.below && !after.overflow, 'Choices must fill a separate row beneath both controls.');
+          assert.ok(after.menuLeft < 1 && after.menuRight < 1 && after.separated && !after.overflow, 'Choices must stay anchored to the select bar.');
+          assert.ok(Math.abs(before.contentY - after.contentY) < 1 && Math.abs(before.height - after.height) < 1, 'Opening the menu must not move the toolbar or the following content.');
           await page.locator(picker + ' .checklist-choice').last().click();
         }
         if (width < 700) await checkToolbar('.routine-heading', '#routine-picker-menu', '#control-launch');
@@ -1048,18 +1052,27 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
             for (const animation of animations) { animation.pause(); animation.currentTime = time; }
             const ring = artwork.querySelector('.eye-ring').getBoundingClientRect();
             const dock = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect();
+            const frame = artwork.querySelector('.flight-rings').getBoundingClientRect();
+            const title = document.querySelector('.routines-header h2').getBoundingClientRect();
             return { transform: getComputedStyle(artwork).transform, opacity: Number(getComputedStyle(artwork).opacity),
               dockOpacity: Number(getComputedStyle(document.querySelector('.routine-optic')).opacity),
+              frameFits: frame.width <= document.querySelector('.routine-optic').getBoundingClientRect().width + 1,
+              clearsTitle: frame.right <= title.left || frame.bottom <= title.top || frame.top >= title.bottom,
               error: Math.abs(ring.left - dock.left) + Math.abs(ring.top - dock.top) + Math.abs(ring.width - dock.width) };
           });
+          for (const animation of animations) animation.currentTime = landing * .45;
+          const earlyWidth = artwork.querySelector('.eye-ring').getBoundingClientRect().width;
+          const dockWidth = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect().width;
           for (const animation of animations) animation.play();
-          return { hold: handoff - landing, frames };
+          return { hold: handoff - landing, frames, earlyWidth, dockWidth };
         });
         assert.ok(result.hold >= 100, 'The landed circle must pause visibly before fading.');
         assert.equal(result.frames[0].transform, result.frames[1].transform);
+        assert.ok(Math.abs(result.earlyWidth - result.dockWidth) < 1, 'The travelling eye must shrink before approaching the header.');
         for (const frame of result.frames.slice(0, 2)) {
           assert.equal(frame.opacity, 1); assert.equal(frame.dockOpacity, 0);
           assert.ok(frame.error < 1, 'The settled circle must match the header eye.');
+          assert.ok(frame.frameFits && frame.clearsTitle, 'Outer rings must fold inside the icon and clear the words.');
         }
         assert.ok(Math.abs(result.frames[2].opacity + result.frames[2].dockOpacity - 1) < .01);
         assert.ok(result.frames[2].opacity > 0 && result.frames[2].opacity < 1);
