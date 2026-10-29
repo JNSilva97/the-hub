@@ -72,7 +72,7 @@ async function openRoutines(page) {
 }
 
 async function chooseRoutine(page, id) {
-  if (await page.locator('#routine-picker-menu').isVisible()) {
+  if (await page.locator('#routine-picker-menu .checklist-picker-toggle').isVisible()) {
     await page.locator('#routine-picker-menu .checklist-picker-toggle').click();
     await page.locator(`#routine-picker-menu .checklist-choice[data-value="${id}"]`).click();
   }
