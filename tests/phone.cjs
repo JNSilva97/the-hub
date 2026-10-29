@@ -23,12 +23,12 @@ test('Phone workflows', { timeout: 90000 }, async t => {
         await page.locator('#phone-routines').click();
         assert.equal(await page.locator('#routines-dialog').evaluate(el => el.open), true);
         assert.equal(await page.locator('.phone-actions').isVisible(), false);
-        await chooseRoutine(page, 'workday'); await page.locator('#field-complete').click();
-        const next = await page.locator('#field-title').textContent();
+        await chooseRoutine(page, 'workday'); await page.locator('.check-row input').nth(2).check();
+        const checked = await page.locator('.check-row input:checked').getAttribute('data-check');
         await page.getByRole('button', { name: 'Close routines', exact: true }).click();
         await ready(page); await page.locator('#phone-routines').click();
         assert.equal(await page.locator('#routine-name').textContent(), 'Workday');
-        assert.equal(await page.locator('#field-title').textContent(), next);
+        assert.equal(await page.locator('.check-row input:checked').getAttribute('data-check'), checked);
         await page.getByRole('button', { name: 'Close routines', exact: true }).click();
         await page.locator('#future-spaces > summary').click();
         assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), true);

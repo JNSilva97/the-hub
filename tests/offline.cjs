@@ -77,7 +77,7 @@ test('offline startup and native queued ticks survive closing; private account d
   await page.waitForFunction(() => document.getElementById('routine-name').textContent === 'Offline private fixture');
   await context.setOffline(true);
   await page.locator('#routines-launch').click();
-  await page.locator('#field-complete').click();
+  await page.locator('.check-items:not([hidden]) .check-row input:not(:checked)').first().check();
   await page.waitForFunction(() => document.getElementById('routine-notice').textContent.startsWith('Saved on this device.'));
   assert.match(await page.locator('#routine-progress-label').textContent(), /1 of 3/);
   assert.equal(await page.evaluate(() => !dispatchEvent(new Event('beforeunload', { cancelable: true }))), false, 'A confirmed disk save must allow closing.');
@@ -102,7 +102,7 @@ test('offline startup and native queued ticks survive closing; private account d
   await page.locator('#routines-launch').click();
   assert.match(await page.locator('#routine-progress-label').textContent(), /1 of 3/);
   assert.match(await page.locator('#routine-notice').textContent(), /Saved on this device/);
-  await page.locator('#field-complete').click();
+  await page.locator('.check-items:not([hidden]) .check-row input:not(:checked)').first().check();
   await page.waitForFunction(() => document.getElementById('routine-notice').textContent.startsWith('Saved on this device.'));
   await page.reload();
   await page.waitForFunction(() => document.getElementById('routine-name').textContent === 'Offline private fixture');

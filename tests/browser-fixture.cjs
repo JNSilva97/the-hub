@@ -79,10 +79,6 @@ async function chooseRoutine(page, id) {
   else await page.locator(`[data-routine="${id}"]`).click();
 }
 
-async function reviewChecklist(page) {
-  if (!await page.locator('#routine-review').evaluate(element => element.open)) await page.locator('#routine-review > summary').click();
-}
-
 async function browseNotes(page) {
   if (await page.locator('#notes-browse').isVisible() && !await page.locator('#notes-library').evaluate(element => element.open)) {
     await page.locator('#notes-browse').click();
@@ -95,4 +91,4 @@ async function showFutureSpaces(page) {
   }
 }
 
-module.exports = { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, reviewChecklist, browseNotes, showFutureSpaces };
+module.exports = { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, browseNotes, showFutureSpaces };

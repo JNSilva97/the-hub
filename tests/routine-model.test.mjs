@@ -30,7 +30,7 @@ test('restart clears one routine and preserves other lists and optional choices'
   assert.equal(state.checks['workday/work/item-1'], true);
 });
 
-test('field items follow checklist order and exclude disabled extras', () => {
+test('active items follow checklist order and exclude disabled extras', () => {
   const state = parseProgress(null);
   assert.deepEqual(getActiveItems(work, state).map(item => item.key), work.groups[0].items.map(item => `workday/work/${item.id}`));
   state.optional['workday/after-work'] = true;
