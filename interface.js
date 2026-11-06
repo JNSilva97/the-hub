@@ -54,12 +54,12 @@ function openApp(button) {
   dialog.dataset.app = icon;
   document.getElementById('health-content').hidden = !health;
   document.getElementById('health-close').hidden = !health;
-  if (health) healthDemo.refresh();
   dialog.querySelector('form .close').textContent = health && routinesDialog.open ? 'Back to Personal Care' : 'Back to the Hub';
   document.getElementById('app-title').textContent = button.querySelector('.app-name').textContent;
   document.getElementById('app-icon').replaceChildren(button.querySelector('.tile').cloneNode(true));
   document.getElementById('interface-settings').hidden = !settings;
   document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : health ? 'Fictional medications, times and stock for testing. Saved only in this browser; not synced to your account.' : icon === 'health' ? 'Health couldn’t load. Reload the page to try again.' : icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Routines.';
+  if (health) healthDemo.refresh();
   dialog.showModal();
 }
 for (const button of document.querySelectorAll('.app')) button.addEventListener('click', () => openApp(button));
@@ -160,6 +160,7 @@ loadRoutines();
     document.getElementById('command-empty').hidden = results.children.length > 0;
   }
   function openPalette() {
+    if (healthDemo && !healthDemo.canNavigate()) return;
     if (!document.getElementById('checklist-control').hidden || document.getElementById('backup-dialog').open) return;
     if (palette.open) { palette.close(); return; }
     for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
