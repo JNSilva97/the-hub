@@ -8,7 +8,7 @@ Open the homepage and choose **Routines** beneath the optical core. Pick a check
 
 Routines shows the full checklist as soon as you open it. Tick things off in whichever order suits you. Checked rows stay where they are, and tapping one again clears its tick. Optional section switches are right in the list. Progress saves automatically.
 
-**Health** is a medication demo with fictional samples saved only in this browser. In **Personal Care → Medication demo**, checking a dose reduces that sample's Health stock once. **Undo** corrects a mistaken check; **Start again** keeps dose history and stock. **Add stock** records a refill. **Edit medication** changes the sample name, daily dose, time and current stock; **Save changes** applies the edit, and **Cancel** leaves saved data as it is. Old dose quantities remain unchanged. The demo uses Lisbon dates and is separate from your real checklist data and account sync.
+**Health** is a medication demo with fictional samples saved only in this browser. In **Personal Care → Medication demo**, checking a dose reduces that sample's Health stock once. **Undo** corrects a mistaken check; **Start again** keeps dose history and stock. **Add medication** creates another entry. Choose one **Linked checklist** in the add/edit panel, or **No checklist**; **Open checklist** opens its selected routine. Moving a medication to another list keeps stock and dose history. **Add stock** records a refill. **Edit medication** changes the sample name, daily dose, time and current stock; **Save changes** applies the edit, and **Cancel** leaves saved data as it is. Old dose quantities remain unchanged. The demo uses Lisbon dates and is separate from your real checklist data and account sync.
 
 Choose **Notes** and start typing. Your first line becomes the title and each edit saves automatically. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Signed-out/local notes stay in this browser; public sample notes and the PC notebook are separate. Signed-in **Account notes** sync privately through Firebase after the current notes rules are published. **Local notes** returns to the original notebook. Existing local text is copied only through **Copy local notes** and its account confirmation.
 
@@ -42,6 +42,7 @@ Choose **Edit checklist** beside the selected checklist title to edit directly i
 | Local note saving, search and note dialog controls | `notes.js` / `styles/notes.css` |
 | Account-note offline drafts, synchronization and conflict copies | `cloud-notes.js` / `notes-model.mjs` |
 | Loading checklists, ticking items and saving | `routines.js` |
+| Shared themed checklist menus | `checklist-picker.js` |
 | Medication demo, local stock and linked Personal Care checks | `health.js` |
 | Checking data and calculating completion | `routine-model.mjs` |
 | Checklist editor, backup and restore | `routine-tools.js` / `styles/routine-tools.css` |

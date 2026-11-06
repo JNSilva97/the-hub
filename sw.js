@@ -1,8 +1,8 @@
 // Bump this version whenever a public app file changes; install the complete release atomically.
 const prefix = `the-hub:${new URL(self.registration.scope).pathname}:`;
-const cacheName = `${prefix}health-2`;
+const cacheName = `${prefix}health-3`;
 const files = [
-  './', 'index.html', 'manifest.webmanifest', 'health.js', 'styles/health.css',
+  './', 'index.html', 'manifest.webmanifest', 'health.js', 'styles/health.css', 'checklist-picker.js',
   'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css',
   'styles/panels.css', 'styles/routines.css', 'styles/routine-tools.css', 'styles/notes.css', 'styles/motion.css',
   'core-progress.js', 'core-transition.js', 'notes.js', 'interface.js', 'interface-sound.js',

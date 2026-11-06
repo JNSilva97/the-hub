@@ -4,7 +4,7 @@ const routinesLauncher = document.getElementById('routines-launch');
 const retryButton = document.getElementById('routine-retry');
 const notesDialog = document.getElementById('notes-dialog');
 const instantNotes = typeof createInstantNotes === 'function' ? createInstantNotes(notesDialog) : undefined;
-const healthDemo = typeof createHealthDemo === 'function' ? createHealthDemo(dialog) : undefined;
+const healthDemo = typeof createHealthDemo === 'function' && typeof createChecklistPicker === 'function' ? createHealthDemo(dialog) : undefined;
 const scriptUrl = new URL(document.currentScript.src);
 const routinesUrl = new URL('./routines.js', scriptUrl);
 routinesUrl.search = scriptUrl.search;

@@ -61,3 +61,11 @@
 .medication-editor .medication-dose-actions { flex-wrap: wrap; }
 .medication-editor .medication-dose-actions button { flex: 1 1 90px; }
 #health-content .medication-editor p { font-size: 12px; }
+
+.health-toolbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.medication-link-info { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0; color: #9fc5df; font-size: 13px; }
+.medication-link-info .health-button { padding: 8px 10px; font-size: 14px; }
+.medication-link-field { margin: 12px 0 18px; color: #b1cde0; font-size: 13px; }
+.medication-link-field > span { display: block; margin-bottom: 6px; }
+.medication-row[hidden] { display: none; }
+#health-new-medication:not(:empty) { margin-bottom: 16px; }

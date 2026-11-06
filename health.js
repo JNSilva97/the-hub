@@ -1,10 +1,15 @@
 // Browser-local medication setup and dose ledger; separate from account checklists.
 function createHealthDemo(panel) {
   const prefix = 'thehub:health-demo:v1:';
-  const medications = [
+  const samples = [
     { id: 'sample-a', name: 'Sample A', quantity: 1, time: '08:00', initial: 28 },
     { id: 'sample-b', name: 'Sample B', quantity: 2, time: '20:00', initial: 10 }
   ];
+  let medications = [...samples];
+  let workspace = { scope: '', routines: [], selected: null };
+  let newView;
+  const allViews = () => [...cards.values(), newView].filter(Boolean);
+  const validMedicationId = id => typeof id === 'string' && (samples.some(med => med.id === id) || /^med-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id));
   const dateFormat = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon', year: 'numeric', month: '2-digit', day: '2-digit' });
   const stampFormat = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const today = () => {
@@ -25,10 +30,10 @@ function createHealthDemo(panel) {
   const setupKey = id => prefix + 'settings:' + id;
   const setup = (medication, entries) => entries.find(entry => entry.type === 'settings' && entry.medication === medication.id);
   const configured = (medication, entries) => ({ ...medication, ...setup(medication, entries), id: medication.id });
-  const doseQuantity = entry => entry.quantity ?? medications.find(medication => medication.id === entry.medication).quantity;
+  const doseQuantity = entry => entry.quantity ?? samples.find(medication => medication.id === entry.medication).quantity;
   let busy = false;
   let day = today();
-  let message = 'Try a dose in Personal Care or record it here.';
+  let message = 'Record a dose here or in its linked checklist.';
   let failed = false;
 
   function node(tag, className, text) {
@@ -43,23 +48,39 @@ function createHealthDemo(panel) {
     button.addEventListener('click', run);
     return button;
   }
+  const validLink = link => link === null || link && typeof link === 'object' && !Array.isArray(link) && typeof link.scope === 'string' && link.scope.length > 0 && link.scope.length <= 180 && typeof link.id === 'string' && /^[a-z][a-z0-9-]{0,49}$/.test(link.id);
+  const linkValue = link => link ? JSON.stringify({ scope: link.scope, id: link.id }) : '';
+  function binding(medication, entries) {
+    const saved = setup(medication, entries);
+    if (saved && Object.hasOwn(saved, 'link')) return saved.link;
+    if (!samples.some(sample => sample.id === medication.id)) return null;
+    const care = workspace.routines.find(routine => routine.id === 'personal-care' || routine.name.trim().toLowerCase() === 'personal care');
+    return care ? { scope: workspace.scope, id: care.id } : null;
+  }
+  function linkedChecklist(link) {
+    return link && link.scope === workspace.scope ? workspace.routines.find(routine => routine.id === link.id) : undefined;
+  }
   function read() {
     const entries = [];
     for (let index = 0; index < localStorage.length; index++) {
       const key = localStorage.key(index);
       if (!key?.startsWith(prefix)) continue;
       const record = JSON.parse(localStorage.getItem(key));
-      const medication = medications.find(med => med.id === record?.medication);
-      if (!medication || record.version !== 1 || !Number.isSafeInteger(record.at) || record.at < 0) throw new Error('Unreadable demo record');
+      const id = record?.medication;
+      if (!validMedicationId(id) || record.version !== 1 || !Number.isSafeInteger(record.at) || record.at < 0) throw new Error('Unreadable demo record');
       if (record.type === 'dose') {
-        if (typeof record.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) || key !== doseKey(record.date, medication.id) || typeof record.taken !== 'boolean' || record.quantity !== undefined && !validQuantity(record.quantity) || record.name !== undefined && !validName(record.name)) throw new Error('Unreadable dose');
+        if (typeof record.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) || key !== doseKey(record.date, id) || typeof record.taken !== 'boolean' || record.quantity !== undefined && !validQuantity(record.quantity) || record.quantity === undefined && !samples.some(sample => sample.id === id) || record.name !== undefined && !validName(record.name)) throw new Error('Unreadable dose');
       } else if (record.type === 'restock') {
         if (!key.startsWith(prefix + 'restock:') || !Number.isSafeInteger(record.quantity) || record.quantity < 1 || record.quantity > 10000) throw new Error('Unreadable stock');
       } else if (record.type === 'settings') {
-        if (key !== setupKey(medication.id) || !validName(record.name) || !validQuantity(record.quantity) || !validTime(record.time) || typeof record.adjustment !== 'number' || !Number.isSafeInteger(record.adjustment * 4) || Math.abs(record.adjustment) > 1000000) throw new Error('Unreadable medication settings');
+        if (key !== setupKey(id) || !validName(record.name) || !validQuantity(record.quantity) || !validTime(record.time) || typeof record.adjustment !== 'number' || !Number.isSafeInteger(record.adjustment * 4) || Math.abs(record.adjustment) > 1000000 || Object.hasOwn(record, 'link') && !validLink(record.link)) throw new Error('Unreadable medication settings');
       } else throw new Error('Unknown demo record');
       entries.push({ ...record, key });
     }
+    const custom = entries.filter(entry => entry.type === 'settings' && !samples.some(sample => sample.id === entry.medication));
+    const known = new Set([...samples.map(sample => sample.id), ...custom.map(entry => entry.medication)]);
+    if (known.size > 50 || entries.some(entry => !known.has(entry.medication))) throw new Error('Medication setup missing');
+    medications = [...samples, ...custom.map(entry => ({ id: entry.medication, name: entry.name, quantity: 1, time: '08:00', initial: 0 }))];
     return entries;
   }
   function stock(medication, entries) {
@@ -98,13 +119,13 @@ function createHealthDemo(panel) {
 
   const conflict = text => { const error = new Error(text); error.medicationConflict = true; throw error; };
   function editorValues(view) {
-    return { name: view.fields.name.value.trim(), quantity: Number(view.fields.dose.value), time: view.fields.time.value, stock: Number(view.fields.stock.value) };
+    return { name: view.fields.name.value.trim(), quantity: Number(view.fields.dose.value), time: view.fields.time.value, stock: Number(view.fields.stock.value), link: view.linkChoice || '' };
   }
   function dirty(view) {
     return view.baseline && JSON.stringify(editorValues(view)) !== JSON.stringify(view.baseline.values);
   }
-  function cancelEditor(view) { view.baseline = undefined; view.editor.hidden = true; view.edit.hidden = false; }
-  function hasDraft() { return [...cards.values()].some(dirty); }
+  function cancelEditor(view) { view.baseline = undefined; view.linkPicker.close(); view.editor.hidden = true; if (view.isNew) { view.card.hidden = true; document.getElementById('health-add-medication').hidden = false; } else view.edit.hidden = false; }
+  function hasDraft() { return allViews().some(dirty); }
   function requestExit(run) {
     if (busy) { message = 'Saving medication changes… Keep this tab open.'; render(); return false; }
     if (!hasDraft()) { run(); return true; }
@@ -117,20 +138,44 @@ function createHealthDemo(panel) {
     if (!Object.values(view.fields).every(input => input.reportValidity())) return;
     const values = editorValues(view);
     if (!validName(values.name)) { view.fields.name.setCustomValidity('Enter a medication name.'); view.fields.name.reportValidity(); return; }
+    let savedId;
     return change(entries => {
-      if (JSON.stringify(setup(medication, entries) || null) !== view.baseline.setup) conflict('Medication changed in another tab. Cancel and reopen Edit medication to review the latest setup.');
-      const currentStock = stock(medication, entries);
+      if (view.baseline.scope !== workspace.scope) conflict('Checklist workspace changed. Cancel and reopen the editor before saving.');
+      const target = view.isNew ? { id: view.draftId, initial: 0, quantity: 1 } : medication;
+      if (view.isNew && medications.length >= 50) conflict('This browser supports up to 50 medications.');
+      if (JSON.stringify(setup(target, entries) || null) !== view.baseline.setup) conflict('Medication changed in another tab. Cancel and reopen Edit medication to review the latest setup.');
+      const currentStock = stock(target, entries);
       const stockEdited = values.stock !== view.baseline.values.stock;
       if (stockEdited && currentStock !== view.baseline.values.stock) conflict('Stock changed while you were editing. Cancel and reopen Edit medication to review it.');
-      const adjustment = (setup(medication, entries)?.adjustment || 0) + (stockEdited ? values.stock - currentStock : 0);
+      const adjustment = (setup(target, entries)?.adjustment || 0) + (stockEdited ? values.stock - currentStock : 0);
       if (!Number.isSafeInteger(adjustment * 4) || Math.abs(adjustment) > 1000000) conflict('Stock adjustment is outside the supported range. Stored data is unchanged.');
-      const record = { version: 1, type: 'settings', medication: medication.id, name: values.name, quantity: values.quantity, time: values.time, adjustment, at: Date.now() };
-      localStorage.setItem(setupKey(medication.id), JSON.stringify(record));
+      const link = values.link ? JSON.parse(values.link) : null;
+      if (!validLink(link) || (view.isNew || values.link !== view.baseline.values.link) && link && !linkedChecklist(link)) conflict('Choose a checklist from the current workspace or No checklist.');
+      const record = { version: 1, type: 'settings', medication: target.id, name: values.name, quantity: values.quantity, time: values.time, adjustment, link, at: Date.now() };
+      localStorage.setItem(setupKey(target.id), JSON.stringify(record));
+      savedId = target.id;
       cancelEditor(view);
-    }, 'Medication saved in this browser. Existing dose quantities are unchanged.');
+    }, view.isNew ? 'Medication added in this browser.' : 'Medication saved in this browser. Existing dose quantities are unchanged.').then(() => {
+      if (!savedId) return;
+      const saved = cards.get(savedId);
+      if (view.isNew) saved.card.scrollIntoView({ block: 'nearest' });
+      saved.edit.focus({ preventScroll: true });
+    });
+  }
+  function updateLinkChoices(view, entries) {
+    const desired = view.baseline ? view.linkChoice || '' : linkValue(binding(view.medication, entries));
+    const signature = JSON.stringify([workspace.scope, workspace.routines, desired]);
+    if (signature === view.linkSignature) return;
+    view.linkSignature = signature;
+    const options = [Object.assign(document.createElement('option'), { value: '', textContent: 'No checklist' })];
+    for (const routine of workspace.routines) options.push(Object.assign(document.createElement('option'), { value: linkValue({ scope: workspace.scope, id: routine.id }), textContent: routine.name }));
+    if (desired && !options.some(option => option.value === desired)) options.push(Object.assign(document.createElement('option'), { value: desired, textContent: 'Linked checklist unavailable in this workspace', disabled: true }));
+    view.linkSelect.replaceChildren(...options); view.linkSelect.value = desired; view.linkPicker.refresh();
   }
 
-  for (const medication of medications) {
+  function createCard(medication, isNew = false) {
+    const view = { medication, isNew };
+
     const card = node('article', 'medication-card'); card.dataset.medication = medication.id;
     const heading = node('div', 'medication-heading');
     const title = node('h3', '', medication.name);
@@ -154,12 +199,12 @@ function createHealthDemo(panel) {
       change(entries => {
         const key = prefix + 'restock:' + crypto.randomUUID();
         localStorage.setItem(key, JSON.stringify({ version: 1, type: 'restock', medication: medication.id, name: configured(medication, entries).name, quantity: amount, at: Date.now() }));
-      }, `${cards.get(medication.id).title.textContent}: added ${amount} tablets.`);
+      }, `${view.title.textContent}: added ${amount} tablets.`);
     });
     quantity.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); add.click(); } });
     restock.append(label, quantity, add);
     const editor = node('fieldset', 'medication-editor'); editor.hidden = true;
-    editor.append(node('legend', '', 'Edit medication'));
+    editor.append(node('legend', '', isNew ? 'Add medication' : 'Edit medication'));
     const fields = {};
     for (const [key, text, type] of [['name', 'Name', 'text'], ['dose', 'Tablets per dose', 'number'], ['time', 'Daily time (Lisbon)', 'time'], ['stock', 'Current stock', 'number']]) {
       const label = node('label', '', text);
@@ -169,30 +214,45 @@ function createHealthDemo(panel) {
       if (key === 'dose' || key === 'stock') { input.min = key === 'dose' ? '.25' : '0'; input.max = key === 'dose' ? '100' : '100000'; input.step = '.25'; input.inputMode = 'decimal'; }
       fields[key] = input; label.append(input); editor.append(label);
     }
-    const save = action('Save changes', `Save ${medication.name} changes`, () => saveEditor(medication, cards.get(medication.id)));
-    const cancel = action('Cancel', `Cancel ${medication.name} changes`, () => { const view = cards.get(medication.id); cancelEditor(view); render(); view.edit.focus(); });
+    const linkField = node('div', 'medication-link-field');
+    const linkLabel = node('span', '', 'Linked checklist'); linkLabel.id = `medication-${medication.id}-link-label`;
+    const linkSelect = node('select', ''); linkSelect.id = `medication-${medication.id}-checklist`; linkSelect.setAttribute('aria-label', 'Linked checklist'); linkSelect.setAttribute('aria-labelledby', linkLabel.id);
+    linkField.append(linkLabel, linkSelect); editor.append(linkField);
+    const linkPicker = createChecklistPicker(linkSelect);
+    linkSelect.addEventListener('change', () => { view.linkChoice = linkSelect.value; view.save.disabled = busy || !dirty(view); });
+    const save = action(isNew ? 'Save medication' : 'Save changes', isNew ? 'Save new medication' : `Save ${medication.name} changes`, () => saveEditor(medication, view));
+    const cancel = action('Cancel', `Cancel ${medication.name} changes`, () => { cancelEditor(view); render(); (view.isNew ? document.getElementById('health-add-medication') : view.edit).focus(); });
     const editorActions = node('div', 'medication-dose-actions'); editorActions.append(save, cancel);
     editor.append(node('p', '', 'One daily dose. Changes save in this browser; previous dose quantities stay unchanged.'), editorActions);
     const edit = action('Edit medication', `Edit ${medication.name}`, () => {
       try {
-        const entries = read(); const current = configured(medication, entries); const view = cards.get(medication.id);
-        const values = { name: current.name, quantity: current.quantity, time: current.time, stock: stock(medication, entries) };
-        view.baseline = { values, setup: JSON.stringify(setup(medication, entries) || null) };
+        const entries = read(); const current = configured(medication, entries);
+        const values = { name: current.name, quantity: current.quantity, time: current.time, stock: stock(medication, entries), link: linkValue(binding(medication, entries)) };
+        view.linkChoice = values.link;
+        view.baseline = { scope: workspace.scope, values, setup: JSON.stringify(setup(medication, entries) || null) };
         fields.name.value = values.name; fields.dose.value = values.quantity; fields.time.value = values.time; fields.stock.value = values.stock;
         editor.hidden = false; edit.hidden = true; render(); fields.name.focus(); fields.name.select();
       } catch { message = 'Medication setup could not be read. Stored data is unchanged.'; failed = true; render(); }
     });
-    editor.addEventListener('input', () => { fields.name.setCustomValidity(''); save.disabled = busy || !dirty(cards.get(medication.id)); });
-    editor.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); save.click(); } });
+    editor.addEventListener('input', () => { fields.name.setCustomValidity(''); save.disabled = busy || !dirty(view); });
+    editor.addEventListener('keydown', event => { if (event.key === 'Enter' && event.target.matches('input')) { event.preventDefault(); save.click(); } });
     heading.append(edit);
-    card.append(heading, editor, schedule, count, estimate, warning, doseState, buttons, restock);
-    document.getElementById('health-medications').append(card);
+    const linkInfo = node('div', 'medication-link-info'); const linkText = node('span', '');
+    const openLinked = action('Open checklist', 'Open linked checklist', () => {
+      const link = binding(medication, read()); const routine = linkedChecklist(link); if (routine) openRoutine(routine.id);
+    });
+    linkInfo.append(linkText, openLinked);
+    const details = node('div', 'medication-details'); details.append(linkInfo, schedule, count, estimate, warning, doseState, buttons, restock); details.hidden = isNew;
+    card.append(heading, editor, details);
+    document.getElementById(isNew ? 'health-new-medication' : 'health-medications').append(card);
     const row = node('label', 'medication-row');
     const check = node('input', ''); check.type = 'checkbox'; check.dataset.dose = medication.id;
     check.addEventListener('change', () => recordDose(medication, check.checked));
     const copy = node('span', ''); copy.append(node('strong', '', `Take ${medication.name}`), node('small', '', `${medication.quantity} tablet${medication.quantity === 1 ? '' : 's'} · ${medication.time} · Demo`));
-    row.append(check, copy); document.getElementById('medication-checks').append(row);
-    cards.set(medication.id, { title, badge, schedule, copy, editor, fields, edit, save, cancel, count, estimate, warning, dose, undo, doseState, quantity, add, check });
+    row.append(check, copy); if (!isNew) document.getElementById('medication-checks').append(row);
+    Object.assign(view, { card, row, linkText, openLinked, linkSelect, linkPicker, title, badge, schedule, copy, editor, fields, edit, save, cancel, count, estimate, warning, dose, undo, doseState, quantity, add, check });
+    if (isNew) { card.hidden = true; edit.hidden = true; } else cards.set(medication.id, view);
+    return view;
   }
 
   function render() {
@@ -201,12 +261,21 @@ function createHealthDemo(panel) {
     let error = '';
     try { entries = read(); medications.forEach(medication => stock(medication, entries)); }
     catch { error = 'Demo storage could not be read. Stored records are unchanged. No stock changes are available until storage is accessible.'; }
+    for (const medication of medications) if (!cards.has(medication.id)) createCard(medication);
+    for (const [id, view] of cards) if (!medications.some(med => med.id === id) && !dirty(view)) { view.card.remove(); view.row.remove(); cards.delete(id); }
     for (const medication of medications) {
       const view = cards.get(medication.id);
       const count = error ? 0 : stock(medication, entries);
       const checked = taken(medication, entries);
       const current = configured(medication, entries);
       const custom = Boolean(setup(medication, entries));
+      const link = binding(medication, entries); const linked = linkedChecklist(link);
+      const visibleHere = Boolean(linked && workspace.selected && linked.id === workspace.selected.id);
+      view.row.hidden = !visibleHere;
+      view.linkText.textContent = linked ? `Linked to ${linked.name}` : link ? 'Linked checklist unavailable in this workspace' : 'Not linked to a checklist';
+      view.openLinked.hidden = !linked; view.openLinked.disabled = Boolean(error) || busy;
+      if (linked) view.openLinked.setAttribute('aria-label', `Open ${linked.name} for ${current.name}`);
+      updateLinkChoices(view, entries); view.linkSelect.disabled = Boolean(error) || busy;
       view.title.textContent = current.name; view.badge.textContent = custom ? 'CUSTOM DEMO' : 'DEMO';
       view.schedule.textContent = `${current.quantity} tablet${current.quantity === 1 ? '' : 's'} · Daily at ${current.time} · Lisbon time`;
       view.copy.querySelector('strong').textContent = `Take ${current.name}`;
@@ -237,8 +306,16 @@ function createHealthDemo(panel) {
     document.getElementById('medication-demo-title').textContent = 'Medication demo';
     document.getElementById('medication-data-note').textContent = customSetup ? 'Customized demo saved only in this browser. Routine resets keep recorded doses and stock.' : 'Fictional samples saved only in this browser. Routine resets keep recorded doses and stock.';
     if (panel.dataset.app === 'health') document.getElementById('app-description').textContent = customSetup ? 'Medication demo customized in this browser. Sample dose history is kept. Not synced to your account.' : 'Fictional medications, times and stock for testing. Saved only in this browser; not synced to your account.';
-    const completed = medications.filter(medication => taken(medication, entries)).length;
-    document.getElementById('medication-today').textContent = `${completed} of ${medications.length} demo doses recorded today`;
+    const visible = medications.filter(medication => { const link = binding(medication, entries); return workspace.selected && link && link.scope === workspace.scope && link.id === workspace.selected.id; });
+    routineSection.hidden = !visible.length;
+    const completed = visible.filter(medication => taken(medication, entries)).length;
+    document.getElementById('medication-today').textContent = `${completed} of ${visible.length} demo doses recorded today`;
+    document.getElementById('health-add-medication').disabled = Boolean(error) || busy || medications.length >= 50;
+    if (newView) {
+      updateLinkChoices(newView, entries); newView.linkSelect.disabled = Boolean(error) || busy;
+      for (const input of Object.values(newView.fields)) input.disabled = Boolean(error) || busy;
+      newView.save.disabled = Boolean(error) || busy || !dirty(newView); newView.cancel.disabled = busy;
+    }
     status.textContent = routineStatus.textContent = busy ? 'Saving demo change…' : error || message;
     status.dataset.warning = routineStatus.dataset.warning = String(Boolean(error) || failed);
     const focused = history.contains(document.activeElement);
@@ -257,20 +334,25 @@ function createHealthDemo(panel) {
     }
     document.getElementById('health-history-empty').hidden = history.children.length > 0;
     if (focused) status.focus({ preventScroll: true });
-    document.getElementById('health-open-care').disabled = !personalCareCard();
+    document.getElementById('health-open-care').disabled = !currentRoutineCard();
   }
-  function personalCareCard() {
-    return [...document.querySelectorAll('.routine-card')].find(card => card.dataset.routine === 'personal-care' || card.querySelector('.routine-card-name').textContent.trim().toLowerCase() === 'personal care');
+  function currentRoutineCard() {
+    const cards = [...document.querySelectorAll('.routine-card')];
+    return cards.find(card => card.dataset.routine === workspace.selected?.id) || cards[0];
   }
-  document.getElementById('health-open-care').addEventListener('click', () => {
-    const card = personalCareCard(); if (!card) return;
-    requestExit(() => { panel.close(); document.getElementById('routines-launch').click(); card.click(); routineSection.scrollIntoView({ block: 'nearest' }); });
-  });
+  function openRoutine(id, scope = workspace.scope) {
+    requestExit(() => {
+      const card = [...document.querySelectorAll('.routine-card')].find(card => card.dataset.routine === id);
+      if (scope !== workspace.scope || !card) { message = 'Checklist workspace changed. Choose the linked checklist again.'; failed = true; render(); return; }
+      panel.close(); document.getElementById('routines-launch').click(); card.click();
+      if (!routineSection.hidden) routineSection.scrollIntoView({ block: 'nearest' });
+    });
+  }
+  document.getElementById('health-open-care').addEventListener('click', () => { const card = currentRoutineCard(); if (card) openRoutine(card.dataset.routine); });
   document.getElementById('medication-open-health').addEventListener('click', () => document.querySelector('.app[data-icon="health"]').click());
-  document.addEventListener('hub:progress', () => { document.getElementById('health-open-care').disabled = !personalCareCard(); });
+  document.addEventListener('hub:progress', () => { document.getElementById('health-open-care').disabled = !currentRoutineCard(); });
   document.addEventListener('hub:checklistview', event => {
-    const routine = event.detail;
-    routineSection.hidden = !routine || !(routine.id === 'personal-care' || routine.name.trim().toLowerCase() === 'personal care');
+    workspace = event.detail || { scope: '', routines: [], selected: null };
     render();
   });
   window.addEventListener('storage', event => { if (event.key === null || event.key.startsWith(prefix)) render(); });
@@ -288,10 +370,20 @@ function createHealthDemo(panel) {
   panel.addEventListener('click', closingClick, true);
   panel.addEventListener('submit', event => { if (hasDraft() || busy) { event.preventDefault(); event.stopImmediatePropagation(); requestExit(() => panel.close()); } }, true);
   panel.addEventListener('cancel', event => { if (hasDraft() || busy) { event.preventDefault(); event.stopImmediatePropagation(); requestExit(() => panel.close()); } }, true);
-  panel.addEventListener('close', () => { for (const view of cards.values()) cancelEditor(view); });
-  document.getElementById('medication-discard-confirm').addEventListener('click', () => { const run = discardAction; discardAction = undefined; for (const view of cards.values()) cancelEditor(view); discard.close(); run?.(); });
+  panel.addEventListener('close', () => { for (const view of allViews()) cancelEditor(view); });
+  document.getElementById('medication-discard-confirm').addEventListener('click', () => { const run = discardAction; discardAction = undefined; for (const view of allViews()) cancelEditor(view); discard.close(); run?.(); });
   discard.addEventListener('close', () => { if (!discard.open) discardAction = undefined; });
   window.addEventListener('beforeunload', event => { if (hasDraft() || busy) { event.preventDefault(); event.returnValue = ''; } });
+  newView = createCard({ id: 'new-medication', name: 'New medication', quantity: 1, time: '08:00', initial: 0 }, true);
+  document.getElementById('health-add-medication').addEventListener('click', () => {
+    newView.draftId = 'med-' + crypto.randomUUID();
+    const values = { name: '', quantity: 1, time: '08:00', stock: 0, link: '' };
+    newView.baseline = { values, scope: workspace.scope, setup: 'null' }; newView.linkChoice = '';
+    newView.fields.name.value = ''; newView.fields.dose.value = '1'; newView.fields.time.value = '08:00'; newView.fields.stock.value = '0';
+    newView.fields.name.setCustomValidity('');
+    newView.card.hidden = false; newView.editor.hidden = false; document.getElementById('health-add-medication').hidden = true;
+    render(); newView.fields.name.focus();
+  });
   render();
   return { refresh: render, canNavigate() { if (!hasDraft() && !busy) return true; message = 'Save or cancel medication edits before opening quick access.'; failed = true; render(); return false; } };
 }
