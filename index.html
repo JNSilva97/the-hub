@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="styles/routines.css?v=free-9">
   <link rel="stylesheet" href="styles/routine-tools.css?v=phone-7">
   <link rel="stylesheet" href="styles/notes.css?v=daily-8">
-  <link rel="stylesheet" href="styles/health.css?v=health-2">
+  <link rel="stylesheet" href="styles/health.css?v=health-3">
   <link rel="stylesheet" href="styles/motion.css?v=free-9">
 </head>
 <body>
@@ -217,7 +217,8 @@
     <h2 id="app-title"></h2>
     <p id="app-description">This app is yet to be built.</p>
     <section id="health-content" hidden aria-label="Medication demo">
-      <div class="health-toolbar"><span id="health-data-badge" class="health-demo-badge">DEMO / THIS BROWSER</span><button id="health-open-care" class="health-button" type="button" disabled>Open Personal Care</button></div>
+      <div class="health-toolbar"><span id="health-data-badge" class="health-demo-badge">DEMO / THIS BROWSER</span><div class="health-toolbar-actions"><button id="health-add-medication" class="health-button" type="button">+ Add medication</button><button id="health-open-care" class="health-button" type="button" disabled>Open Routines</button></div></div>
+      <div id="health-new-medication"></div>
       <div id="health-medications"></div>
       <p id="health-status" role="status" tabindex="-1"></p>
       <section class="health-history" aria-labelledby="health-history-title"><h3 id="health-history-title">Recent activity</h3><p id="health-history-empty">No demo doses recorded yet.</p><ol id="health-history"></ol></section>
@@ -226,7 +227,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Metallic scanner sweeps and digital signals.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.06.2</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.06.3</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -357,8 +358,9 @@
   <script defer src="core-progress.js?v=control-2"></script>
   <script defer src="core-transition.js?v=staged-6"></script>
   <script defer src="notes.js?v=daily-8"></script>
-  <script defer src="health.js?v=health-2"></script>
-  <script defer src="interface.js?v=health-2"></script>
+  <script defer src="checklist-picker.js?v=health-3"></script>
+  <script defer src="health.js?v=health-3"></script>
+  <script defer src="interface.js?v=health-3"></script>
   <script defer src="interface-sound.js?v=signal-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>
   <script defer src="experience.js?v=tidy-10"></script>

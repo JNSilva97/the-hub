@@ -22,6 +22,7 @@ let state;
 let storageKey;
 let workspaceKey;
 let selectionKey;
+let workspaceScope = "";
 let localOverride = false;
 let storageAvailable = true;
 let loadGeneration = 0;
@@ -167,7 +168,7 @@ function selectRoutine(routine, remember = true) {
     content.append(section);
   }
   updateProgress();
-  document.dispatchEvent(new CustomEvent('hub:checklistview', { detail: { id: routine.id, name: routine.name } }));
+  document.dispatchEvent(new CustomEvent('hub:checklistview', { detail: { scope: workspaceScope, routines: routines.map(({ id, name }) => ({ id, name })), selected: { id: routine.id, name: routine.name } } }));
 }
 
 document.getElementById('routine-restart').addEventListener('click', () => {
@@ -240,6 +241,7 @@ export async function initialiseRoutines() {
   routines = loadedRoutines;
   storageKey = `thehub:routines:${source}:v1`;
   workspaceKey = `thehub:workspace:${source}:v1`;
+  workspaceScope = source === 'account' ? `account:${cloudWorkspace.user.uid}` : source;
   selectionKey = source === 'account' ? `thehub:selection:account:${cloudWorkspace.user.uid}:v1` : `thehub:selection:${source}:v1`;
   localOverride = false;
   storageAvailable = true;
