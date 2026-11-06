@@ -9,7 +9,7 @@ const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
 const publicFiles = ['index.html', 'styles/routine-tools.css', 'routine-tools.js', 'workspace-model.mjs', 'install.js', 'manifest.webmanifest', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png', 'assets/icons/hub-180.png', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'pointer-effects.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
-publicFiles.push('cloud-notes.js', 'notes-model.mjs');
+publicFiles.push('cloud-notes.js', 'notes-model.mjs', 'health.js', 'styles/health.css');
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: options.width || 1024, height: options.height || 900 }, hasTouch: Boolean(options.mobile), isMobile: Boolean(options.mobile), reducedMotion: options.motion || 'no-preference' });

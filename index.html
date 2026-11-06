@@ -12,13 +12,14 @@
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles/base.css?v=control-2">
-  <link rel="stylesheet" href="styles/shell.css?v=tidy-10">
+  <link rel="stylesheet" href="styles/shell.css?v=health-1">
   <link rel="stylesheet" href="styles/core.css?v=mobile-1">
   <link rel="stylesheet" href="styles/access.css?v=control-2">
   <link rel="stylesheet" href="styles/panels.css?v=mobile-1">
   <link rel="stylesheet" href="styles/routines.css?v=free-9">
   <link rel="stylesheet" href="styles/routine-tools.css?v=phone-7">
   <link rel="stylesheet" href="styles/notes.css?v=daily-8">
+  <link rel="stylesheet" href="styles/health.css?v=health-1">
   <link rel="stylesheet" href="styles/motion.css?v=free-9">
 </head>
 <body>
@@ -193,7 +194,7 @@
       <button class="app" type="button" data-icon="settings" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#settings"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">08</span></span><span class="app-name">Settings</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       </nav>
       <details id="future-spaces" class="future-spaces" hidden>
-        <summary>More spaces <span>6 coming soon</span></summary>
+        <summary>More spaces <span>5 coming soon</span></summary>
         <div class="future-grid"></div>
       </details>
     </div>
@@ -210,15 +211,22 @@
     <button id="phone-settings" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#settings"/></svg><span>Settings</span></button>
   </nav>
   <dialog id="app-dialog" aria-labelledby="app-title" aria-describedby="app-description">
+    <button id="health-close" class="routine-exit" type="button" aria-label="Close Health" hidden>×</button>
     <div class="panel-eyebrow" aria-hidden="true">THE HUB / MODULE INTERFACE</div>
     <div id="app-icon" aria-hidden="true"></div>
     <h2 id="app-title"></h2>
     <p id="app-description">This app is yet to be built.</p>
+    <section id="health-content" hidden aria-label="Medication demo">
+      <div class="health-toolbar"><span class="health-demo-badge">DEMO / THIS BROWSER</span><button id="health-open-care" class="health-button" type="button" disabled>Open Personal Care</button></div>
+      <div id="health-medications"></div>
+      <p id="health-status" role="status" tabindex="-1"></p>
+      <section class="health-history" aria-labelledby="health-history-title"><h3 id="health-history-title">Recent activity</h3><p id="health-history-empty">No demo doses recorded yet.</p><ol id="health-history"></ol></section>
+    </section>
     <div id="interface-settings" hidden>
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Metallic scanner sweeps and digital signals.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.10.29.10</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.06.1</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -277,6 +285,11 @@
         <div id="routine-progress" class="routine-progress" role="progressbar" aria-label="Checklist completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
         <p class="checklist-hint">Tick things off in any order.</p>
         <div id="routine-content"></div>
+        <section id="personal-care-medications" class="medication-demo" hidden aria-labelledby="medication-demo-title">
+          <div class="health-toolbar"><h4 id="medication-demo-title">Medication demo</h4><button id="medication-open-health" class="health-button" type="button">Open Health</button></div>
+          <p>Fictional samples saved only in this browser. Routine resets keep recorded doses and stock.</p>
+          <p id="medication-today"></p><div id="medication-checks"></div><p id="medication-status" role="status"></p>
+        </section>
         </div>
         <section id="checklist-control" class="control-dialog inline-editor" hidden aria-labelledby="control-title">
           <div class="command-heading"><h2 id="control-title">EDIT CHECKLIST</h2><button id="control-close" class="routine-exit" type="button" aria-label="Back to checklist">Back</button></div>
@@ -340,7 +353,8 @@
   <script defer src="core-progress.js?v=control-2"></script>
   <script defer src="core-transition.js?v=staged-6"></script>
   <script defer src="notes.js?v=daily-8"></script>
-  <script defer src="interface.js?v=tidy-10"></script>
+  <script defer src="health.js?v=health-1"></script>
+  <script defer src="interface.js?v=health-1"></script>
   <script defer src="interface-sound.js?v=signal-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>
   <script defer src="experience.js?v=tidy-10"></script>

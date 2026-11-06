@@ -167,6 +167,7 @@ function selectRoutine(routine, remember = true) {
     content.append(section);
   }
   updateProgress();
+  document.dispatchEvent(new CustomEvent('hub:checklistview', { detail: { id: routine.id, name: routine.name } }));
 }
 
 document.getElementById('routine-restart').addEventListener('click', () => {
@@ -190,6 +191,7 @@ restartDialog.addEventListener('close', () => { if (!restartDialog.open) pending
 
 export async function initialiseRoutines() {
   const current = ++loadGeneration;
+  document.dispatchEvent(new CustomEvent('hub:checklistview', { detail: null }));
   selectionKey = undefined;
   routines = [];
   selected = undefined;

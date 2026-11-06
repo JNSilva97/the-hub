@@ -13,9 +13,9 @@ test('Phone workflows', { timeout: 90000 }, async t => {
       const { context, page, errors } = await fixture(browser, { width, height: 640, motion: 'reduce' });
       try {
         await ready(page);
-        assert.equal(await page.locator('.apps > .app').count(), 2);
+        assert.equal(await page.locator('.apps > .app').count(), 3);
         assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), false);
-        assert.equal(await page.locator('.future-grid .app').count(), 6);
+        assert.equal(await page.locator('.future-grid .app').count(), 5);
         assert.equal(await page.locator('.phone-actions').isVisible(), true);
         for (const button of await page.locator('.phone-actions button').all()) {
           assert.ok(await button.evaluate(el => { const r = el.getBoundingClientRect(); return r.height >= 44 && r.width >= 44 && r.bottom <= innerHeight; }));
