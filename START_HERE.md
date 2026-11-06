@@ -8,6 +8,8 @@ Open the homepage and choose **Routines** beneath the optical core. Pick a check
 
 Routines shows the full checklist as soon as you open it. Tick things off in whichever order suits you. Checked rows stay where they are, and tapping one again clears its tick. Optional section switches are right in the list. Progress saves automatically.
 
+**Health** is a medication demo with fictional samples saved only in this browser. In **Personal Care → Medication demo**, checking a dose reduces that sample's Health stock once. **Undo** corrects a mistaken check; **Start again** keeps dose history and stock. **Add stock** records a refill. The demo uses Lisbon dates and is separate from your real checklist data and account sync.
+
 Choose **Notes** and start typing. Your first line becomes the title and each edit saves automatically. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Signed-out/local notes stay in this browser; public sample notes and the PC notebook are separate. Signed-in **Account notes** sync privately through Firebase after the current notes rules are published. **Local notes** returns to the original notebook. Existing local text is copied only through **Copy local notes** and its account confirmation.
 
 **Delete note** asks for confirmation inside the app. **Keep note**, Escape or clicking outside cancels. After confirming, **Undo delete** recovers the last deleted note until you reload the page or successfully delete another note. Deleting one note leaves the others untouched.
@@ -40,6 +42,7 @@ Choose **Edit checklist** beside the selected checklist title to edit directly i
 | Local note saving, search and note dialog controls | `notes.js` / `styles/notes.css` |
 | Account-note offline drafts, synchronization and conflict copies | `cloud-notes.js` / `notes-model.mjs` |
 | Loading checklists, ticking items and saving | `routines.js` |
+| Medication demo, local stock and linked Personal Care checks | `health.js` |
 | Checking data and calculating completion | `routine-model.mjs` |
 | Checklist editor, backup and restore | `routine-tools.js` / `styles/routine-tools.css` |
 | Portable workspace validation and progress pruning | `workspace-model.mjs` |

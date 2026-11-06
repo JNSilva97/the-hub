@@ -4,6 +4,7 @@ const routinesLauncher = document.getElementById('routines-launch');
 const retryButton = document.getElementById('routine-retry');
 const notesDialog = document.getElementById('notes-dialog');
 const instantNotes = typeof createInstantNotes === 'function' ? createInstantNotes(notesDialog) : undefined;
+const healthDemo = typeof createHealthDemo === 'function' ? createHealthDemo(dialog) : undefined;
 const scriptUrl = new URL(document.currentScript.src);
 const routinesUrl = new URL('./routines.js', scriptUrl);
 routinesUrl.search = scriptUrl.search;
@@ -49,10 +50,16 @@ function openApp(button) {
   const icon = button.dataset.icon;
   if (icon === 'notes' && instantNotes) { instantNotes.open(); return; }
   const settings = icon === 'settings';
+  const health = icon === 'health' && Boolean(healthDemo);
+  dialog.dataset.app = icon;
+  document.getElementById('health-content').hidden = !health;
+  document.getElementById('health-close').hidden = !health;
+  if (health) healthDemo.refresh();
+  dialog.querySelector('form .close').textContent = health && routinesDialog.open ? 'Back to Personal Care' : 'Back to the Hub';
   document.getElementById('app-title').textContent = button.querySelector('.app-name').textContent;
   document.getElementById('app-icon').replaceChildren(button.querySelector('.tile').cloneNode(true));
   document.getElementById('interface-settings').hidden = !settings;
-  document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Routines.';
+  document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : health ? 'Fictional medications, times and stock for testing. Saved only in this browser; not synced to your account.' : icon === 'health' ? 'Health couldn’t load. Reload the page to try again.' : icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Routines.';
   dialog.showModal();
 }
 for (const button of document.querySelectorAll('.app')) button.addEventListener('click', () => openApp(button));
@@ -63,7 +70,7 @@ const appGrid = document.querySelector('.apps');
 const appButtons = [...appGrid.querySelectorAll('.app')];
 const futureSpaces = document.getElementById('future-spaces');
 const futureGrid = futureSpaces.querySelector('.future-grid');
-const futureApps = appButtons.filter(button => !['notes', 'settings'].includes(button.dataset.icon));
+const futureApps = appButtons.filter(button => !['notes', 'settings', 'health'].includes(button.dataset.icon));
 for (const button of futureApps) {
   const label = button.querySelector('.app-meta');
   label.textContent = 'COMING SOON';
@@ -80,6 +87,8 @@ document.getElementById('phone-routines').addEventListener('click', () => routin
 for (const icon of ['notes', 'settings']) {
   document.getElementById(`phone-${icon}`).addEventListener('click', () => document.querySelector(`.app[data-icon="${icon}"]`).click());
 }
+
+document.getElementById('health-close').addEventListener('click', () => dialog.close());
 
 routinesLauncher.addEventListener('click', () => {
   routineTransition.open();

@@ -40,6 +40,16 @@ Built with HTML, CSS and JavaScript, without a build step. Optional checklist sy
 
 Display typography uses self-hosted Orbitron and Rajdhani fonts. Their SIL Open Font License notices are included in `assets/fonts/`. Checklist text keeps the system font for readability.
 
+## Health medication demo
+
+**Health** now opens a fictional, browser-only medication tracker. **Sample A** starts with 28 tablets and a sample daily quantity of one at 08:00; **Sample B** starts with ten tablets and a sample quantity of two at 20:00. These names, times and quantities are test data, not a medication plan. The demo is labeled in English on every view and is available while signed in or signed out.
+
+Open **Personal Care → Medication demo** to tick a sample dose. The same dose appears as **Taken today** in Health and reduces stock once, including across tabs or after a page reload. **Undo** or unticking that dose restores its quantity. **Start again** clears ordinary checklist ticks and keeps dose records and stock. Each Lisbon calendar day has a new dose slot; yesterday's records remain in **Recent activity**. Old doses can be undone individually without changing today's check. **Add stock** records a refill, and low-stock indicators estimate remaining days at the fictional schedule.
+
+This prototype saves only to this browser under `thehub:health-demo:v1:`. It does not sync between devices, write to Firebase, edit personal checklist definitions, enter checklist progress counts, or appear in checklist backups. Browser data clearing removes the demo ledger. Real medication configuration, account synchronization and background notifications are not part of this demo.
+
+`health.js` owns the local demo ledger and both linked views; `styles/health.css` owns its appearance. Dose IDs are fixed per sample and Lisbon date, stock is derived from unique dose/refill records, and Web Locks serialize available browser updates. Failed writes leave checks and stock unchanged; unreadable records disable changes and remain untouched.
+
 ## Preview locally
 
 Serve this folder using a loopback address. Routines needs a local server to load its data:
@@ -145,7 +155,7 @@ node --test tests/routine-model.test.mjs tests/workspace-model.test.mjs
 For the browser regression suite, make the installed `playwright` package available to Node.js and use a system Chrome installation:
 
 ```sh
-node --test tests/browser.cjs tests/phone.cjs
+node --test tests/browser.cjs tests/phone.cjs tests/health.cjs
 node --test tests/offline.cjs
 node --test tests/notes-model.test.mjs tests/notes-sync.cjs
 ```
