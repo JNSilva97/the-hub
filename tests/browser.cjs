@@ -167,7 +167,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.10.8');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.12.1');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -1356,6 +1356,56 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await showFutureSpaces(page);
       await page.locator('[data-icon="projects"]').click();
       assert.equal(await page.locator('#interface-settings').isVisible(), false);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('the public site plays distinct selected clips for startup, opening and closing', async () => {
+    const { context, page, errors } = await fixture(browser);
+    try {
+      const clips = new Map([[914, 1.1], [901, .85], [3114, 1.25]]);
+      const requests = new Set();
+      await context.route('https://assets.mixkit.co/**', route => {
+        const id = Number(new URL(route.request().url()).pathname.split('/')[3]);
+        requests.add(id);
+        const pcmSize = clips.get(id) * 16000;
+        // Synthetic PCM distinguishes the three clips without shipping licensed assets.
+        const wave = Buffer.alloc(44 + pcmSize);
+        wave.write('RIFF', 0); wave.writeUInt32LE(wave.length - 8, 4);
+        wave.write('WAVEfmt ', 8); wave.writeUInt32LE(16, 16);
+        wave.writeUInt16LE(1, 20); wave.writeUInt16LE(1, 22);
+        wave.writeUInt32LE(8000, 24); wave.writeUInt32LE(16000, 28);
+        wave.writeUInt16LE(2, 32); wave.writeUInt16LE(16, 34);
+        wave.write('data', 36); wave.writeUInt32LE(pcmSize, 40);
+        return route.fulfill({ body: wave, contentType: 'audio/wav', headers: { 'access-control-allow-origin': '*' } });
+      });
+      await context.addInitScript(() => {
+        window.playedCues = [];
+        const start = AudioBufferSourceNode.prototype.start;
+        AudioBufferSourceNode.prototype.start = function (...args) {
+          window.playedCues.push({ length: this.buffer.duration, args, at: performance.now() });
+          return start.apply(this, args);
+        };
+      });
+      await ready(page);
+      await page.locator('[data-icon="settings"]').click();
+      await page.locator('#settings-sound').click();
+      await page.waitForFunction(() => window.playedCues[0]?.length < .12);
+      async function play(click, expected) {
+        await page.waitForFunction(() => performance.now() - window.playedCues.at(-1).at >= 70);
+        const count = await page.evaluate(() => window.playedCues.length);
+        await click();
+        await page.waitForFunction(count => window.playedCues.length > count, count);
+        const cue = await page.evaluate(count => window.playedCues[count], count);
+        assert.ok(Math.abs(cue.length - expected[0]) < .002);
+        assert.deepEqual(cue.args, expected[1]);
+      }
+      await play(() => page.keyboard.press('Escape'), [1.25, [0, .065, .565]]);
+      await play(() => page.locator('#replay-intro').click(), [1.1, [0, .09, .93]]);
+      await play(() => openRoutines(page), [.85, [0, .09, .62]]);
+      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
+      await play(() => page.keyboard.press('Escape'), [1.25, [0, .065, .565]]);
+      assert.deepEqual([...requests].sort((a, b) => a - b), [901, 914, 3114]);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });

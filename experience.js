@@ -27,12 +27,16 @@
     }
   }
   showSoundSetting();
-  if (startupPending) playTone('startup', true).then(played => { if (played) startupPending = false; });
+  if (startupPending) {
+    interfaceSound?.prepare().catch(() => {});
+    playTone('startup', true).then(played => { if (played) startupPending = false; });
+  }
   settingsSound.addEventListener('click', () => {
     soundEnabled = !soundEnabled;
     try { localStorage.setItem(soundPreference, soundEnabled ? 'on' : 'off'); } catch {}
     showSoundSetting();
-    if (!soundEnabled) interfaceSound?.silence();
+    if (soundEnabled) interfaceSound?.prepare().catch(() => {});
+    else interfaceSound?.silence();
   });
   const openControls = '[aria-haspopup="dialog"], #routine-restart, #backup-launch, #account-launch, #control-launch, #backup-restore, #note-delete, #notes-import, #notes-account, #medication-open-health, #health-open-care, #health-sign-in';
   const closeControls = '.routine-exit, .close, .restart-keep';

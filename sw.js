@@ -1,6 +1,6 @@
 // Bump this version whenever a public app file changes; install the complete release atomically.
 const prefix = `the-hub:${new URL(self.registration.scope).pathname}:`;
-const cacheName = `${prefix}review-1`;
+const cacheName = `${prefix}sound-preview-1`;
 const files = [
   './', 'index.html', 'manifest.webmanifest', 'health.js', 'styles/health.css', 'checklist-picker.js',
   'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css',
@@ -15,10 +15,12 @@ const files = [
   'https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js',
   'https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js'
 ].map(file => new URL(file, self.registration.scope).href);
-// Local licensed clips are optional in a public checkout.
-const localAudio = ['assets/audio/mixkit-startup.mp3', 'assets/audio/mixkit-open.mp3', 'assets/audio/mixkit-close.mp3']
-  .map(file => new URL(file, self.registration.scope).href);
-const publicFiles = new Set([...files, ...localAudio]);
+// The PC keeps its own clips. The public site caches only the previews it actually plays.
+const local = ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(self.registration.scope).hostname);
+const localAudio = local ? ['assets/audio/mixkit-startup.mp3', 'assets/audio/mixkit-open.mp3', 'assets/audio/mixkit-close.mp3']
+  .map(file => new URL(file, self.registration.scope).href) : [];
+const hostedAudio = new Set([914, 901, 3114].map(id => `https://assets.mixkit.co/active_storage/sfx/${id}/${id}-preview.mp3`));
+const publicFiles = new Set([...files, ...localAudio, ...hostedAudio]);
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
@@ -45,6 +47,13 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' || !publicFiles.has(url.href)) return;
   event.respondWith((async () => {
     const cache = await caches.open(cacheName);
-    return await cache.match(url.href) || fetch(event.request);
+    const cached = await cache.match(url.href);
+    if (cached) return cached;
+    const response = await fetch(event.request);
+    if (hostedAudio.has(url.href) && response.ok && response.type === 'cors') {
+      // A full cache should not interrupt playback.
+      try { await cache.put(url.href, response.clone()); } catch {}
+    }
+    return response;
   })());
 });
