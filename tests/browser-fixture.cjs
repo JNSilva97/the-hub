@@ -1,6 +1,6 @@
 // Public browser fixtures only; never contacts the configured Firebase project.
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
+const { existsSync, readFileSync } = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 
@@ -9,7 +9,10 @@ const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
 const publicFiles = ['index.html', 'styles/routine-tools.css', 'routine-tools.js', 'workspace-model.mjs', 'install.js', 'manifest.webmanifest', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png', 'assets/icons/hub-180.png', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'pointer-effects.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
-publicFiles.push('cloud-notes.js', 'notes-model.mjs', 'health.js', 'styles/health.css', 'checklist-picker.js');
+publicFiles.push('cloud-notes.js', 'cloud-health.js', 'notes-model.mjs', 'health.js', 'styles/health.css', 'checklist-picker.js', 'assets/audio/interface-glide.mp3', 'assets/audio/interface-tap.mp3');
+
+const localAudio = ['startup', 'open', 'close'].map(kind => 'assets/audio/mixkit-' + kind + '.mp3')
+  .filter(filename => existsSync(path.join(root, filename)));
 
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: options.width || 1024, height: options.height || 900 }, hasTouch: Boolean(options.mobile), isMobile: Boolean(options.mobile), reducedMotion: options.motion || 'no-preference' });
@@ -20,11 +23,15 @@ async function fixture(browser, options = {}) {
     window.__hubFirebase = {
       docs: documents,
       user: signedIn ? { uid: 'account-a', email: 'test@example.invalid' } : null,
-      writes: [], held: [], imports: 0, rejectWrites: false, holdWrites: false, fromCache, noteListeners: new Set(), noteWrites: [], heldNotes: [],
+      writes: [], held: [], imports: 0, rejectWrites: false, holdWrites: false, fromCache, noteListeners: new Set(), healthListeners: new Set(), healthWrites: [], noteWrites: [], heldNotes: [],
       publish() {
         if (this.listener) {
           const records = Object.entries(this.docs[this.listener.uid] || {});
           this.listener.next({ empty: !records.length, metadata: { fromCache: this.fromCache, hasPendingWrites: Boolean(this.hasPendingWrites) }, docs: records.map(([id, data]) => ({ id, data: () => structuredClone(data) })) });
+        }
+        for (const listener of this.healthListeners) {
+          const records = Object.entries(this.docs[listener.uid]?.health || {});
+          listener.next({ empty: !records.length, metadata: { fromCache: this.fromCache }, docs: records.map(([id, data]) => ({ id, data: () => structuredClone(data) })) });
         }
         for (const listener of this.noteListeners) {
           const records = Object.entries(this.docs[listener.uid]?.notes || {}).filter(([, note]) => note.retired === false);
@@ -53,8 +60,8 @@ async function fixture(browser, options = {}) {
     if (filename === 'routines.js' && failures.module) return route.abort();
     if (filename === 'routine-model.mjs' && failures.dependency) return route.abort();
     if (url.pathname === '/private/routines.json' && options.private) return route.fulfill({ contentType: 'application/json', body: demo });
-    if (!publicFiles.includes(filename)) return route.fulfill({ status: 404, body: 'Not found' });
-    const contentType = filename.endsWith('.woff2') ? 'font/woff2' : filename.endsWith('.css') ? 'text/css' : /\.m?js$/.test(filename) ? 'text/javascript' : filename.endsWith('.json') ? 'application/json' : 'text/html';
+    if (!publicFiles.includes(filename) && !localAudio.includes(filename)) return route.fulfill({ status: 404, body: 'Not found' });
+    const contentType = filename.endsWith('.mp3') ? 'audio/mpeg' : filename.endsWith('.woff2') ? 'font/woff2' : filename.endsWith('.css') ? 'text/css' : /\.m?js$/.test(filename) ? 'text/javascript' : filename.endsWith('.json') ? 'application/json' : 'text/html';
     return route.fulfill({ path: path.join(root, filename), contentType });
   });
   return { context, requests, errors, failures, page: await context.newPage() };

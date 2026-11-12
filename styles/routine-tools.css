@@ -5,6 +5,8 @@
   padding: 24px;
   text-align: left;
 }
+/* Bring in the full backup frame together, without clipping its edges. */
+#backup-dialog[open] { animation: section-arrive 380ms var(--ease-arrive) both; }
 .control-dialog h2 { font-size: 20px; }
 .control-dialog p { margin: 12px 0; }
 #control-fields, #backup-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
@@ -67,10 +69,6 @@
 .control-footer button { background: #124378; border-color: #67bded; }
 .control-footer p { margin: 8px 0 0; }
 #control-status, #backup-status { font-size: 14px; overflow-wrap: anywhere; }
-/* Both checklist menus use page controls, including on Android and iOS. */
-.checklist-native {
-  display: none !important;
-}
 .checklist-picker {
   position: relative;
   min-width: 0;

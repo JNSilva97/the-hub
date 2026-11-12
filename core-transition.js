@@ -80,14 +80,16 @@ function createCoreTransition(panel) {
   function opticFlight(source, opening) {
     // A manual popover places decorative artwork above the modal without taking focus.
     if (!('showPopover' in HTMLElement.prototype)) return;
-    const target = dock.getBoundingClientRect();
-    const eye = core.querySelector('.eye-art');
-    const view = eye.viewBox.baseVal;
-    const matrix = eye.getScreenCTM();
-    // A nested SVG reports artwork bounds; docking needs its full viewBox viewport.
-    const origin = new DOMPoint(view.x, view.y).matrixTransform(matrix);
-    const scale = target.width / (view.width * Math.hypot(matrix.a, matrix.b));
-    const destination = { left: target.left - (origin.x - source.left) * scale, top: target.top - (origin.y - source.top) * scale, width: source.width * scale };
+    // Match the visible ring itself. Firefox and Chromium report different CTMs for nested SVGs.
+    const ring = core.querySelector('.eye-ring').getBoundingClientRect();
+    const target = dock.querySelector('.eye-ring').getBoundingClientRect();
+    const scale = target.width / ring.width;
+    const eyeX = ring.left + ring.width / 2;
+    const eyeY = ring.top + ring.height / 2;
+    const compactX = (eyeX - source.left) * (1 - scale);
+    const compactY = (eyeY - source.top) * (1 - scale);
+    const travelX = target.left + target.width / 2 - eyeX;
+    const travelY = target.top + target.height / 2 - eyeY;
     const svg = copyArtwork(core, 'flight');
     const rings = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     rings.classList.add('flight-rings');
@@ -107,8 +109,8 @@ function createCoreTransition(panel) {
     overlay.append(svg);
     document.body.append(overlay);
     overlay.showPopover();
-    const transform = `translate(${destination.left - source.left}px, ${destination.top - source.top}px) scale(${destination.width / source.width})`;
-    const compact = `translate(${(source.width - destination.width) / 2}px, ${(source.height - destination.width) / 2}px) scale(${destination.width / source.width})`;
+    const transform = `translate(${compactX + travelX}px, ${compactY + travelY}px) scale(${scale})`;
+    const compact = `translate(${compactX}px, ${compactY}px) scale(${scale})`;
     svg.style.filter = getComputedStyle(core).filter;
     animate(svg, opening ? [
       { transform: 'none', easing },

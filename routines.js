@@ -1,12 +1,14 @@
 import { validateRoutines, parseProgress, groupKey, itemKey, getProgress, restartRoutine } from './routine-model.mjs?v=control-1';
-import { cloudWorkspace } from './cloud.js?v=notes-sync-1';
+import { cloudWorkspace } from './cloud.js?v=review-1';
 import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=control-1';
-import { createRoutineTools, createChecklistPicker } from './routine-tools.js?v=phone-7';
+import { createRoutineTools } from './routine-tools.js?v=review-1';
+
+export { createHealthAccount } from './cloud-health.js?v=review-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
 const picker = document.getElementById('routine-picker');
-const routinePicker = createChecklistPicker(picker);
+const routinePicker = window.createChecklistPicker(picker);
 picker.addEventListener('change', () => {
   const routine = routines.find(routine => routine.id === picker.value);
   if (routine) selectRoutine(routine);
@@ -22,10 +24,15 @@ let state;
 let storageKey;
 let workspaceKey;
 let selectionKey;
-let workspaceScope = "";
 let localOverride = false;
 let storageAvailable = true;
 let loadGeneration = 0;
+
+const inAccount = () => dialog.dataset.source === 'account';
+function workspaceIdentity() {
+  if (!inAccount()) return dialog.dataset.source;
+  return cloudWorkspace.user ? `account:${cloudWorkspace.user.uid}` : undefined;
+}
 
 function make(tag, className, text) {
   const element = document.createElement(tag);
@@ -47,7 +54,7 @@ async function readData(path) {
 }
 
 function latestProgress() {
-  if (dialog.dataset.source === 'account') return cloudWorkspace.progress;
+  if (inAccount()) return cloudWorkspace.progress;
   // shortcut: merge before saving; simultaneous tab writes need transactional storage.
   if (!storageAvailable) return state;
   try {
@@ -61,7 +68,7 @@ function latestProgress() {
 }
 
 function save() {
-  if (dialog.dataset.source === 'account') {
+  if (inAccount()) {
     try { cloudWorkspace.save(state); }
     catch { notice.textContent = 'Account is not ready. Your ticks have not synced. Open Account & sync to retry.'; }
     return;
@@ -168,7 +175,7 @@ function selectRoutine(routine, remember = true) {
     content.append(section);
   }
   updateProgress();
-  document.dispatchEvent(new CustomEvent('hub:checklistview', { detail: { scope: workspaceScope, routines: routines.map(({ id, name }) => ({ id, name })), selected: { id: routine.id, name: routine.name } } }));
+  document.dispatchEvent(new CustomEvent('hub:checklistview', { detail: { scope: workspaceIdentity(), routines: routines.map(({ id, name }) => ({ id, name })), selected: { id: routine.id, name: routine.name } } }));
 }
 
 document.getElementById('routine-restart').addEventListener('click', () => {
@@ -241,8 +248,8 @@ export async function initialiseRoutines() {
   routines = loadedRoutines;
   storageKey = `thehub:routines:${source}:v1`;
   workspaceKey = `thehub:workspace:${source}:v1`;
-  workspaceScope = source === 'account' ? `account:${cloudWorkspace.user.uid}` : source;
-  selectionKey = source === 'account' ? `thehub:selection:account:${cloudWorkspace.user.uid}:v1` : `thehub:selection:${source}:v1`;
+  dialog.dataset.source = source;
+  selectionKey = `thehub:selection:${workspaceIdentity()}:v1`;
   localOverride = false;
   storageAvailable = true;
   try {
@@ -286,12 +293,11 @@ export async function initialiseRoutines() {
   let remembered;
   try { remembered = localStorage.getItem(selectionKey); } catch { /* A blocked preference store does not affect progress. */ }
   selectRoutine(routines.find(routine => routine.id === remembered) || routines[0], false);
-  dialog.dataset.source = source;
   dialog.dataset.ready = 'true';
 }
 
 window.addEventListener('storage', event => {
-  if (dialog.dataset.source === 'account') return;
+  if (inAccount()) return;
   if (event.key === workspaceKey || event.key === null && localOverride) { initialiseRoutines(); return; }
   if (localOverride) return;
   if (!storageAvailable || (event.key !== storageKey && event.key !== null) || !selected) return;
@@ -308,19 +314,19 @@ window.addEventListener('storage', event => {
 createRoutineTools({
   select: id => { const routine = routines.find(routine => routine.id === id); if (routine) selectRoutine(routine); },
   snapshot() {
-    const account = Boolean(cloudWorkspace.user);
+    const account = inAccount();
     if (!selected || account && !cloudWorkspace.canEdit) throw new Error('Wait for your account and ticks to finish syncing, then try again.');
     if (!account && !storageAvailable) throw new Error('Browser storage is unavailable or unreadable. Your saved data is unchanged.');
     const progress = account ? cloudWorkspace.progress : latestProgress();
     return { routines: structuredClone(account ? cloudWorkspace.routines || routines : routines), progress,
-      identity: account ? cloudWorkspace.user.uid : dialog.dataset.source,
+      identity: workspaceIdentity(),
       selectedId: selected.id, revision: account ? cloudWorkspace.revision : JSON.stringify(routines),
       destination: account ? 'your signed-in account' : 'this browser', account };
   },
   async commit(next, baseline, restoredProgress) {
     if (baseline.account) await cloudWorkspace.replace(next, baseline, restoredProgress);
     else {
-      if (cloudWorkspace.user || baseline.identity !== dialog.dataset.source) throw new Error('The workspace changed. Reopen checklist control.');
+      if (!selected || inAccount() || baseline.identity !== workspaceIdentity()) throw new Error('The workspace changed. Reopen checklist control.');
       const raw = localStorage.getItem(workspaceKey);
       const latest = raw ? readWorkspace(JSON.parse(raw)) : { routines, progress: parseProgress(localStorage.getItem(storageKey)) };
       if (JSON.stringify(latest.routines) !== baseline.revision || localOverride && !raw) throw new Error('Checklists changed in another tab. Reopen checklist control before saving.');
@@ -332,11 +338,11 @@ createRoutineTools({
       await initialiseRoutines();
     }
   },
-  identity: () => cloudWorkspace.user?.uid || dialog.dataset.source
+  identity: workspaceIdentity
 });
 
 document.addEventListener('hub:cloudprogress', () => {
-  if (dialog.dataset.source !== 'account' || !cloudWorkspace.active || !selected) return;
+  if (!inAccount() || !cloudWorkspace.active || !selected) return;
   state = cloudWorkspace.progress;
   updateProgress();
 });

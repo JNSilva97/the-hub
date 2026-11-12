@@ -1,9 +1,9 @@
 name: UI checks
 on:
   push:
-    branches: ['codex/compact-pickers-eye']
+    branches: ['main']
   pull_request:
-    paths: ['**/*.js', '**/*.cjs', '**/*.mjs', '**/*.css', 'index.html', '.github/workflows/ui-checks.yml']
+    paths: ['**/*.js', '**/*.cjs', '**/*.mjs', '**/*.css', 'index.html', 'firestore.rules', '.github/workflows/ui-checks.yml']
   workflow_dispatch:
 permissions:
   contents: read

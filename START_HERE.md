@@ -8,7 +8,7 @@ Open the homepage and choose **Routines** beneath the optical core. Pick a check
 
 Routines shows the full checklist as soon as you open it. Tick things off in whichever order suits you. Checked rows stay where they are, and tapping one again clears its tick. Optional section switches are right in the list. Progress saves automatically.
 
-**Health** is a medication demo with fictional samples saved only in this browser. In **Personal Care → Medication demo**, checking a dose reduces that sample's Health stock once. **Undo** corrects a mistaken check; **Start again** keeps dose history and stock. **Add medication** creates another entry. Choose one **Linked checklist** in the add/edit panel, or **No checklist**; **Open checklist** opens its selected routine. Moving a medication to another list keeps stock and dose history. **Add stock** records a refill. **Edit medication** changes the sample name, daily dose, time and current stock; **Save changes** applies the edit, and **Cancel** leaves saved data as it is. Old dose quantities remain unchanged. The demo uses Lisbon dates and is separate from your real checklist data and account sync.
+**Health** opens today’s doses and stock. Use **Add medication** to get started, **Mark taken** to record a dose, and **Undo** to put the recorded amount back. A **Linked checklist** lets you record that dose from Routines. Account Health syncs after its rules are enabled. The local demo keeps its fictional records in this browser.
 
 Choose **Notes** and start typing. Your first line becomes the title and each edit saves automatically. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Signed-out/local notes stay in this browser; public sample notes and the PC notebook are separate. Signed-in **Account notes** sync privately through Firebase after the current notes rules are published. **Local notes** returns to the original notebook. Existing local text is copied only through **Copy local notes** and its account confirmation.
 
@@ -18,7 +18,7 @@ While signed out, the online version uses example checklists. Your real lists lo
 
 **Private access** inside Routines is the entry point for checklist sync. Sign in on the PC and explicitly choose **Sync PC checklists**, then sign into the same account on your phone. See [Firebase setup and verification](FIREBASE_SETUP.md). Local notes remain local unless explicitly copied. On each personal device, open online once, wait for **Settings → Offline app ready**, and open your account lists. You can then reopen and tick offline. **Saved on this device** means ticks are stored locally and will sync when connected; **Progress synced to your account** confirms delivery. Login stays saved until sign-out. Pending writes block sign-out; rejected saves or unavailable storage still require keeping the tab open.
 
-Choose **Edit checklist** beside the selected checklist title to edit directly in the checklist panel. Use the separate **Backup** button at the top for portable copies. Save applies edits; removals and backup replacement ask for confirmation. Existing ticks follow renamed or reordered items. If a save fails, keep the draft open and retry. Notes are separate. **Settings → Install** adds The Hub to your home screen when supported; sync still needs a connection.
+Choose **Edit checklist** beside the selected checklist title to edit directly in the checklist panel. Use the separate **Backup** button at the top for portable copies. Save applies edits; removals and backup replacement ask for confirmation. Press Enter in an item field to move to the next item or add one. Existing ticks follow renamed or reordered items. If a save fails, keep the draft open and retry. Notes are separate. **Settings → Install** adds The Hub to your home screen when supported; sync still needs a connection.
 
 ## 2. Find the right file
 
@@ -43,7 +43,7 @@ Choose **Edit checklist** beside the selected checklist title to edit directly i
 | Account-note offline drafts, synchronization and conflict copies | `cloud-notes.js` / `notes-model.mjs` |
 | Loading checklists, ticking items and saving | `routines.js` |
 | Shared themed checklist menus | `checklist-picker.js` |
-| Medication demo, local stock and linked Personal Care checks | `health.js` |
+| Medication setup, stock, linked checks and account sync | `health.js` / `cloud-health.js` |
 | Checking data and calculating completion | `routine-model.mjs` |
 | Checklist editor, backup and restore | `routine-tools.js` / `styles/routine-tools.css` |
 | Portable workspace validation and progress pruning | `workspace-model.mjs` |
@@ -58,7 +58,7 @@ Each component has one stylesheet. Its main rules come first and screen-size adj
 
 ## 3. Understand the animation
 
-The intro lasts 3.2 seconds. Its doors open, the optical system appears and the status text moves through three stages. Click or press a key to skip it. **Replay intro** starts it again.
+The intro lasts just over a second. Its doors open, the optical system appears and the status text moves through three stages. Click or press a key to skip it. **Replay intro** starts it again.
 
 Opening Routines fades and slides the panel into place while its optical artwork travels into the header. Closing it sends the eye home while the panel fades out. The two timings are named `open` and `close` near the top of `core-transition.js`; edit them there. The controller tracks opening, open and closing states, so Escape, resizing and navigation can interrupt the animation safely. With motion disabled, the dialog opens immediately.
 
@@ -96,4 +96,4 @@ Account notes store each submitted version under a new ID and retire its predece
 4. Update affected asset version strings and bump the release cache version in `sw.js` whenever public app files change.
 5. Commit and push the public files; GitHub Pages publishes them.
 
-Projects, Goals, Health, Finance, Calendar and Relationships are still marked as coming later. Routines, Notes and Settings work now.
+Routines, Notes, Health and Settings work now. Projects, Goals, Finance, Calendar and Relationships are marked as coming later.

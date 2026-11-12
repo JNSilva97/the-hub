@@ -17,7 +17,7 @@
   height: 100%;
   overflow: visible;
 
-  animation: optics-online 1600ms 1300ms var(--ease-arrive) both;
+  animation: optics-online 520ms 420ms var(--ease-arrive) both;
 }
 
 .core-progress-track {

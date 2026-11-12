@@ -31,6 +31,7 @@ let queued = false;
 const edits = new Map();
 let notesPending = false;
 let notesUnsafe = false;
+let healthBusy = false;
 
 function syncMessage() {
   if (failure) return failure;
@@ -49,7 +50,7 @@ function render() {
   loginButton.hidden = Boolean(user);
   loginButton.disabled = !auth || setupFailure;
   logoutButton.hidden = !user;
-  logoutButton.disabled = importing || workspaceSaving || pending > 0 || edits.size > 0 || queued || notesPending;
+  logoutButton.disabled = importing || workspaceSaving || pending > 0 || edits.size > 0 || queued || notesPending || healthBusy;
   importButton.hidden = !user || !ready || routines !== null || !local || Boolean(failure);
   importButton.disabled = importing;
   retryButton.hidden = !firebaseConfig || (!failure && !edits.size);
@@ -162,7 +163,7 @@ async function connect() {
       queued = false;
       ready = false;
       failure = '';
-      notesPending = notesUnsafe = false;
+      notesPending = notesUnsafe = healthBusy = false;
       document.dispatchEvent(new Event('hub:accountchange'));
       if (user) watchAccount();
       else notify();
@@ -208,19 +209,18 @@ export const cloudWorkspace = {
   get connection() { return { sdk, database }; },
   get user() { return user; },
   get ready() { return ready; },
-  get error() { return failure; },
   get active() { return Boolean(user && ready && routines); },
   get routines() { return routines; },
   get progress() { return parseProgress(JSON.stringify(progress)); },
   get revision() { return revision; },
   get status() { return syncMessage(); },
-  get canEdit() { return Boolean(user && ready && !failure && !pending && !edits.size && !queued && !importing && !workspaceSaving); },
+  get canEdit() { return this.active && !failure && !pending && !edits.size && !queued && !importing && !workspaceSaving; },
   async replace(nextRoutines, baseline, restoredProgress) {
     if (!this.canEdit || !navigator.onLine) throw new Error('Wait for your ticks to sync and check your connection before saving.');
     const cleaned = cleanRoutines(nextRoutines);
     const current = generation;
     const accountId = user.uid;
-    if (baseline.identity !== accountId) throw new Error('The account changed. Reopen checklist control.');
+    if (baseline.identity !== `account:${accountId}`) throw new Error('The account changed. Reopen checklist control.');
     workspaceSaving = true;
     render();
     try {
@@ -315,7 +315,7 @@ loginButton.addEventListener('click', () => {
   }).finally(render);
 });
 logoutButton.addEventListener('click', () => {
-  if (!auth || importing || workspaceSaving || pending || edits.size || queued || notesPending) return;
+  if (!auth || importing || workspaceSaving || pending || edits.size || queued || notesPending || healthBusy) return;
   sdk.signOut(auth).catch(() => { failure = 'Sign-out did not finish. Try again.'; render(); });
 });
 importButton.addEventListener('click', () => cloudWorkspace.importPC());
@@ -336,6 +336,7 @@ window.addEventListener('offline', render);
 window.addEventListener('beforeunload', event => {
   if (notesUnsafe || importing || workspaceSaving || [...edits.values()].some(edit => !edit.durable) || queued && !persistent) { event.preventDefault(); event.returnValue = ''; }
 });
+document.addEventListener('hub:healthsync', event => { healthBusy = event.detail; render(); });
 document.addEventListener('hub:notessync', event => { notesPending = event.detail.pending; notesUnsafe = event.detail.unsafe; render(); });
 render();
 connect();

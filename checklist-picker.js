@@ -1,10 +1,11 @@
 // Keep the native select as the data source; all visible choices stay inside The Hub.
 function createChecklistPicker(select) {
+  const subscriptions = new AbortController();
+  const { signal } = subscriptions;
   const container = document.createElement('div');
   container.id = select.id + '-menu';
   container.className = 'checklist-picker' + (select.classList.contains('routine-picker') ? ' routine-picker' : '');
   select.classList.remove('routine-picker');
-  select.classList.add('checklist-native');
   select.hidden = true;
   select.after(container);
   const trigger = document.createElement('button');
@@ -84,19 +85,26 @@ function createChecklistPicker(select) {
     if (event.key === 'Home') index = 0;
     else if (event.key === 'End') index = buttons.length - 1;
     else if (wasClosed) index = Math.max(0, buttons.findIndex(button => button.dataset.value === select.value));
+    else if (index === -1) index = event.key === 'ArrowDown' ? 0 : buttons.length - 1;
     else index = (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
     buttons[index].focus();
   }, true);
-  document.addEventListener('pointerdown', event => { if (!container.contains(event.target)) close(); });
+  document.addEventListener('pointerdown', event => { if (!container.contains(event.target)) close(); }, { signal });
   container.addEventListener('focusout', event => { if (!container.contains(event.relatedTarget)) close(); });
   select.addEventListener('change', refresh);
   const observer = new MutationObserver(refresh);
   observer.observe(select, { childList: true, subtree: true, characterData: true, attributes: true });
   const fieldset = select.closest('fieldset');
   if (fieldset) observer.observe(fieldset, { attributes: true, attributeFilter: ['disabled'] });
-  dialog?.addEventListener('close', () => close());
-  window.addEventListener('resize', () => close());
+  dialog?.addEventListener('close', () => close(), { signal });
+  window.addEventListener('resize', () => close(), { signal });
   refresh();
-  return { refresh, close, focus: () => trigger.focus() };
+  return {
+    refresh, close, focus: () => trigger.focus(),
+    destroy() {
+      subscriptions.abort();
+      observer.disconnect();
+    }
+  };
 }
 

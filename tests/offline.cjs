@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { createServer } = require('node:http');
-const { readFileSync } = require('node:fs');
+const { existsSync, readFileSync } = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
@@ -22,9 +22,9 @@ test('offline startup and native queued ticks survive closing; private account d
     export const signOut=async()=>window.changeAccount(null);
   `);
   const publicFiles = new Set([
-    ...Array.from(readFileSync(path.join(root, 'sw.js'), 'utf8').matchAll(/'([^']+\.(?:js|mjs|json|css|woff2|png|webmanifest|html))'/g), match => match[1]),
+    ...Array.from(readFileSync(path.join(root, 'sw.js'), 'utf8').matchAll(/'([^']+\.(?:js|mjs|json|css|woff2|png|mp3|webmanifest|html))'/g), match => match[1]),
     'sw.js'
-  ]);
+  ].filter(filename => existsSync(path.join(root, filename))));
   const requests = [];
   let release = 1;
   let failInstall = false;
@@ -34,7 +34,7 @@ test('offline startup and native queued ticks survive closing; private account d
     requests.push(url.pathname);
     if (!url.pathname.startsWith('/the-hub/') || !publicFiles.has(filename)) { response.writeHead(404); response.end(); return; }
     if (failInstall && filename === 'styles/core.css') { response.writeHead(503); response.end(); return; }
-    response.setHeader('Content-Type', /\.m?js$/.test(filename) ? 'text/javascript' : filename.endsWith('.css') ? 'text/css' : /\.(json|webmanifest)$/.test(filename) ? 'application/json' : filename.endsWith('.png') ? 'image/png' : filename.endsWith('.woff2') ? 'font/woff2' : 'text/html');
+    response.setHeader('Content-Type', /\.m?js$/.test(filename) ? 'text/javascript' : filename.endsWith('.css') ? 'text/css' : /\.(json|webmanifest)$/.test(filename) ? 'application/json' : filename.endsWith('.png') ? 'image/png' : filename.endsWith('.woff2') ? 'font/woff2' : filename.endsWith('.mp3') ? 'audio/mpeg' : 'text/html');
     if (filename === 'firebase-config.mjs') response.end('export const firebaseConfig={projectId:"fixture-offline",apiKey:"fixture",appId:"fixture",authDomain:"fixture.invalid"};');
     else if (filename === 'sw.js') response.end(readFileSync(path.join(root, filename), 'utf8').replace(/\$\{prefix\}[^`]+/, '${prefix}offline-' + release));
     else if (filename === 'index.html' && release > 1) response.end(readFileSync(path.join(root, filename), 'utf8').replace('<title>The Hub</title>', `<title>The Hub release ${release}</title>`));
@@ -99,6 +99,14 @@ test('offline startup and native queued ticks survive closing; private account d
     }));
     throw error;
   }
+  const expectedSounds = [...publicFiles].filter(filename => filename.endsWith('.mp3'));
+  const cachedSounds = await page.evaluate(files => Promise.all(
+    files.map(async file => {
+      const response = await fetch(file);
+      return response.ok && response.headers.get('Content-Type') === 'audio/mpeg';
+    })
+  ), expectedSounds);
+  assert.ok(expectedSounds.length >= 2 && cachedSounds.every(Boolean));
   await page.locator('#routines-launch').click();
   assert.match(await page.locator('#routine-progress-label').textContent(), /1 of 3/);
   assert.match(await page.locator('#routine-notice').textContent(), /Saved on this device/);

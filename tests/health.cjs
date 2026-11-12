@@ -38,7 +38,12 @@ test('Health medication demo', { timeout: 150000 }, async t => {
       await chooseRoutine(page, 'training'); assert.equal(await page.locator('#personal-care-medications').isVisible(), false);
       await ready(page); await openHealth(page);
       assert.equal(await stock(page, 'sample-a'), '28 tablets left'); assert.equal(await stock(page, 'sample-b'), '8 tablets left');
-      await page.locator('#restock-sample-b').fill('5'); await page.getByRole('button', { name: 'Add stock for Sample B' }).click(); await waitStock(page, 'sample-b', 13);
+      const restock = page.locator('#restock-sample-b');
+      await restock.fill('5');
+      await page.keyboard.down('Enter'); await waitStock(page, 'sample-b', 13);
+      await restock.focus();
+      await page.keyboard.down('Enter'); await page.keyboard.up('Enter');
+      assert.equal(await stock(page, 'sample-b'), '13 tablets left');
       await page.locator('#restock-sample-b').fill('-1'); await page.getByRole('button', { name: 'Add stock for Sample B' }).click();
       assert.equal(await stock(page, 'sample-b'), '13 tablets left');
       await page.getByRole('button', { name: 'Open Personal Care for Sample B', exact: true }).click();
@@ -247,7 +252,8 @@ test('Health medication demo', { timeout: 150000 }, async t => {
     try {
       await ready(page); await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
       const original = await page.evaluate(() => JSON.stringify(window.__hubFirebase.docs));
-      await openHealth(page); const id = await newMedication(page, 'Account linked example', 'Workday');
+      await openHealth(page); await page.getByRole('button', { name: 'Try local demo' }).click();
+      const id = await newMedication(page, 'Account linked example', 'Workday');
       const card = page.locator(`[data-medication="${id}"]`);
       const switchAccount = uid => page.evaluate(uid => { const service = window.__hubFirebase; service.user = { uid, email: uid + '@example.invalid' }; service.authListener(service.user); }, uid);
       await switchAccount('account-b'); await page.waitForFunction(id => document.querySelector(`[data-medication="${id}"] .medication-link-info`).textContent.includes('unavailable'), id);
@@ -268,6 +274,56 @@ test('Health medication demo', { timeout: 150000 }, async t => {
       assert.equal(await page.evaluate(() => JSON.stringify(window.__hubFirebase.docs)), original);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
+  });
+
+  await t.test('account Health syncs a linked dose, rejects duplicate deductions and keeps accounts separate', async () => {
+    const account = () => ({ routines: JSON.parse(demo), progress: { checks: {}, optional: {} } });
+    const first = await fixture(browser, { motion: 'reduce', firebase: true, cloudDocuments: { 'account-a': account(), 'account-b': account() } });
+    let second;
+    const waitSync = page => page.waitForFunction(() => document.getElementById('health-sync-status').textContent === 'Synced to your account.');
+    try {
+      const { page } = first;
+      await ready(page);
+      await openHealth(page);
+      await waitSync(page);
+      assert.equal(await page.locator('#health-empty').isVisible(), true);
+      assert.equal(await page.locator('[data-medication="sample-a"]').count(), 0);
+      const id = await newMedication(page, 'Private example', 'Workday');
+      await waitStock(page, id, 12);
+      const documents = await page.evaluate(() => structuredClone(window.__hubFirebase.docs));
+      second = await fixture(browser, { motion: 'reduce', firebase: true, cloudDocuments: documents });
+      await ready(second.page);
+      await openHealth(second.page);
+      await waitStock(second.page, id, 12);
+
+      await page.getByRole('button', { name: 'Mark Private example taken' }).click();
+      await waitStock(page, id, 10);
+      const remote = await page.evaluate(() => structuredClone(window.__hubFirebase.docs['account-a'].health));
+      await second.page.evaluate(health => { window.__hubFirebase.docs['account-a'].health = health; }, remote);
+      // The second screen still shows the pre-dose snapshot, but its transaction reads the current ledger.
+      await second.page.getByRole('button', { name: 'Mark Private example taken' }).click();
+      await waitStock(second.page, id, 10);
+      assert.equal(await second.page.evaluate(() => window.__hubFirebase.healthWrites.length), 0);
+      assert.equal(await second.page.locator('#health-today').textContent(), '1 of 1 taken');
+
+      await second.page.locator('#health-open-care').click();
+      await chooseRoutine(second.page, 'workday');
+      assert.equal(await second.page.locator(`[data-dose="${id}"]`).isChecked(), true);
+      await second.page.locator(`[data-dose="${id}"]`).uncheck();
+      await waitStock(second.page, id, 12);
+      const undone = await second.page.evaluate(() => structuredClone(window.__hubFirebase.docs['account-a'].health));
+      await page.evaluate(health => { window.__hubFirebase.docs['account-a'].health = health; window.__hubFirebase.publish(); }, undone);
+      await waitStock(page, id, 12);
+
+      await second.page.evaluate(() => {
+        const service = window.__hubFirebase;
+        service.user = { uid: 'account-b', email: 'other@example.invalid' };
+        service.authListener(service.user);
+      });
+      assert.equal(await second.page.locator(`[data-medication="${id}"]`).count(), 0);
+      assert.equal(await second.page.locator(`[data-dose="${id}"]`).count(), 0);
+      assert.deepEqual(first.errors.concat(second.errors), []);
+    } finally { await first.context.close(); await second?.context.close(); }
   });
 
   await t.test('two tabs share stock and concurrent checks of the same dose deduct only once', async () => {
@@ -325,7 +381,8 @@ test('Health medication demo', { timeout: 150000 }, async t => {
     try {
       await ready(page); await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
       const before = await page.evaluate(() => JSON.stringify(window.__hubFirebase.docs));
-      await openRoutines(page);
+      await openHealth(page); await page.getByRole('button', { name: 'Try local demo' }).click();
+      await closeHealth(page); await openRoutines(page);
       await page.evaluate(() => { const original = Storage.prototype.setItem; Storage.prototype.setItem = function(key, value) { if (key.startsWith('thehub:health-demo:')) throw new Error('Storage full'); return original.call(this, key, value); }; });
       await page.locator('[data-dose="sample-a"]').click();
       await page.waitForFunction(() => document.getElementById('medication-status').textContent.includes('could not be saved'));

@@ -1,7 +1,5 @@
 import { cleanRoutines, createBackup, parseBackup, countItems, removedItems, MAX_BACKUP_BYTES } from './workspace-model.mjs?v=control-1';
 
-export function createChecklistPicker(select) { return window.createChecklistPicker(select); }
-
 // Drafts own their IDs; text edits and moves never change saved tick identities.
 export function createRoutineTools(workspace) {
   const panel = document.getElementById('checklist-control');
@@ -11,7 +9,7 @@ export function createRoutineTools(workspace) {
   const picker = document.getElementById('routine-picker');
   const editor = document.getElementById('checklist-editor');
   const chooser = document.getElementById('editor-list');
-  const editorPicker = createChecklistPicker(chooser);
+  const editorPicker = window.createChecklistPicker(chooser);
   const message = document.getElementById('control-status');
   const preview = document.getElementById('restore-preview');
   const confirmation = document.getElementById('control-confirm');
@@ -86,16 +84,26 @@ export function createRoutineTools(workspace) {
       toggle.addEventListener('change', () => { section.optional = toggle.checked; updateSave(true); });
       optional.append(toggle, document.createTextNode('Optional section'));
       card.append(optional, actions(routine.groups, sectionIndex, 'section', render));
-      section.items.forEach((entry, index) => {
-        const row = document.createElement('div'); row.className = 'editor-item';
-        row.append(input(`Item ${index + 1}`, entry.label, value => { entry.label = value; }), actions(section.items, index, 'item', render));
-        card.append(row);
-      });
       const add = button('+ Add item', () => {
         section.items.push(item()); render();
         focusField(editor.querySelectorAll('.editor-section')[sectionIndex].querySelector('.editor-item:last-of-type'));
       });
-      add.disabled = section.items.length >= 100; card.append(add); editor.append(card);
+      add.disabled = section.items.length >= 100;
+      section.items.forEach((entry, index) => {
+        const row = document.createElement('div'); row.className = 'editor-item';
+        const label = input(`Item ${index + 1}`, entry.label, value => { entry.label = value; });
+        const field = label.querySelector('input');
+        field.enterKeyHint = 'next';
+        field.addEventListener('keydown', event => {
+          if (event.key !== 'Enter' || event.isComposing || event.repeat || !field.value.trim()) return;
+          event.preventDefault();
+          if (row.nextElementSibling?.classList.contains('editor-item')) focusField(row.nextElementSibling);
+          else add.click();
+        });
+        row.append(label, actions(section.items, index, 'item', render));
+        card.append(row);
+      });
+      card.append(add); editor.append(card);
     });
     const add = button('+ Add section', () => { routine.groups.push(group()); render(); focusField(editor.querySelector('.editor-section:last-of-type')); });
     add.disabled = routine.groups.length >= 12; editor.append(add);

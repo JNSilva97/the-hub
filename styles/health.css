@@ -1,4 +1,4 @@
-/* The demo ledger is separate from saved checklist progress and account data. */
+/* Today’s doses, stock and medication setup. */
 #app-dialog[data-app="health"] { width: min(820px, calc(100% - 24px)); text-align: left; max-height: calc(100dvh - 24px); padding: 24px; }
 #app-dialog[data-app="health"] #app-icon { display: none; }
 #app-dialog[data-app="health"] .panel-eyebrow { margin-bottom: 12px; }
@@ -7,7 +7,14 @@
 #health-content[hidden], #health-close[hidden], .medication-demo[hidden], #health-content [hidden] { display: none; }
 .health-demo-badge { display: inline-block; padding: 5px 8px; border: 1px solid #3476ae; color: #a9d9f5; font: 600 11px var(--font-interface); letter-spacing: .1em; }
 .health-toolbar, .medication-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-.health-toolbar { padding: 14px 0 20px; }
+.health-toolbar { padding: 8px 0 14px; }
+.health-today { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.health-today span, #health-sync-status { color: #a6c2da; font-size: 13px; }
+#health-content #health-sync-status { margin: 5px 0 0; }
+#health-sync-status:empty { display: none; }
+.health-mode-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.health-mode-actions:not(:has(button:not([hidden]))) { display: none; }
+#health-add-medication { background: #103b60; }
 #health-content p { margin: 8px 0 14px; }
 #health-content h3 { margin: 0; color: #d8efff; font: 600 24px var(--font-interface); }
 #health-medications { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
@@ -15,7 +22,7 @@
 #health-content .medication-schedule, #health-content .medication-estimate { color: #a6c2da; font-size: 13px; }
 .medication-stock { display: block; color: #9debff; font: 600 30px var(--font-interface); }
 #health-content .medication-warning { color: #ffd294; font-size: 13px; }
-#health-content .medication-dose-state { min-height: 38px; font-size: 13px; }
+#health-content .medication-dose-state { margin: 6px 0 10px; font-size: 13px; }
 .health-button { min-height: 44px; padding: 10px 14px; border: 1px solid #3476ae; color: #c8ecff; background: #07192e; font: 600 16px var(--font-interface); }
 .health-button:hover:not(:disabled) { background: #103655; border-color: #80d5ff; }
 .health-button:disabled { opacity: .5; cursor: default; }
@@ -53,7 +60,7 @@
 }
 
 .medication-heading h3 { flex: 1 1 100px; overflow-wrap: anywhere; }
-.medication-heading > .health-button { width: 100%; font-size: 14px; }
+.medication-heading > .health-button { margin-inline-start: auto; font-size: 14px; }
 .medication-editor { min-width: 0; margin: 16px 0; padding: 14px; border: 1px solid #4585b2; background: #020b16; }
 .medication-editor legend { color: #b5e5ff; font: 600 18px var(--font-interface); }
 .medication-editor label { display: block; margin-bottom: 12px; color: #b1cde0; font-size: 13px; }

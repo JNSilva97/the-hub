@@ -706,7 +706,7 @@ footer {
     z-index: 4;
     inset: auto 12px calc(8px + env(safe-area-inset-bottom)) 12px;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
     padding: 6px;
     border: 1px solid #2f80ba;

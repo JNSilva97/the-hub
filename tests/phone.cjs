@@ -36,6 +36,9 @@ test('Phone workflows', { timeout: 90000 }, async t => {
         await page.locator('[data-icon="projects"]').click();
         assert.match(await page.locator('#app-description').textContent(), /coming later/);
         await page.locator('#app-dialog .close').click();
+        await page.locator('#phone-health').click();
+        assert.equal(await page.locator('#health-content').isVisible(), true);
+        await page.getByRole('button', { name: 'Close Health' }).click();
         await page.locator('#phone-settings').click();
         assert.equal(await page.locator('#interface-settings').isVisible(), true);
         assert.deepEqual(errors, []);
@@ -132,6 +135,9 @@ test('Phone workflows', { timeout: 90000 }, async t => {
         assert.equal(await page.evaluate(() => document.activeElement.value), 'New item');
         assert.equal(await page.evaluate(() => document.activeElement.selectionEnd), 'New item'.length);
         await page.keyboard.type('Added from my phone');
+        await page.keyboard.press('Enter');
+        assert.equal(await page.evaluate(() => document.activeElement.value), 'New item');
+        await page.keyboard.type('Next item from my phone');
         assert.equal(await page.locator('#editor-save').isEnabled(), true);
         assert.match(await page.locator('#control-status').textContent(), /Unsaved changes/);
         await page.getByRole('button', { name: '+ Add section', exact: true }).click();

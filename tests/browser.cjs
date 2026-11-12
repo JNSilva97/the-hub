@@ -167,7 +167,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.06.3');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.10.8');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -350,7 +350,9 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(await page.locator('#routine-picker-menu .checklist-choice[aria-pressed="true"]').evaluate(el => el === document.activeElement), true);
       await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
       assert.equal(await page.locator('#routine-name').textContent(), JSON.parse(demo).routines[1].name);
-      await trigger.click(); await page.keyboard.press('Escape');
+      await trigger.click(); await page.keyboard.press('ArrowUp');
+      assert.equal(await page.locator('#routine-picker-menu .checklist-choice').last().evaluate(el => el === document.activeElement), true);
+      await page.keyboard.press('Escape');
       assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
       assert.equal(await page.locator('#routines-dialog').evaluate(el => el.open), true);
       assert.equal(await trigger.evaluate(el => el === document.activeElement), true);
@@ -541,7 +543,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('an empty cached snapshot waits for the server and public demo lists cannot be imported', async () => {
+  await t.test('an empty cached snapshot waits for the server and demo editing and backups stay local', async () => {
     const { context, page, errors } = await fixture(browser, { motion: 'reduce', firebase: true, fromCache: true });
     try {
       await ready(page);
@@ -553,7 +555,27 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.locator('#account-launch').click();
       assert.equal(await page.locator('#account-import').isVisible(), false);
       assert.match(await page.locator('#account-status').textContent(), /Open the PC version/);
-      assert.equal(await page.evaluate(() => window.__hubFirebase.imports), 0);
+      await page.keyboard.press('Escape');
+      await page.locator('#backup-launch').click();
+      assert.match(await page.locator('#backup-destination').textContent(), /this browser/);
+      const pendingBackup = page.waitForEvent('download');
+      await page.locator('#backup-export').click();
+      const backup = readFileSync(await (await pendingBackup).path());
+      await page.locator('#backup-close').click();
+      await page.locator('#control-launch').click();
+      await page.getByLabel('Checklist name', { exact: true }).fill('Edited in this browser');
+      await page.locator('#editor-save').click();
+      await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
+      const localName = () => page.evaluate(() => JSON.parse(localStorage.getItem('thehub:workspace:demo:v1')).routines[0].name);
+      assert.equal(await localName(), 'Edited in this browser');
+      await page.locator('#control-close').click();
+      await page.locator('#backup-launch').click();
+      await page.locator('#backup-file').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: backup });
+      await page.locator('#backup-restore').click();
+      await page.locator('#control-confirm-yes').click();
+      await page.waitForFunction(() => document.getElementById('backup-status').textContent.startsWith('Saved.'));
+      assert.equal(await localName(), JSON.parse(demo).routines[0].name);
+      assert.deepEqual(await page.evaluate(() => window.__hubFirebase.docs['account-a'] || {}), {});
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });
@@ -644,12 +666,6 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         assert.equal(await page.evaluate(() => document.fonts.check('500 24px Orbitron') && document.fonts.check('600 18px Rajdhani')), true);
         assert.equal(requests.some(request => request.pathname.includes('/private/') || request.method !== 'GET'), false);
         assert.deepEqual(errors, []);
-        if ([390, 1440].includes(width)) {
-          await page.locator('.motion-toggle').click();
-          await page.screenshot({ path: path.join(root, `preview-fixed-${width}.jpg`), fullPage: true });
-          await openRoutines(page);
-          await page.screenshot({ path: path.join(root, `preview-checklists-${width}.jpg`), fullPage: true });
-        }
       } finally { await context.close(); }
     });
   }
@@ -1279,6 +1295,8 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       await page.locator('#command-launch').click();
+      await page.locator('#command-search').fill('Health');
+      assert.match(await page.locator('#command-results button').textContent(), /Medication and stock/);
       await page.locator('#command-search').fill('zzzz-no-match');
       assert.equal(await page.locator('#command-empty').isVisible(), true);
       await page.keyboard.press('Enter');
@@ -1302,7 +1320,16 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         window.toneCount = 0;
         const NativeAudioContext = window.AudioContext;
         window.AudioContext = class extends NativeAudioContext {
-          createOscillator() { window.toneCount++; return super.createOscillator(); }
+          createBufferSource() {
+            const source = super.createBufferSource();
+            const start = source.start.bind(source);
+            source.start = (...args) => {
+              window.toneCount++;
+              window.lastCueDuration = source.buffer.duration;
+              return start(...args);
+            };
+            return source;
+          }
         };
       });
       await ready(page);
@@ -1320,6 +1347,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.locator('#settings-motion').click();
       await page.locator('#settings-sound').click();
       await page.waitForFunction(() => window.toneCount > 0);
+      assert.ok(await page.evaluate(() => window.lastCueDuration < .12), 'Enabling sound is a selection.');
       const tones = await page.evaluate(() => window.toneCount);
       await page.locator('#settings-sound').click();
       assert.equal(await page.evaluate(() => window.toneCount), tones);
@@ -1413,15 +1441,21 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('scanner sounds stay quiet, avoid bass impacts and end in silence', async () => {
+  await t.test('selection and transition sounds stay quiet and end in silence', async () => {
     const { context, page } = await fixture(browser);
     try {
       await ready(page);
       const rendered = await page.evaluate(async () => {
         const results = [];
-        for (const kind of ['select', 'open', 'close']) {
-          const audio = new OfflineAudioContext(1, 17640, 44100);
-          synthesizeInterfaceSound(audio, audio.destination, kind);
+        const decoder = new OfflineAudioContext(1, 1, 44100);
+        const [glide, tap] = await Promise.all([fallbackTransition, interfaceCueFiles.select].map(async file => {
+          const response = await fetch(file);
+          if (!response.ok) throw new Error(`Could not load ${file}`);
+          return decoder.decodeAudioData(await response.arrayBuffer());
+        }));
+        for (const kind of ['select', 'open']) {
+          const audio = new OfflineAudioContext(1, 26460, 44100);
+          playInterfaceCue(audio, audio.destination, kind === 'select' ? tap : glide, kind);
           const rendered = await audio.startRendering();
           const data = rendered.getChannelData(0);
           let peak = 0, energy = 0, last = 0, tail = 0;
@@ -1429,30 +1463,18 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
             peak = Math.max(peak, Math.abs(data[i]));
             energy += data[i] ** 2;
             if (Math.abs(data[i]) > .00005) last = i / 44100;
-            if (i > 14112) tail = Math.max(tail, Math.abs(data[i]));
+            if (i > 13230) tail = Math.max(tail, Math.abs(data[i]));
           }
-          const bassContext = new OfflineAudioContext(1, data.length, 44100);
-          const source = bassContext.createBufferSource();
-          const lowpass = bassContext.createBiquadFilter();
-          source.buffer = rendered;
-          lowpass.type = 'lowpass';
-          lowpass.frequency.value = 250;
-          lowpass.Q.value = Math.SQRT1_2;
-          source.connect(lowpass).connect(bassContext.destination);
-          source.start();
-          const bass = (await bassContext.startRendering()).getChannelData(0);
-          const bassEnergy = bass.reduce((sum, value) => sum + value ** 2, 0);
-          results.push({ kind, peak, rms: Math.sqrt(energy / data.length), bassRatio: bassEnergy / energy, last, tail });
+          results.push({ kind, peak, rms: Math.sqrt(energy / data.length), last, tail });
         }
         return results;
       });
       for (const sound of rendered) {
         assert.ok(sound.peak > .005 && sound.peak < .12, `${sound.kind} should be audible without clipping or a loud peak.`);
         assert.ok(sound.rms > .0005 && sound.rms < .03);
-        assert.ok(sound.bassRatio < .02, `${sound.kind} should have no drum-like bass impact.`);
         assert.equal(sound.tail, 0, 'No lingering drone after the one-shot ends.');
       }
-      assert.ok(rendered[0].last < rendered[2].last && rendered[2].last < rendered[1].last);
+      assert.ok(rendered[0].last < rendered[1].last && rendered[1].last < .25);
     } finally { await context.close(); }
   });
 

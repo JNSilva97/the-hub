@@ -36,6 +36,23 @@ service cloud.firestore {
         && request.resource.data.checks.values().hasOnly([true, false])
         && request.resource.data.optional.values().hasOnly([true, false]);
     }
+    match /users/{uid}/health/{medicationId} {
+      function validLedger() {
+        return medicationId.matches('^med-[a-f0-9-]{36}$')
+          && request.resource.data.keys().hasOnly(['version', 'revision', 'payload'])
+          && request.resource.data.version == 1
+          && request.resource.data.revision is int
+          && request.resource.data.revision <= 1000000000
+          && request.resource.data.payload is string
+          && request.resource.data.payload.size() > 0
+          && request.resource.data.payload.size() <= 450000;
+      }
+      allow read: if owner(uid);
+      allow create: if owner(uid) && validLedger() && request.resource.data.revision == 1;
+      allow update: if owner(uid) && validLedger()
+        && request.resource.data.revision == resource.data.revision + 1;
+    }
+
     match /users/{uid}/notes/{noteId} {
       function validNote() {
         return noteId.matches('^[a-f0-9-]{36}$')

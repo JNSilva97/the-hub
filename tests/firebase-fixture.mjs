@@ -34,6 +34,11 @@ export async function getDoc(reference) {
 }
 export function onSnapshot(reference, options, next, failed) {
   const listener = { uid: reference.path[1], next, failed };
+  if (reference.path[2] === 'health') {
+    service.healthListeners.add(listener);
+    queueMicrotask(() => { if (service.healthListeners.has(listener)) service.publish(); });
+    return () => service.healthListeners.delete(listener);
+  }
   if (reference.path[2] === 'notes') {
     service.noteListeners.add(listener);
     queueMicrotask(() => { if (service.noteListeners.has(listener)) service.publish(); });
@@ -87,14 +92,22 @@ export async function runTransaction(database, update) {
   const writes = [];
   const transaction = {
     async get(reference) {
-      const data = service.docs[reference.path[1]]?.[reference.path[3]];
+      const [, uid, collection, id] = reference.path;
+      const data = collection === 'health' ? service.docs[uid]?.health?.[id] : service.docs[uid]?.[id];
       return { exists: () => data !== undefined, data: () => structuredClone(data) };
     },
     set(reference, data) { writes.push({ path: reference.path, data: structuredClone(data) }); }
   };
   const result = await update(transaction);
-  for (const write of writes) (service.docs[write.path[1]] ??= {})[write.path[3]] = write.data;
-  service.imports++;
+  for (const write of writes) {
+    const [, uid, collection, id] = write.path;
+    const account = service.docs[uid] ??= {};
+    if (collection === 'health') {
+      (account.health ??= {})[id] = write.data;
+      service.healthWrites.push(write);
+    } else account[id] = write.data;
+  }
+  if (writes.some(write => write.path[2] === 'hub')) service.imports++;
   service.publish();
   return result;
 }

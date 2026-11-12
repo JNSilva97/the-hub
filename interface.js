@@ -4,11 +4,12 @@ const routinesLauncher = document.getElementById('routines-launch');
 const retryButton = document.getElementById('routine-retry');
 const notesDialog = document.getElementById('notes-dialog');
 const instantNotes = typeof createInstantNotes === 'function' ? createInstantNotes(notesDialog) : undefined;
-const healthDemo = typeof createHealthDemo === 'function' && typeof createChecklistPicker === 'function' ? createHealthDemo(dialog) : undefined;
+const health = typeof createHealth === 'function' && typeof createChecklistPicker === 'function' ? createHealth(dialog) : undefined;
 const scriptUrl = new URL(document.currentScript.src);
 const routinesUrl = new URL('./routines.js', scriptUrl);
 routinesUrl.search = scriptUrl.search;
 let routinesModule;
+let healthConnected = false;
 let routinesLoadVersion = 0;
 const routineTransition = typeof createCoreTransition === 'function' ? createCoreTransition(routinesDialog) : {
   open: () => routinesDialog.showModal(), close: () => routinesDialog.close()
@@ -50,16 +51,16 @@ function openApp(button) {
   const icon = button.dataset.icon;
   if (icon === 'notes' && instantNotes) { instantNotes.open(); return; }
   const settings = icon === 'settings';
-  const health = icon === 'health' && Boolean(healthDemo);
+  const healthOpen = icon === 'health' && Boolean(health);
   dialog.dataset.app = icon;
-  document.getElementById('health-content').hidden = !health;
-  document.getElementById('health-close').hidden = !health;
-  dialog.querySelector('form .close').textContent = health && routinesDialog.open ? 'Back to Personal Care' : 'Back to the Hub';
+  document.getElementById('health-content').hidden = !healthOpen;
+  document.getElementById('health-close').hidden = !healthOpen;
+  dialog.querySelector('form .close').textContent = healthOpen && routinesDialog.open ? 'Back to Routines' : 'Back to the Hub';
   document.getElementById('app-title').textContent = button.querySelector('.app-name').textContent;
   document.getElementById('app-icon').replaceChildren(button.querySelector('.tile').cloneNode(true));
   document.getElementById('interface-settings').hidden = !settings;
-  document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : health ? 'Fictional medications, times and stock for testing. Saved only in this browser; not synced to your account.' : icon === 'health' ? 'Health couldn’t load. Reload the page to try again.' : icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Routines.';
-  if (health) healthDemo.refresh();
+  document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : healthOpen ? 'Track today’s doses and see what is left.' : icon === 'health' ? 'Health couldn’t load. Reload the page to try again.' : icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Routines.';
+  if (healthOpen) health.refresh();
   dialog.showModal();
 }
 for (const button of document.querySelectorAll('.app')) button.addEventListener('click', () => openApp(button));
@@ -70,7 +71,8 @@ const appGrid = document.querySelector('.apps');
 const appButtons = [...appGrid.querySelectorAll('.app')];
 const futureSpaces = document.getElementById('future-spaces');
 const futureGrid = futureSpaces.querySelector('.future-grid');
-const futureApps = appButtons.filter(button => !['notes', 'settings', 'health'].includes(button.dataset.icon));
+const moduleKinds = new Map([['notes', 'Notebook'], ['settings', 'Interface'], ['health', 'Medication and stock']]);
+const futureApps = appButtons.filter(button => !moduleKinds.has(button.dataset.icon));
 for (const button of futureApps) {
   const label = button.querySelector('.app-meta');
   label.textContent = 'COMING SOON';
@@ -84,7 +86,7 @@ function arrangePhoneApps() {
 phoneLayout.addEventListener('change', arrangePhoneApps);
 arrangePhoneApps();
 document.getElementById('phone-routines').addEventListener('click', () => routinesLauncher.click());
-for (const icon of ['notes', 'settings']) {
+for (const icon of ['notes', 'health', 'settings']) {
   document.getElementById(`phone-${icon}`).addEventListener('click', () => document.querySelector(`.app[data-icon="${icon}"]`).click());
 }
 
@@ -116,6 +118,7 @@ async function loadRoutines() {
   try {
     routinesModule ??= await import(routinesUrl.href);
     if (current !== routinesLoadVersion) return;
+    if (health && !healthConnected) { health.connect(routinesModule.createHealthAccount); healthConnected = true; }
     await routinesModule.initialiseRoutines();
   } catch {
     if (current !== routinesLoadVersion) return;
@@ -160,19 +163,20 @@ loadRoutines();
     document.getElementById('command-empty').hidden = results.children.length > 0;
   }
   function openPalette() {
-    if (healthDemo && !healthDemo.canNavigate()) return;
+    if (health && !health.canNavigate()) return;
     if (!document.getElementById('checklist-control').hidden || document.getElementById('backup-dialog').open) return;
     if (palette.open) { palette.close(); return; }
     for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
     const launch = target => { target.focus(); target.click(); };
-    const routines = document.getElementById('routines-launch');
-    commands = [{ name: 'Routines', kind: 'Checklists', run: () => launch(routines) }];
+    commands = [{ name: 'Routines', kind: 'Checklists', run: () => launch(routinesLauncher) }];
     for (const card of document.querySelectorAll('.routine-card')) commands.push({
       name: card.querySelector('.routine-card-name').textContent,
-      kind: 'Checklist', run: () => { launch(routines); card.click(); }
+      kind: 'Checklist', run: () => { launch(routinesLauncher); card.click(); }
     });
-    for (const app of document.querySelectorAll('.app')) commands.push({
-      name: app.querySelector('.app-name').textContent, kind: app.dataset.icon === 'settings' ? 'Interface' : app.dataset.icon === 'notes' ? 'Notebook' : 'Coming soon', run: () => launch(app)
+    for (const app of appButtons) commands.push({
+      name: app.querySelector('.app-name').textContent,
+      kind: moduleKinds.get(app.dataset.icon) || 'Coming soon',
+      run: () => launch(app)
     });
     search.value = '';
     renderResults();

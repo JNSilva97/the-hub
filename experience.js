@@ -7,33 +7,53 @@
   const settingsMotion = document.getElementById('settings-motion');
   const settingsSound = document.getElementById('settings-sound');
   const interfaceSound = typeof createInterfaceSound === 'function' ? createInterfaceSound() : undefined;
+  const soundPreference = 'thehub:interface-sound:v1';
   let soundEnabled = false;
-  async function playTone(kind = 'select') {
-    if (!soundEnabled || document.hidden) return;
+  try { soundEnabled = localStorage.getItem(soundPreference) === 'on'; } catch {}
+  let startupPending = soundEnabled;
+  const showSoundSetting = (label = soundEnabled ? 'On' : 'Off') => {
+    settingsSound.setAttribute('aria-pressed', String(soundEnabled));
+    settingsSound.textContent = label;
+  };
+  async function playTone(kind, automatic = false) {
+    if (!soundEnabled || document.hidden) return false;
     try {
       if (!interfaceSound) throw new Error('Sound unavailable');
-      await interfaceSound.play(kind);
+      return await interfaceSound.play(kind, automatic);
     } catch {
       soundEnabled = false;
-      settingsSound.setAttribute('aria-pressed', 'false');
-      settingsSound.textContent = 'Unavailable';
+      showSoundSetting('Unavailable');
+      return false;
     }
   }
+  showSoundSetting();
+  if (startupPending) playTone('startup', true).then(played => { if (played) startupPending = false; });
   settingsSound.addEventListener('click', () => {
     soundEnabled = !soundEnabled;
-    settingsSound.setAttribute('aria-pressed', String(soundEnabled));
-    settingsSound.textContent = soundEnabled ? 'On' : 'Off';
+    try { localStorage.setItem(soundPreference, soundEnabled ? 'on' : 'off'); } catch {}
+    showSoundSetting();
     if (!soundEnabled) interfaceSound?.silence();
   });
+  const openControls = '[aria-haspopup="dialog"], #routine-restart, #backup-launch, #account-launch, #control-launch, #backup-restore, #note-delete, #notes-import, #notes-account, #medication-open-health, #health-open-care, #health-sign-in';
+  const closeControls = '.routine-exit, .close, .restart-keep';
   document.addEventListener('click', event => {
     if (!event.isTrusted) return;
     const target = event.target.closest('button, input[type="checkbox"]');
+    const playStartup = startupPending && !target;
+    startupPending = false;
+    if (playStartup || target === replay) { playTone('startup'); return; }
     if (!target) return;
-    const kind = target.matches('.app, #routines-launch, #phone-routines, #phone-notes, #phone-settings, #command-launch, #replay-intro, #settings-sound, #routine-restart') || target.closest('#command-results') ? 'open' : target.matches('.routine-exit, .close, .restart-keep') ? 'close' : 'select';
-    playTone(kind);
+    const check = target.matches('input[type="checkbox"], [aria-pressed], [aria-checked]');
+    if (!check && target.matches(closeControls)) playTone('close');
+    else if (!check && (target.matches(openControls) || target.closest('#command-results'))) playTone('open');
+    else playTone('select');
   });
   document.addEventListener('keydown', event => {
-    if (event.isTrusted && event.key === 'Escape' && !event.repeat && document.querySelector('dialog[open]')) playTone('close');
+    if (!event.isTrusted || event.repeat) return;
+    if (event.key === 'Escape' && document.querySelector('dialog[open]')) {
+      startupPending = false;
+      playTone('close');
+    }
   });
   document.addEventListener('visibilitychange', () => { if (document.hidden) interfaceSound?.silence(); });
   settingsMotion.addEventListener('click', () => document.querySelector('.motion-toggle').click());
@@ -46,7 +66,7 @@
     const status = intro.querySelector('.access-status');
     bootTimers = ['ASSEMBLING WORKSPACE', 'CALIBRATING OPTICS', 'YOUR INTERFACE IS READY'].map((text, index) => setTimeout(() => {
       if (intro.isConnected) status.textContent = text;
-    }, 650 + index * 650));
+    }, 210 + index * 210));
   }
   function updateMotionControls() {
     settingsMotion.disabled = reducedMotion.matches;
