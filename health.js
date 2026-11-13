@@ -36,6 +36,16 @@ function createHealth(panel) {
   const validQuantity = value => Number.isFinite(value) && value >= .25 && value <= 100 && Number.isSafeInteger(value * 4);
   const validName = value => typeof value === 'string' && value.trim().length > 0 && value.length <= 80;
   const validTime = value => typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+  const schedules = new Map([['morning', 'Morning'], ['bedtime', 'Before bed'], ['as-needed', 'As needed']]);
+  const asNeeded = medication => medication.time === 'as-needed';
+  const validPackSize = value => value == null || Number.isSafeInteger(value) && value > 0 && value <= 10000;
+  const tabletCount = quantity => `${quantity} tablet${quantity === 1 ? '' : 's'}`;
+  const timing = medication => schedules.get(medication.time) || medication.time;
+  function scheduleText(medication) {
+    if (asNeeded(medication)) return 'As needed · Stock only';
+    const schedule = validTime(medication.time) ? `Daily at ${medication.time} · Lisbon time` : `Daily · ${timing(medication)}`;
+    return `${tabletCount(medication.quantity)} · ${schedule}`;
+  }
   const setupKey = id => prefix + 'settings:' + id;
   const setup = (medication, entries) => entries.find(entry => entry.type === 'settings' && entry.medication === medication.id);
   const configured = (medication, entries) => ({ ...medication, ...setup(medication, entries), id: medication.id });
@@ -77,7 +87,11 @@ function createHealth(panel) {
     } else if (record.type === 'restock') {
       if (!key.startsWith(prefix + 'restock:') || !Number.isSafeInteger(record.quantity) || record.quantity < 1 || record.quantity > 10000 || record.name !== undefined && !validName(record.name)) throw new Error('Unreadable stock');
     } else if (record.type === 'settings') {
-      if (key !== setupKey(id) || !validName(record.name) || !validQuantity(record.quantity) || !validTime(record.time) || typeof record.adjustment !== 'number' || !Number.isSafeInteger(record.adjustment * 4) || Math.abs(record.adjustment) > 1000000 || Object.hasOwn(record, 'link') && !validLink(record.link)) throw new Error('Unreadable medication settings');
+      const validDose = asNeeded(record) ? record.quantity === null && !record.link : validQuantity(record.quantity);
+      if (key !== setupKey(id) || !validName(record.name) || !validDose || !validPackSize(record.packSize) ||
+          !(validTime(record.time) || schedules.has(record.time)) || typeof record.adjustment !== 'number' ||
+          !Number.isSafeInteger(record.adjustment * 4) || Math.abs(record.adjustment) > 1000000 ||
+          Object.hasOwn(record, 'link') && !validLink(record.link)) throw new Error('Unreadable medication settings');
     } else throw new Error('Unknown medication record');
   }
 
@@ -163,6 +177,7 @@ function createHealth(panel) {
     return change(medication.id, entries => {
       if (taken(medication, entries, date) === checked) return;
       const current = configured(medication, entries);
+      if (checked && asNeeded(current)) conflict('This item is set to stock only.');
       const previous = entries.find(entry => entry.key === doseKey(date, medication.id));
       const quantity = checked ? current.quantity : doseQuantity(previous);
       if (checked && stock(medication, entries) < quantity) throw new Error('Not enough stock');
@@ -173,7 +188,39 @@ function createHealth(panel) {
 
   const conflict = text => { const error = new Error(text); error.medicationConflict = true; throw error; };
   function editorValues(view) {
-    return { name: view.fields.name.value.trim(), quantity: Number(view.fields.dose.value), time: view.fields.time.value, stock: Number(view.fields.stock.value), link: view.linkChoice || '' };
+    const { name, dose, schedule, time, stock, pack } = view.fields;
+    const stockOnly = schedule.value === 'as-needed';
+    return {
+      name: name.value.trim(),
+      quantity: stockOnly ? null : Number(dose.value),
+      time: schedule.value === 'fixed' ? time.value : schedule.value,
+      stock: Number(stock.value),
+      packSize: pack.value ? Number(pack.value) : null,
+      link: stockOnly ? '' : view.linkChoice || ''
+    };
+  }
+  function loadEditorFields(view, values) {
+    const { name, dose, schedule, time, stock, pack } = view.fields;
+    name.value = values.name;
+    dose.value = values.quantity ?? '';
+    schedule.value = schedules.has(values.time) ? values.time : 'fixed';
+    time.value = validTime(values.time) ? values.time : '';
+    stock.value = values.stock;
+    pack.value = values.packSize ?? '';
+  }
+  function renderEditorFields(view, locked) {
+    const { dose, schedule, time } = view.fields;
+    const stockOnly = schedule.value === 'as-needed';
+    for (const field of Object.values(view.fields)) field.disabled = locked;
+    for (const [field, hidden] of [[dose, stockOnly], [time, schedule.value !== 'fixed']]) {
+      field.closest('label').hidden = hidden;
+      field.disabled = locked || hidden;
+    }
+    view.linkField.hidden = stockOnly;
+    view.linkSelect.disabled = locked || stockOnly;
+    if (stockOnly) view.linkPicker.close();
+    view.save.disabled = locked || !dirty(view);
+    view.cancel.disabled = busy;
   }
   function dirty(view) {
     return view.baseline && JSON.stringify(editorValues(view)) !== JSON.stringify(view.baseline.values);
@@ -214,7 +261,7 @@ function createHealth(panel) {
       if (!Number.isSafeInteger(adjustment * 4) || Math.abs(adjustment) > 1000000) conflict('Stock adjustment is outside the supported range. Stored data is unchanged.');
       const link = values.link ? JSON.parse(values.link) : null;
       if (!validLink(link) || (view.isNew || values.link !== baseline.values.link) && link && !linkedChecklist(link)) conflict('Choose a checklist from the current workspace or No checklist.');
-      const record = { version: 1, type: 'settings', medication: target.id, name: values.name, quantity: values.quantity, time: values.time, adjustment, link, at: Date.now() };
+      const record = { version: 1, type: 'settings', medication: target.id, name: values.name, quantity: values.quantity, time: values.time, packSize: values.packSize, adjustment, link, at: Date.now() };
       return { ...record, key: setupKey(target.id) };
     }, view.isNew ? 'Medication added.' : 'Medication saved. Existing dose quantities are unchanged.').then(saved => {
       if (!saved) return;
@@ -245,8 +292,9 @@ function createHealth(panel) {
     const title = node('h3', '', medication.name);
     const badge = node('span', 'health-demo-badge', 'DEMO');
     heading.append(title, badge);
-    const schedule = node('p', 'medication-schedule', `${medication.quantity} tablet${medication.quantity === 1 ? '' : 's'} · Daily at ${medication.time} · Lisbon time`);
+    const schedule = node('p', 'medication-schedule');
     const count = node('strong', 'medication-stock');
+    const packSize = node('p', 'medication-estimate');
     const estimate = node('p', 'medication-estimate');
     const warning = node('p', 'medication-warning');
     const dose = action('Mark taken', `Mark ${medication.name} taken`, () => recordDose(medication, true));
@@ -263,7 +311,7 @@ function createHealth(panel) {
       const key = prefix + 'restock:' + crypto.randomUUID();
       change(medication.id, entries => ({ key, version: 1, type: 'restock', medication: medication.id,
         name: configured(medication, entries).name, quantity: amount, at: Date.now() }),
-      `${view.title.textContent}: added ${amount} tablets.`);
+      `${view.title.textContent}: stock increased by ${amount}.`);
     });
     quantity.addEventListener('keydown', event => {
       if (event.key !== 'Enter' || event.isComposing) return;
@@ -274,12 +322,18 @@ function createHealth(panel) {
     const editor = node('fieldset', 'medication-editor'); editor.hidden = true;
     editor.append(node('legend', '', isNew ? 'Add medication' : 'Edit medication'));
     const fields = {};
-    for (const [key, text, type] of [['name', 'Name', 'text'], ['dose', 'Tablets per dose', 'number'], ['time', 'Daily time (Lisbon)', 'time'], ['stock', 'Current stock', 'number']]) {
+    for (const [key, text, type] of [['name', 'Name', 'text'], ['schedule', 'Schedule', 'select'], ['time', 'Daily time (Lisbon)', 'time'], ['dose', 'Tablets per dose', 'number'], ['stock', 'Current stock', 'number'], ['pack', 'Pack size (optional)', 'number']]) {
       const label = node('label', '', text);
-      const input = node('input', ''); input.type = type; input.required = true;
+      const input = node(type === 'select' ? 'select' : 'input', '');
+      if (type !== 'select') input.type = type;
+      input.required = key !== 'pack';
       input.id = `medication-${medication.id}-${key}`; label.htmlFor = input.id;
       if (key === 'name') input.maxLength = 80;
       if (key === 'dose' || key === 'stock') { input.min = key === 'dose' ? '.25' : '0'; input.max = key === 'dose' ? '100' : '100000'; input.step = '.25'; input.inputMode = 'decimal'; }
+      if (key === 'pack') { input.min = '1'; input.max = '10000'; input.inputMode = 'numeric'; }
+      if (key === 'schedule') for (const [value, label] of [['fixed', 'At a set time'], ...schedules]) {
+        input.append(new Option(value === 'as-needed' ? 'As needed (stock only)' : label, value));
+      }
       fields[key] = input; label.append(input); editor.append(label);
     }
     const linkField = node('div', 'medication-link-field');
@@ -291,17 +345,18 @@ function createHealth(panel) {
     const save = action(isNew ? 'Save medication' : 'Save changes', isNew ? 'Save new medication' : `Save ${medication.name} changes`, () => saveEditor(medication, view));
     const cancel = action('Cancel', `Cancel ${medication.name} changes`, () => { cancelEditor(view); render(); (view.isNew ? addMedication : view.edit).focus(); });
     const editorActions = node('div', 'medication-dose-actions'); editorActions.append(save, cancel);
-    editor.append(node('p', '', 'One daily dose. Previous dose quantities stay unchanged.'), editorActions);
+    editor.append(editorActions);
     const edit = action('Edit medication', `Edit ${medication.name}`, () => {
       try {
         const entries = read(); const current = configured(medication, entries);
-        const values = { name: current.name, quantity: current.quantity, time: current.time, stock: stock(medication, entries), link: linkValue(binding(medication, entries)) };
+        const values = { name: current.name, quantity: current.quantity, time: current.time, stock: stock(medication, entries), packSize: current.packSize ?? null, link: linkValue(binding(medication, entries)) };
         view.linkChoice = values.link;
         view.baseline = { scope: workspace.scope, values, setup: JSON.stringify(setup(medication, entries) || null) };
-        fields.name.value = values.name; fields.dose.value = values.quantity; fields.time.value = values.time; fields.stock.value = values.stock;
+        loadEditorFields(view, values);
         editor.hidden = false; edit.hidden = true; render(); fields.name.focus(); fields.name.select();
       } catch { message = 'Medication setup could not be read. Stored data is unchanged.'; failed = true; render(); }
     });
+    fields.schedule.addEventListener('change', () => renderEditorFields(view, fields.schedule.disabled));
     editor.addEventListener('input', () => { fields.name.setCustomValidity(''); save.disabled = busy || !dirty(view); });
     editor.addEventListener('keydown', event => { if (event.key === 'Enter' && event.target.matches('input')) { event.preventDefault(); save.click(); } });
     heading.append(edit);
@@ -310,15 +365,15 @@ function createHealth(panel) {
       const link = binding(medication, read()); const routine = linkedChecklist(link); if (routine) openRoutine(routine.id);
     });
     linkInfo.append(linkText, openLinked);
-    const details = node('div', 'medication-details'); details.append(schedule, buttons, doseState, count, estimate, warning, restock, linkInfo); details.hidden = isNew;
+    const details = node('div', 'medication-details'); details.append(schedule, buttons, doseState, count, packSize, estimate, warning, restock, linkInfo); details.hidden = isNew;
     card.append(heading, editor, details);
     document.getElementById(isNew ? 'health-new-medication' : 'health-medications').append(card);
     const row = node('label', 'medication-row');
     const check = node('input', ''); check.type = 'checkbox'; check.dataset.dose = medication.id;
     check.addEventListener('change', () => recordDose(medication, check.checked));
-    const copy = node('span', ''); copy.append(node('strong', '', `Take ${medication.name}`), node('small', '', `${medication.quantity} tablet${medication.quantity === 1 ? '' : 's'} · ${medication.time} · Demo`));
+    const copy = node('span', ''); copy.append(node('strong', ''), node('small', ''));
     row.append(check, copy); if (!isNew) document.getElementById('medication-checks').append(row);
-    Object.assign(view, { card, row, linkText, openLinked, linkSelect, linkPicker, title, badge, schedule, copy, editor, fields, edit, save, cancel, count, estimate, warning, dose, undo, doseState, quantity, add, check });
+    Object.assign(view, { card, row, linkText, openLinked, linkField, linkSelect, linkPicker, title, badge, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, doseState, quantity, restockLabel: label, add, check });
     if (isNew) { card.hidden = true; edit.hidden = true; } else cards.set(medication.id, view);
     return view;
   }
@@ -347,6 +402,7 @@ function createHealth(panel) {
       const count = error ? 0 : stock(medication, entries);
       const checked = taken(medication, entries, day);
       const current = configured(medication, entries);
+      const stockOnly = asNeeded(current);
       const custom = Boolean(setup(medication, entries));
       const link = binding(medication, entries); const linked = linkedChecklist(link);
       const visibleHere = Boolean(linked && workspace.selected && linked.id === workspace.selected.id);
@@ -354,28 +410,33 @@ function createHealth(panel) {
       view.linkText.textContent = linked ? `Linked to ${linked.name}` : link ? 'Linked checklist unavailable in this workspace' : 'Not linked to a checklist';
       view.openLinked.hidden = !linked; view.openLinked.disabled = locked;
       if (linked) view.openLinked.setAttribute('aria-label', `Open ${linked.name} for ${current.name}`);
-      updateLinkChoices(view, entries); view.linkSelect.disabled = locked;
+      updateLinkChoices(view, entries);
       view.title.textContent = current.name; view.badge.hidden = accountMode; view.badge.textContent = custom ? 'CUSTOM DEMO' : 'DEMO';
-      view.schedule.textContent = `${current.quantity} tablet${current.quantity === 1 ? '' : 's'} · Daily at ${current.time} · Lisbon time`;
+      view.schedule.textContent = scheduleText(current);
       view.copy.querySelector('strong').textContent = `Take ${current.name}`;
-      view.copy.querySelector('small').textContent = `${current.quantity} tablet${current.quantity === 1 ? '' : 's'} · ${current.time}${demoLabel}`;
+      view.copy.querySelector('small').textContent = `${tabletCount(current.quantity)} · ${timing(current)}${demoLabel}`;
       view.dose.setAttribute('aria-label', `Mark ${current.name} taken`); view.undo.setAttribute('aria-label', `Undo ${current.name} dose`);
       view.edit.setAttribute('aria-label', `Edit ${current.name}`); view.save.setAttribute('aria-label', `Save ${current.name} changes`); view.cancel.setAttribute('aria-label', `Cancel ${current.name} changes`);
       view.add.setAttribute('aria-label', `Add stock for ${current.name}`);
       view.edit.disabled = locked;
-      for (const input of Object.values(view.fields)) input.disabled = locked;
-      view.save.disabled = locked || !dirty(view); view.cancel.disabled = busy;
-      view.count.textContent = error ? 'Stock unavailable' : `${count} tablets left`;
-      view.estimate.textContent = error ? '' : `About ${Math.floor(count / current.quantity)} days at this daily schedule.`;
+      renderEditorFields(view, locked);
+      view.count.textContent = error ? 'Stock unavailable' : `${count} ${stockOnly ? 'units' : 'tablets'} left`;
+      view.restockLabel.textContent = stockOnly ? 'Units to add' : 'Tablets to add';
+      view.packSize.textContent = current.packSize ? `Pack of ${stockOnly ? current.packSize + ' units' : tabletCount(current.packSize)}` : '';
+      view.packSize.hidden = !current.packSize;
+      view.estimate.hidden = Boolean(error) || stockOnly;
+      view.estimate.textContent = view.estimate.hidden ? '' : `About ${Math.floor(count / current.quantity)} days at this daily schedule.`;
       view.warning.textContent = count < current.quantity ? 'Not enough stock for the next dose.' : 'Low stock · add more soon';
-      view.warning.hidden = Boolean(error) || count > current.quantity * 7;
+      view.warning.hidden = Boolean(error) || stockOnly || count > current.quantity * 7;
       const todayDose = entries.find(entry => entry.key === doseKey(day, medication.id));
       const recordedQuantity = checked ? doseQuantity(todayDose) : 0;
       view.doseState.textContent = checked ? `Taken today · ${recordedQuantity} tablet${recordedQuantity === 1 ? '' : 's'} recorded` : 'Not recorded today';
       if (checked) view.copy.querySelector('small').textContent = `${recordedQuantity} tablet${recordedQuantity === 1 ? '' : 's'} recorded today${demoLabel}`;
       view.dose.textContent = checked ? 'Taken today' : 'Mark taken';
-      view.dose.disabled = locked || checked || count < current.quantity;
-      view.undo.hidden = !checked; view.undo.disabled = locked;
+      view.dose.hidden = stockOnly;
+      view.doseState.hidden = stockOnly;
+      view.dose.disabled = locked || stockOnly || checked || count < current.quantity;
+      view.undo.hidden = stockOnly || !checked; view.undo.disabled = locked;
       view.add.disabled = view.quantity.disabled = locked;
       if (!busy) view.check.checked = checked;
       view.check.disabled = locked || !checked && count < current.quantity;
@@ -385,8 +446,9 @@ function createHealth(panel) {
     document.getElementById('medication-demo-title').textContent = accountMode ? 'Medication' : 'Medication demo';
     document.getElementById('medication-data-note').textContent = accountMode ? 'Doses and stock sync with your Health account.' : 'Demo doses stay in this browser.';
     if (panel.dataset.app === 'health') document.getElementById('app-description').textContent = accountMode ? 'Track today’s doses and see what is left.' : 'Fictional samples for trying Health. Demo records stay in this browser and are not synced.';
-    const totalTaken = medications.filter(medication => taken(medication, entries, day)).length;
-    document.getElementById('health-today').textContent = medications.length ? `${totalTaken} of ${medications.length} taken` : '';
+    const daily = medications.filter(medication => !asNeeded(configured(medication, entries)));
+    const totalTaken = daily.filter(medication => taken(medication, entries, day)).length;
+    document.getElementById('health-today').textContent = daily.length ? `${totalTaken} of ${daily.length} taken` : '';
     document.getElementById('health-empty').hidden = !accountMode || !account.ready || medications.length > 0 || !newView?.card.hidden;
     mode.hidden = !account?.uid;
     mode.textContent = accountMode ? 'Try local demo' : 'Open account Health';
@@ -399,9 +461,8 @@ function createHealth(panel) {
     document.getElementById('medication-today').textContent = `${completed} of ${visible.length} ${accountMode ? '' : 'demo '}doses recorded today`;
     addMedication.disabled = locked || (!accountMode && medications.length >= 50);
     if (newView) {
-      updateLinkChoices(newView, entries); newView.linkSelect.disabled = locked;
-      for (const input of Object.values(newView.fields)) input.disabled = locked;
-      newView.save.disabled = locked || !dirty(newView); newView.cancel.disabled = busy;
+      updateLinkChoices(newView, entries);
+      renderEditorFields(newView, locked);
     }
     status.textContent = routineStatus.textContent = busy ? 'Saving medication change…' : error || message;
     status.dataset.warning = routineStatus.dataset.warning = String(Boolean(error) || failed);
@@ -411,7 +472,8 @@ function createHealth(panel) {
       const medication = medications.find(med => med.id === entry.medication);
       const row = node('li', 'health-history-row');
       const quantity = entry.type === 'dose' ? doseQuantity(entry) : 0;
-      const text = entry.type === 'settings' ? 'Medication setup updated' : entry.type === 'restock' ? `Added ${entry.quantity} tablets` : entry.taken ? `Taken · ${quantity} tablet${quantity === 1 ? '' : 's'}` : 'Dose undone · stock restored';
+      const units = asNeeded(configured(medication, entries)) ? 'units' : 'tablets';
+      const text = entry.type === 'settings' ? 'Medication setup updated' : entry.type === 'restock' ? `Added ${entry.quantity} ${units}` : entry.taken ? `Taken · ${tabletCount(quantity)}` : 'Dose undone · stock restored';
       row.append(node('strong', '', entry.name || medication.name), node('span', '', text), node('small', '', `${stampFormat.format(entry.at)}${entry.type === 'dose' ? ' · Dose for ' + entry.date : ''}`));
       if (entry.type === 'dose' && entry.taken) {
         const undo = action('Undo', `Undo ${entry.name || medication.name} dose for ${entry.date}`, () => recordDose(medication, false, entry.date));
@@ -466,9 +528,9 @@ function createHealth(panel) {
   newView = createCard({ id: 'new-medication', name: 'New medication', quantity: 1, time: '08:00', initial: 0 }, true);
   addMedication.addEventListener('click', () => {
     newView.draftId = 'med-' + crypto.randomUUID();
-    const values = { name: '', quantity: 1, time: '08:00', stock: 0, link: '' };
+    const values = { name: '', quantity: 1, time: '08:00', stock: 0, packSize: null, link: '' };
     newView.baseline = { values, scope: workspace.scope, setup: 'null' }; newView.linkChoice = '';
-    newView.fields.name.value = ''; newView.fields.dose.value = '1'; newView.fields.time.value = '08:00'; newView.fields.stock.value = '0';
+    loadEditorFields(newView, values);
     newView.fields.name.setCustomValidity('');
     newView.card.hidden = false; newView.editor.hidden = false; addMedication.hidden = true;
     render(); newView.fields.name.focus();

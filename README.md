@@ -42,7 +42,7 @@ Display typography uses self-hosted Orbitron and Rajdhani fonts. Their SIL Open 
 
 ## Health
 
-The mobile **Health** shortcut opens **Today**, with a dose count, **Mark taken**, **Undo** and stock at a glance. **Add medication** asks for a name, daily time in Lisbon, tablets per dose and current stock. Add a **Linked checklist** to record the same dose directly from Routines. **Edit medication** can change any of these fields. **Add stock** records a refill. **Recent activity** shows the latest changes.
+The mobile **Health** shortcut opens **Today**, with a dose count, **Mark taken**, **Undo** and stock at a glance. **Add medication** asks for a name, schedule, quantity per dose and current stock. Daily entries can use a fixed Lisbon time, **Morning** or **Before bed**. Pack size is optional. **As needed (stock only)** keeps a stock record outside the daily dose count. Add a **Linked checklist** to record the same daily dose directly from Routines. **Edit medication** can change these fields. **Add stock** records a refill. **Recent activity** shows the latest changes.
 
 A medication has one dose per Lisbon calendar day. Recording it from either view deducts stock once. Undo returns the amount that was originally recorded. Editing the dose applies to future records, moving a checklist link preserves the dose, and **Start again** only clears checklist ticks.
 

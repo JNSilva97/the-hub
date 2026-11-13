@@ -376,6 +376,61 @@ test('Health medication demo', { timeout: 150000 }, async t => {
     } finally { await context.close(); }
   });
 
+  await t.test('account Health keeps routine periods and stock-only items across reloads', async () => {
+    const { context, page, errors } = await fixture(browser, {
+      width: 390, motion: 'reduce', firebase: true,
+      cloudDocuments: { 'account-a': { routines: JSON.parse(demo), progress: { checks: {}, optional: {} } } }
+    });
+    try {
+      await ready(page); await openHealth(page);
+      await page.waitForFunction(() => document.getElementById('health-sync-status').textContent === 'Synced to your account.');
+      for (const [name, schedule, title, checklist] of [
+        ['Morning example', 'morning', 'Morning', 'Personal Care'],
+        ['Bedtime example', 'bedtime', 'Before bed', 'Wind Down'],
+        ['Stock example', 'as-needed', 'As needed', null]
+      ]) {
+        await page.locator('#health-add-medication').click();
+        await page.locator('#medication-new-medication-name').fill(name);
+        await page.locator('#medication-new-medication-schedule').selectOption(schedule);
+        assert.equal(await page.locator('#medication-new-medication-time').isVisible(), false);
+        assert.equal(await page.locator('#medication-new-medication-dose').isVisible(), Boolean(checklist));
+        await page.locator('#medication-new-medication-stock').fill('12');
+        await page.locator('#medication-new-medication-pack').fill('24');
+        if (checklist) {
+          await page.locator('#medication-new-medication-checklist-menu .checklist-picker-toggle').click();
+          await page.getByRole('button', { name: checklist, exact: true }).click();
+        }
+        await page.getByRole('button', { name: 'Save new medication' }).click();
+        const card = page.locator('#health-medications .medication-card').filter({ has: page.getByRole('heading', { name, exact: true }) });
+        await card.waitFor();
+        assert.ok((await card.locator('.medication-schedule').textContent()).includes(title));
+        assert.ok((await card.textContent()).includes('Pack of 24'));
+        assert.equal(await card.getByRole('button', { name: `Mark ${name} taken` }).isVisible(), Boolean(checklist));
+      }
+      assert.equal(await page.locator('#health-today').textContent(), '0 of 2 taken');
+      const stockCard = page.locator('#health-medications .medication-card').filter({ has: page.getByRole('heading', { name: 'Stock example' }) });
+      assert.equal(await stockCard.locator('.medication-stock').textContent(), '12 units left');
+      await closeHealth(page);
+      await openRoutines(page);
+      const dose = page.getByRole('checkbox', { name: /Take Morning example/ });
+      await dose.check();
+      await page.waitForFunction(() => document.getElementById('medication-today').textContent === '1 of 1 doses recorded today');
+      await chooseRoutine(page, 'wind-down');
+      assert.equal(await page.getByRole('checkbox', { name: /Take Bedtime example/ }).isVisible(), true);
+      assert.equal(await page.getByRole('checkbox', { name: /Take Stock example/ }).isVisible(), false);
+      const documents = await page.evaluate(() => structuredClone(window.__hubFirebase.docs));
+      const second = await fixture(browser, { motion: 'reduce', firebase: true, cloudDocuments: documents });
+      try {
+        await ready(second.page); await openHealth(second.page);
+        await second.page.waitForFunction(() => document.getElementById('health-today').textContent === '1 of 2 taken');
+        const stockOnly = second.page.locator('#health-medications .medication-card').filter({ has: second.page.getByRole('heading', { name: 'Stock example' }) });
+        assert.equal(await stockOnly.locator('.medication-stock').textContent(), '12 units left');
+        assert.deepEqual(second.errors, []);
+      } finally { await second.context.close(); }
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
   await t.test('blocked writes and unreadable records cannot change stock or private account data', async () => {
     const { context, page, errors } = await fixture(browser, { motion: 'reduce', firebase: true, cloudDocuments: { 'account-a': { routines: JSON.parse(demo), progress: { checks: {}, optional: {} } } } });
     try {
