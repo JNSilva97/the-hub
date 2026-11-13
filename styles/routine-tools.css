@@ -21,7 +21,7 @@
 }
 .control-dialog button:hover { border-color: #8cdbff; background: #0d2a48; }
 .control-dialog button:disabled { opacity: .45; cursor: default; }
-.control-backup { padding: 16px; border: 1px solid #21486b; background: #030b16; margin: 18px 0; }
+.control-backup { padding: 16px; border: 1px solid #21486b; background: var(--panel-surface); margin: 18px 0; }
 .control-backup input[type="file"] { display: block; max-width: 100%; margin-top: 8px; color: #a8cde6; }
 .control-backup label { display: block; margin-top: 16px; }
 .control-backup #restore-preview { border-top: 1px solid #315471; margin-top: 14px; padding-top: 8px; }
@@ -58,7 +58,7 @@
   width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #275277;
   border-radius: 2px; background: #020914; color: #e5f5ff; font: 16px/1.4 system-ui, sans-serif;
 }
-.editor-section { min-width: 0; margin: 22px 0; padding: 16px; border: 1px solid #204d71; background: #030e1b; }
+.editor-section { min-width: 0; margin: 22px 0; padding: 16px; border: 1px solid #204d71; background: var(--panel-surface); }
 .editor-section legend { color: #76caff; padding: 0 8px; font: 600 15px var(--font-interface); }
 .editor-optional { display: flex; gap: 10px; align-items: center; min-height: 44px; margin: 8px 0; }
 .editor-optional input { width: 20px; height: 20px; accent-color: #39aaff; }

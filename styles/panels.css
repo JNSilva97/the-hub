@@ -1,8 +1,11 @@
 /* Shared dialogs, quick access and interface settings. */
 
 dialog {
-  --panel-glass: radial-gradient(ellipse at 18% 0%, #163755d9, #071425d9 46%, #050d18e8 100%);
-  --panel-header: linear-gradient(108deg, #153958e8, #091b2cec 78%);
+  --panel-glass: radial-gradient(ellipse at 18% 0%, #0d2238f0, #060e1af5 48%, #030810f7 100%);
+  --panel-header: linear-gradient(108deg, #102941f7, #07111ef9 80%);
+  --panel-surface: #08121f;
+  --panel-inset: #050c16;
+  --panel-raised: linear-gradient(125deg, #102339, #08121f 75%);
   width: min(440px, calc(100% - 40px));
   padding: 38px 30px 30px;
   border: 1px solid #3c88cf;
@@ -46,7 +49,7 @@ dialog h2 {
 }
 
 dialog::backdrop {
-  background: #020916a8;
+  background: #020610cb;
 }
 
 .panel-eyebrow {
@@ -113,6 +116,11 @@ dialog::backdrop {
 
 .command-heading h2 {
   font-size: 20px;
+}
+
+#app-dialog[data-app="settings"] .app-heading {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #244361;
 }
 
 #command-search {

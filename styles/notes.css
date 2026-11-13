@@ -118,7 +118,7 @@
   min-width: 0;
   padding: 20px 16px;
   border-right: 1px solid #183855;
-  background: #02060c;
+  background: var(--panel-inset);
   height: 100%;
 }
 
@@ -207,7 +207,7 @@
   min-height: 0;
   min-width: 0;
   padding: 22px 26px;
-  background: radial-gradient(ellipse at top right, #12559913, transparent 65%);
+  background: var(--panel-surface);
 }
 
 .note-editor-heading {
