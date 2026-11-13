@@ -12,7 +12,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
 
   await t.test('a skincare choice syncs between checklists and devices at mobile width', async () => {
     const routines = JSON.parse(demo);
-    for (const [index, label] of ['Put moisturiser or sunscreen', 'Apply moisturiser OR sunscreen', 'Apply moisturiser or sunscreen, according to your usual routine'].entries()) {
+    for (const [index, label] of ['Put moisturiser or self-tanner', 'Apply moisturizer OR self-tanner', 'Apply moisturiser or self-tanner, according to your usual routine'].entries()) {
       routines.routines[index].groups[0].items.push({ id: 'skin-care', label });
     }
     const { context, page, errors } = await fixture(browser, {
@@ -37,16 +37,16 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await choice(page, 'Undo skincare choice').waitFor();
       await sync(page, other);
       assert.equal(await choice(other, 'Moisturiser').count(), 0);
-      assert.equal(await choice(other, 'Sunscreen').isVisible(), true);
-      await choice(other, 'Sunscreen').tap();
+      assert.equal(await choice(other, 'Self-tanner').isVisible(), true);
+      await choice(other, 'Self-tanner').tap();
       await choice(other, 'Undo skincare choice').waitFor();
       await sync(other, page);
       await chooseRoutine(page, routines.routines[2].id);
       assert.equal(await page.locator('.skin-care-status').textContent(), 'Both options already applied today');
       await choice(other, 'Undo skincare choice').tap();
-      await choice(other, 'Sunscreen').waitFor();
+      await choice(other, 'Self-tanner').waitFor();
       await sync(other, page);
-      assert.equal(await choice(page, 'Sunscreen').isVisible(), true);
+      assert.equal(await choice(page, 'Self-tanner').isVisible(), true);
       assert.equal(await choice(page, 'Moisturiser').count(), 0);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
@@ -209,7 +209,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.16');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.17');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);

@@ -1,4 +1,4 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey } from './routine-model.mjs?v=morning-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey } from './routine-model.mjs?v=self-tanner-1';
 
 export const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 

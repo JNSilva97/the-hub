@@ -1,6 +1,6 @@
 import { firebaseConfig } from './firebase-config.mjs?v=control-1';
-import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=morning-1';
-import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=morning-1';
+import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=self-tanner-1';
+import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=self-tanner-1';
 
 const panel = document.getElementById('account-dialog');
 const loginButton = document.getElementById('account-login');

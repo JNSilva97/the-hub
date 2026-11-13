@@ -1,9 +1,9 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, getProgress, restartRoutine, lisbonDay, isSkinCareChoice, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice } from './routine-model.mjs?v=morning-1';
-import { cloudWorkspace } from './cloud.js?v=morning-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=morning-1';
-import { createRoutineTools } from './routine-tools.js?v=morning-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, getProgress, restartRoutine, lisbonDay, skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice } from './routine-model.mjs?v=self-tanner-1';
+import { cloudWorkspace } from './cloud.js?v=self-tanner-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=self-tanner-1';
+import { createRoutineTools } from './routine-tools.js?v=self-tanner-1';
 
-export { createHealthAccount } from './cloud-health.js?v=morning-1';
+export { createHealthAccount } from './cloud-health.js?v=self-tanner-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -105,9 +105,11 @@ function updateProgress() {
   progressDay = lisbonDay();
   const skinCare = skinCareProgress(state.checks, progressDay);
   for (const row of content.querySelectorAll('[data-skin-care]')) {
-    const choice = skinCare.selected.get(row.dataset.skinCare);
+    const choices = [...row.querySelectorAll('button[data-skin-care-option]')];
+    const selectedOption = skinCare.selected.get(row.dataset.skinCare);
+    const choice = choices.some(button => button.dataset.skinCareOption === selectedOption) ? selectedOption : undefined;
     const legacy = state.checks[row.dataset.skinCare] === true;
-    const bothUsed = skinCare.used.size === 2;
+    const bothUsed = choices.every(button => skinCare.used.has(button.dataset.skinCareOption));
     const status = row.querySelector('.skin-care-status');
     status.textContent = choice ? `${skinCareOptions[choice]} applied today` : bothUsed ? 'Both options already applied today' : legacy ? 'Previously ticked · choose what you applied today' : '';
     row.dataset.done = String(Boolean(choice) || bothUsed || legacy);
@@ -141,7 +143,7 @@ function updateProgress() {
   document.dispatchEvent(new CustomEvent('hub:progress', { detail: signals }));
 }
 
-function createSkinCareRow(key, title) {
+function createSkinCareRow(key, title, options) {
   const row = make('div', 'check-row skin-care-row');
   row.dataset.skinCare = key;
   const status = make('span', 'skin-care-status');
@@ -174,8 +176,8 @@ function createSkinCareRow(key, title) {
       }
     }
   }
-  for (const [option, label] of Object.entries(skinCareOptions)) {
-    const button = make('button', '', label);
+  for (const option of options) {
+    const button = make('button', '', skinCareOptions[option]);
     button.type = 'button';
     button.dataset.skinCareOption = option;
     button.addEventListener('click', () => choose(button, option, true));
@@ -225,8 +227,9 @@ function selectRoutine(routine, remember = true) {
     }
     for (const item of group.items) {
       const key = itemKey(routine, group, item);
-      if (isSkinCareChoice(item.label)) {
-        body.append(createSkinCareRow(key, item.label));
+      const options = skinCareOptionsFor(item.label);
+      if (options.length) {
+        body.append(createSkinCareRow(key, item.label, options));
         continue;
       }
       const label = make('label', 'check-row');

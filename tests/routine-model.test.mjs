@@ -78,11 +78,15 @@ test('shared skincare choices follow the Lisbon day and survive a checklist back
   const initial = parseProgress(null);
   const first = setSkinCareChoice(routines, initial, morning, 'm', true, day);
   assert.throws(() => setSkinCareChoice(routines, first, goingOut, 'm', true, day), /changed on another device/);
-  const both = setSkinCareChoice(routines, first, goingOut, 's', true, day);
+  const sunscreen = setSkinCareChoice(routines, first, goingOut, 's', true, day);
+  routines[1].groups[0].items[0].label = 'Apply moisturizer or self-tanner';
+  assert.equal(getProgress(routines[1], sunscreen, skinCareProgress(sunscreen.checks, day)).done, 0);
+  assert.throws(() => setSkinCareChoice(routines, first, goingOut, 's', true, day), /item changed/);
+  const both = setSkinCareChoice(routines, sunscreen, goingOut, 't', true, day);
   const restored = parseBackup(JSON.stringify(createBackup(routines, both))).progress;
-  assert.deepEqual(skinCareProgress(restored.checks, day).selected, new Map([[morning, 'm'], [goingOut, 's']]));
+  assert.deepEqual(skinCareProgress(restored.checks, day).selected, new Map([[morning, 'm'], [goingOut, 't']]));
   const undone = setSkinCareChoice(routines, restored, morning, 'm', false, day);
-  assert.deepEqual(skinCareProgress(undone.checks, day).used, new Set(['s']));
+  assert.deepEqual(skinCareProgress(undone.checks, day).used, new Set(['t']));
   assert.equal(getProgress(routines[1], restored, skinCareProgress(restored.checks, day)).done, 1);
   assert.equal(getProgress(routines[1], restored, skinCareProgress(restored.checks, nextDay)).done, 0);
   assert.deepEqual(skinCareProgress(restartRoutine(routines[1], both).checks, day).used, new Set(['m']));
