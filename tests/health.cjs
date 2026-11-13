@@ -72,6 +72,12 @@ test('Account Health', { timeout: 150000 }, async t => {
       await page.getByRole('button', { name: 'Add stock for Sample B' }).click();
       await page.locator(`#restock-${secondId}`).fill('-1'); await page.getByRole('button', { name: 'Save stock for Sample B' }).click();
       assert.equal(await stock(page, secondId), '13 tablets left');
+      await page.getByRole('button', { name: 'Cancel stock addition for Sample B' }).click();
+      assert.equal(await restock.isVisible(), false);
+      await page.getByRole('tab', { name: 'Activity' }).click();
+      await page.getByRole('button', { name: 'Undo stock addition for Sample B' }).click();
+      await waitStock(page, secondId, 8);
+      await page.getByRole('tab', { name: 'Today' }).click();
       await page.getByRole('button', { name: 'Open Personal Care for Sample B', exact: true }).click();
       assert.equal(await page.locator('#routines-dialog').evaluate(el => el.open), true);
       assert.equal(await page.locator('#routine-name').textContent(), 'Personal Care');
@@ -127,7 +133,7 @@ test('Account Health', { timeout: 150000 }, async t => {
     try {
       const other = await context.newPage(); await ready(page); await ready(other); await openHealth(page); await openHealth(other);
       const editor = p => p.locator('[data-medication="med-00000000-0000-4000-8000-000000000001"] .medication-editor');
-      const edit = p => p.locator('[data-medication="med-00000000-0000-4000-8000-000000000001"] > .medication-heading .health-button');
+      const edit = p => p.locator(`[data-medication="${firstId}"]`).getByRole('button', { name: /^Edit / });
       await edit(page).click(); await edit(other).click();
       await page.locator(`#medication-${firstId}-name`).fill('First example');
       await other.locator('#medication-med-00000000-0000-4000-8000-000000000001-name').fill('Second example');
@@ -210,7 +216,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       await ready(page); await openHealth(page);
       const id = await newMedication(page, 'Evening example', 'Wind Down');
       const card = page.locator(`[data-medication="${id}"]`);
-      assert.match(await card.locator('.medication-link-info').textContent(), /Linked to Wind Down/);
+      assert.equal(await card.locator('.medication-checklist-link .medication-checklist-name').textContent(), 'Wind Down');
       assert.equal(await stock(page, id), '12 tablets left');
       await card.getByRole('button', { name: 'Open Wind Down for Evening example', exact: true }).click();
       assert.equal(await page.locator('#routine-name').textContent(), 'Wind Down');
@@ -228,7 +234,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       await chooseRoutine(page, 'wind-down'); assert.equal(await page.locator(`[data-dose="${id}"]`).isVisible(), false);
       await page.locator('#routines-dialog').evaluate(dialog => dialog.close());
       await openHealth(page); assert.equal(await stock(page, id), '10 tablets left');
-      assert.match(await card.locator('.medication-link-info').textContent(), /Linked to Workday/);
+      assert.equal(await card.locator('.medication-checklist-link .medication-checklist-name').textContent(), 'Workday');
       assert.equal(await page.locator('#app-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
@@ -243,7 +249,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await page.locator('#health-medications .medication-card').count(), 2);
       const id = await newMedication(page, 'Unlinked example');
       const card = page.locator(`[data-medication="${id}"]`);
-      assert.match(await card.locator('.medication-link-info').textContent(), /Not linked/);
+      assert.match(await card.locator('.medication-link-info').textContent(), /No linked checklist/);
       await page.locator('#health-open-care').click(); assert.equal(await page.locator(`[data-dose="${id}"]`).isVisible(), false);
       await page.locator('#medication-open-health').click(); await page.locator('#health-add-medication').click();
       await page.locator('#medication-new-medication-name').fill('Failed sample');
@@ -265,7 +271,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       await page.locator('#control-launch').click(); await page.getByLabel('Checklist name', { exact: true }).fill('Renamed work');
       await page.locator('#editor-save').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
       await page.locator('#control-close').click(); await page.locator('#medication-open-health').click();
-      assert.match(await card.locator('.medication-link-info').textContent(), /Linked to Renamed work/);
+      assert.equal(await card.locator('.medication-checklist-link .medication-checklist-name').textContent(), 'Renamed work');
       await card.getByRole('button', { name: 'Edit Linked example', exact: true }).click();
       const toggle = page.locator(`#medication-${id}-checklist-menu .checklist-picker-toggle`);
       await toggle.focus(); await page.keyboard.press('Home'); await page.keyboard.press('Enter');
@@ -273,7 +279,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await card.locator('.medication-editor').isVisible(), true);
       await card.locator('.medication-editor .medication-dose-actions > button').first().click();
       await page.waitForFunction(id => document.querySelector(`[data-medication="${id}"] .medication-editor`).hidden, id);
-      assert.match(await card.locator('.medication-link-info').textContent(), /Not linked/);
+      assert.match(await card.locator('.medication-link-info').textContent(), /No linked checklist/);
       assert.equal(await stock(page, id), '12 tablets left');
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
@@ -373,6 +379,49 @@ test('Account Health', { timeout: 150000 }, async t => {
       await page.getByRole('button', { name: 'Undo Sample A dose for 2026-06-06', exact: true }).click(); await waitStock(page, firstId, 27);
       await closeHealth(page); assert.equal(await page.locator(`[data-dose="${firstId}"]`).isChecked(), true);
     } finally { await context.close(); }
+  });
+
+  await t.test('card order saves through dragging, keyboard and touch and syncs to another device', async () => {
+    const first = await accountFixture(browser, { width: 1440, motion: 'reduce' });
+    let second;
+    const order = page => page.locator('#health-medications h3').allTextContents();
+    try {
+      await ready(first.page); await openHealth(first.page);
+      const grip = first.page.getByRole('button', { name: /Reorder Sample A/ });
+      const target = first.page.getByRole('heading', { name: 'Sample B', exact: true });
+      assert.deepEqual(await order(first.page), ['Sample A', 'Sample B']);
+      const sourceBox = await grip.boundingBox();
+      const targetBox = await target.boundingBox();
+      await first.page.mouse.move(sourceBox.x + 20, sourceBox.y + 20);
+      await first.page.mouse.down();
+      await first.page.mouse.move(targetBox.x + 10, targetBox.y + 10, { steps: 8 });
+      await first.page.mouse.up();
+      await first.page.locator('#health-status').filter({ hasText: 'Medication order saved.' }).waitFor();
+      assert.deepEqual(await order(first.page), ['Sample B', 'Sample A']);
+      assert.equal(await stock(first.page, firstId), '28 tablets left');
+      const docs = await first.page.evaluate(() => structuredClone(window.__hubFirebase.docs));
+      second = await fixture(browser, { width: 390, height: 900, mobile: true, motion: 'reduce', firebase: true, cloudDocuments: docs });
+      await ready(second.page); await second.page.locator('#phone-health').click();
+      assert.deepEqual(await order(second.page), ['Sample B', 'Sample A']);
+      const secondGrip = second.page.getByRole('button', { name: /Reorder Sample A/ });
+      await secondGrip.press('ArrowUp');
+      await second.page.getByRole('button', { name: 'Reorder Sample A, position 1 of 2' }).waitFor();
+      assert.deepEqual(await order(second.page), ['Sample A', 'Sample B']);
+      const touch = await second.context.newCDPSession(second.page);
+      const start = await secondGrip.boundingBox();
+      const end = await second.page.getByRole('heading', { name: 'Sample B', exact: true }).boundingBox();
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start.x + 20, y: start.y + 20 }] });
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: end.x + 10, y: end.y + 10 }] });
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await second.page.getByRole('button', { name: 'Reorder Sample B, position 1 of 2' }).waitFor();
+      assert.deepEqual(await order(second.page), ['Sample B', 'Sample A']);
+      await second.page.getByRole('button', { name: /Reorder Sample B/ }).tap();
+      assert.equal(await second.page.getByRole('button', { name: /Reorder Sample B/ }).getAttribute('aria-pressed'), 'true');
+      await secondGrip.tap();
+      await second.page.getByRole('button', { name: 'Reorder Sample A, position 1 of 2' }).waitFor();
+      assert.equal(await second.page.locator('#app-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+      assert.deepEqual(first.errors.concat(second.errors), []);
+    } finally { await first.context.close(); await second?.context.close(); }
   });
 
   await t.test('empty stock blocks another dose, while restocking restores availability', async () => {
@@ -494,7 +543,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await page.locator('#health-today').textContent(), '0 of 2 taken');
       assert.equal(await page.evaluate(() => window.__hubFirebase.healthWrites.length), 3);
       const morning = page.locator('#health-medications .medication-card').filter({ has: page.getByRole('heading', { name: 'Morning example', exact: true }) });
-      assert.match(await morning.locator('.medication-link-info').textContent(), /Linked to Getting Ready/);
+      assert.equal(await morning.locator('.medication-checklist-link .medication-checklist-name').textContent(), 'Getting Ready');
       await morning.getByRole('button', { name: 'Mark Morning example taken', exact: true }).click();
       await page.waitForFunction(() => document.querySelector('#health-today').textContent === '1 of 2 taken');
       assert.equal(await page.locator('#health-dose-progress').evaluate(progress => progress.value), 1);

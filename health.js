@@ -34,6 +34,7 @@ function createHealth(panel) {
   const routineStatus = document.getElementById('medication-status');
   const routineSection = document.getElementById('personal-care-medications');
   const history = document.getElementById('health-history');
+  const medicationList = document.getElementById('health-medications');
   const cards = new Map();
   const discard = document.getElementById('medication-discard-dialog');
   let discardAction;
@@ -58,6 +59,9 @@ function createHealth(panel) {
   let day = today();
   let message = '';
   let failed = false;
+  let pickedUp;
+  let drag;
+  let reorderHint = '';
 
   function node(tag, className, text) {
     const element = document.createElement(tag);
@@ -72,9 +76,21 @@ function createHealth(panel) {
     return button;
   }
 
+  function svgIcon(symbol, className) {
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const use = document.createElementNS(icon.namespaceURI, 'use');
+    icon.classList.add(className);
+    icon.setAttribute('viewBox', '0 0 24 24');
+    icon.setAttribute('aria-hidden', 'true');
+    use.setAttribute('href', `#${symbol}`);
+    icon.append(use);
+    return icon;
+  }
+
   function selectTab(selected, scroll = true) {
     const active = tabs.find(tab => tab.getAttribute('aria-selected') === 'true');
     if (active === selected) return;
+    clearReorder();
     for (const tab of tabs) {
       const isSelected = tab === selected;
       tab.setAttribute('aria-selected', String(isSelected));
@@ -101,7 +117,8 @@ function createHealth(panel) {
       if (key !== setupKey(id) || !validName(record.name) || !validDose || !validPackSize(record.packSize) ||
           !(validTime(record.time) || schedules.has(record.time)) || typeof record.adjustment !== 'number' ||
           !Number.isSafeInteger(record.adjustment * 4) || Math.abs(record.adjustment) > 1000000 ||
-          Object.hasOwn(record, 'link') && !validLink(record.link)) throw new Error('Unreadable medication settings');
+          Object.hasOwn(record, 'link') && !validLink(record.link) ||
+          record.position !== undefined && (!Number.isSafeInteger(record.position) || record.position < 0)) throw new Error('Unreadable medication settings');
     } else throw new Error('Unknown medication record');
   }
 
@@ -237,10 +254,153 @@ function createHealth(panel) {
   function read() {
     return account?.ready ? account.entries : [];
   }
+  function orderedSettings(entries) {
+    return entries.filter(entry => entry.type === 'settings').sort((left, right) =>
+      (left.position ?? Number.MAX_SAFE_INTEGER) - (right.position ?? Number.MAX_SAFE_INTEGER));
+  }
+
+  function clearReorder() {
+    if (drag) cancelAnimationFrame(drag.frame);
+    drag = undefined;
+    if (pickedUp) cards.get(pickedUp)?.handle.setAttribute('aria-pressed', 'false');
+    pickedUp = undefined;
+    reorderHint = '';
+    delete medicationList.dataset.reordering;
+    medicationList.querySelector('[data-drop]')?.removeAttribute('data-drop');
+  }
+
+  function showReorder(id) {
+    if (pickedUp) cards.get(pickedUp)?.handle.setAttribute('aria-pressed', 'false');
+    pickedUp = id;
+    reorderHint = 'Choose another grip to move here, or use the arrow keys.';
+    cards.get(id).handle.setAttribute('aria-pressed', 'true');
+    medicationList.dataset.reordering = id;
+  }
+
+  async function moveMedication(from, to) {
+    const scope = healthScope();
+    const settings = orderedSettings(read());
+    const order = settings.map(entry => entry.medication);
+    const source = order.indexOf(from);
+    const destination = order.indexOf(to);
+    clearReorder();
+    if (busy || source < 0 || destination < 0 || source === destination) return;
+    order.splice(source, 1);
+    order.splice(destination, 0, from);
+    const positions = new Map(settings.map(entry => [entry.medication, entry.position]));
+    busy = true;
+    render();
+    document.dispatchEvent(new CustomEvent('hub:healthsync', { detail: true }));
+    try {
+      if (!await account.reorder(order, positions) || scope !== healthScope()) return;
+      message = 'Medication order saved.';
+      failed = false;
+    } catch (error) {
+      if (scope !== healthScope()) return;
+      message = error.message === 'Medication order changed on another device.' ? error.message : 'Order could not be saved. Try moving the medication again.';
+      failed = true;
+    } finally {
+      busy = false;
+      document.dispatchEvent(new CustomEvent('hub:healthsync', { detail: false }));
+      render();
+      if (scope === healthScope() && panel.open && todayTab.getAttribute('aria-selected') === 'true') {
+        cards.get(from)?.handle.focus();
+      }
+    }
+  }
+
+  function trackDrag() {
+    if (!drag?.active) return;
+    const bounds = panel.getBoundingClientRect();
+    const headerBottom = panel.querySelector('.health-tabs').getBoundingClientRect().bottom;
+    const edge = 44;
+    if (drag.y > bounds.bottom - edge && drag.y < bounds.bottom + edge) panel.scrollTop += 11;
+    if (drag.y < headerBottom + edge && drag.y > bounds.top) panel.scrollTop -= 11;
+    const target = document.elementFromPoint(drag.x, drag.y)?.closest('#health-medications > .medication-card');
+    const next = target?.dataset.medication === drag.id ? undefined : target;
+    if (drag.target !== next) {
+      drag.target?.removeAttribute('data-drop');
+      next?.setAttribute('data-drop', '');
+      drag.target = next;
+    }
+    drag.frame = requestAnimationFrame(trackDrag);
+  }
+
+  function createReorderHandle(id) {
+    const activate = () => {
+      if (pickedUp === id) { clearReorder(); render(); return; }
+      if (pickedUp) { moveMedication(pickedUp, id); return; }
+      showReorder(id);
+      render();
+    };
+    const handle = action('', 'Reorder medication', event => {
+      if (event.detail === 0) activate();
+    });
+    handle.classList.add('medication-grip');
+    handle.append(svgIcon('med-icon-grip', 'medication-grip-icon'));
+    handle.setAttribute('aria-pressed', 'false');
+    handle.setAttribute('aria-describedby', 'health-reorder-help');
+    handle.title = 'Reorder';
+    handle.addEventListener('keydown', event => {
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape'].includes(event.key)) return;
+      if (event.key === 'Escape' && !pickedUp && !drag) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.key === 'Escape') { clearReorder(); render(); return; }
+      const order = [...medicationList.children].map(card => card.dataset.medication);
+      const direction = ['ArrowUp', 'ArrowLeft'].includes(event.key) ? -1 : 1;
+      const target = order[order.indexOf(id) + direction];
+      if (target) moveMedication(id, target);
+    });
+    handle.addEventListener('pointerdown', event => {
+      if (event.button !== 0 || !event.isPrimary || drag) return;
+      drag = { id, pointer: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY };
+      handle.setPointerCapture(event.pointerId);
+    });
+    handle.addEventListener('pointermove', event => {
+      if (drag?.pointer !== event.pointerId) return;
+      drag.x = event.clientX;
+      drag.y = event.clientY;
+      if (!drag.active && Math.hypot(drag.x - drag.startX, drag.y - drag.startY) >= 7) {
+        drag.active = true;
+        showReorder(id);
+        trackDrag();
+      }
+    });
+    handle.addEventListener('pointerup', event => {
+      if (drag?.pointer !== event.pointerId) return;
+      const releasedOn = document.elementFromPoint(event.clientX, event.clientY);
+      if (!drag.active) {
+        drag = undefined;
+        if (handle.contains(releasedOn)) activate();
+        return;
+      }
+      const target = releasedOn?.closest('#health-medications > .medication-card');
+      if (target && target.dataset.medication !== id) moveMedication(id, target.dataset.medication);
+      else { clearReorder(); render(); }
+    });
+    const cancelDrag = event => {
+      if (drag?.pointer !== event.pointerId) return;
+      clearReorder();
+      render();
+    };
+    handle.addEventListener('pointercancel', cancelDrag);
+    handle.addEventListener('lostpointercapture', cancelDrag);
+    return handle;
+  }
   function stock(medication, entries) {
     const value = entries.filter(entry => entry.medication === medication.id).reduce((count, entry) => entry.type === 'settings' ? count + entry.adjustment : entry.type === 'restock' ? count + entry.quantity : count - (entry.taken ? doseQuantity(entry) : 0), medication.initial);
     if (!Number.isSafeInteger(value * 4) || value < 0) throw new Error('Invalid stock');
     return value;
+  }
+
+  function undoRestock(medication, entry) {
+    return change(medication.id, entries => {
+      const refill = entries.find(record => record.key === entry.key);
+      if (!refill) return;
+      if (stock(medication, entries) < refill.quantity) conflict('There is not enough stock left to undo this refill.');
+      return { key: refill.key, remove: true };
+    }, `${entry.name || medication.name}: stock addition undone.`);
   }
   function taken(medication, entries, date = today()) {
     return entries.some(entry => entry.type === 'dose' && entry.medication === medication.id && entry.date === date && entry.taken);
@@ -360,7 +520,7 @@ function createHealth(panel) {
       if (!Number.isSafeInteger(adjustment * 4) || Math.abs(adjustment) > 1000000) conflict('Stock adjustment is outside the supported range. Stored data is unchanged.');
       const link = values.link ? JSON.parse(values.link) : null;
       if (!validLink(link) || (view.isNew || values.link !== baseline.values.link) && link && !linkedChecklist(link)) conflict('Choose a checklist from the current workspace or No checklist.');
-      const record = { version: 1, type: 'settings', medication: target.id, name: values.name, quantity: values.quantity, time: values.time, packSize: values.packSize, adjustment, link, at: Date.now() };
+      const record = { ...setup(target, entries), version: 1, type: 'settings', medication: target.id, name: values.name, quantity: values.quantity, time: values.time, packSize: values.packSize, adjustment, link, at: Date.now() };
       return { ...record, key: setupKey(target.id) };
     }, view.isNew ? 'Medication added.' : 'Medication saved. Existing dose quantities are unchanged.').then(saved => {
       if (!saved) return;
@@ -389,13 +549,9 @@ function createHealth(panel) {
     const card = node('article', 'medication-card'); card.dataset.medication = medication.id;
     const heading = node('div', 'medication-heading');
     const title = node('h3', '', medication.name);
-    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    const iconUse = document.createElementNS(icon.namespaceURI, 'use');
-    icon.classList.add('medication-icon');
-    icon.setAttribute('viewBox', '0 0 24 24');
-    icon.setAttribute('aria-hidden', 'true');
-    icon.append(iconUse);
-    iconUse.setAttribute('href', '#med-icon-capsule');
+    const icon = svgIcon('med-icon-capsule', 'medication-icon');
+    const iconUse = icon.firstElementChild;
+    const handle = isNew ? null : createReorderHandle(medication.id);
     heading.append(icon, title);
     const schedule = node('p', 'medication-schedule');
     const count = node('strong', 'medication-stock');
@@ -423,25 +579,32 @@ function createHealth(panel) {
     restockToggle.addEventListener('keydown', event => {
       if (event.key === 'Enter' && event.repeat) event.preventDefault();
     });
+    const closeRestock = () => {
+      restock.hidden = true;
+      restockToggle.setAttribute('aria-expanded', 'false');
+      restockToggle.focus({ preventScroll: true });
+    };
+    const cancelStock = action('Cancel', `Cancel stock addition for ${medication.name}`, closeRestock);
     const add = action('Save stock', `Save stock for ${medication.name}`, () => {
       if (!quantity.reportValidity()) return;
       const amount = Number(quantity.value);
       const key = prefix + 'restock:' + crypto.randomUUID();
       change(medication.id, entries => ({ key, version: 1, type: 'restock', medication: medication.id,
         name: configured(medication, entries).name, quantity: amount, at: Date.now() }),
-      `${view.title.textContent}: stock increased by ${amount}.`).then(saved => {
-        if (!saved) return;
-        restock.hidden = true;
-        restockToggle.setAttribute('aria-expanded', 'false');
-        restockToggle.focus({ preventScroll: true });
-      });
+      `${view.title.textContent}: stock increased by ${amount}.`).then(saved => { if (saved) closeRestock(); });
     });
     quantity.addEventListener('keydown', event => {
       if (event.key !== 'Enter' || event.isComposing) return;
       event.preventDefault();
       if (!event.repeat) add.click();
     });
-    restock.append(label, quantity, add);
+    restock.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || busy) return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeRestock();
+    });
+    restock.append(label, quantity, add, cancelStock);
     const editor = node('fieldset', 'medication-editor'); editor.hidden = true;
     editor.append(node('legend', '', isNew ? 'Add medication' : 'Edit medication'));
     const fields = {};
@@ -483,11 +646,20 @@ function createHealth(panel) {
     editor.addEventListener('input', () => { fields.name.setCustomValidity(''); save.disabled = busy || !dirty(view); updateImportButton(); });
     editor.addEventListener('keydown', event => { if (event.key === 'Enter' && event.target.matches('input')) { event.preventDefault(); save.click(); } });
     heading.append(edit);
-    const linkInfo = node('div', 'medication-link-info'); const linkText = node('span', '');
-    const openLinked = action('Open checklist', 'Open linked checklist', () => {
+    if (handle) heading.prepend(handle);
+    const linkInfo = node('div', 'medication-link-info');
+    const linkText = node('span', 'medication-checklist-name');
+    const openLinked = action('', 'Open linked checklist', () => {
       const link = binding(medication, read()); const routine = linkedChecklist(link); if (routine) openRoutine(routine.id);
     });
-    linkInfo.append(linkText, openLinked);
+    const linkedName = node('span', 'medication-checklist-name');
+    const arrow = node('span', 'medication-checklist-arrow', '↗');
+    arrow.setAttribute('aria-hidden', 'true');
+    openLinked.classList.add('medication-checklist-link');
+    openLinked.append(svgIcon('med-icon-checklist', 'medication-checklist-icon'), linkedName, arrow);
+    const unlinked = node('div', 'medication-checklist-empty');
+    unlinked.append(svgIcon('med-icon-checklist', 'medication-checklist-icon'), linkText);
+    linkInfo.append(openLinked, unlinked);
     const stockLine = node('div', 'medication-stock-line');
     const stockInfo = node('div', 'medication-stock-info'); stockInfo.append(count, packSize, estimate);
     stockLine.append(stockInfo, restockToggle);
@@ -495,13 +667,13 @@ function createHealth(panel) {
     details.append(schedule, stockLine, warning, buttons, doseState, restock, linkInfo);
     details.hidden = isNew;
     card.append(heading, editor, details);
-    document.getElementById(isNew ? 'health-new-medication' : 'health-medications').append(card);
+    (isNew ? document.getElementById('health-new-medication') : medicationList).append(card);
     const row = node('label', 'medication-row');
     const check = node('input', ''); check.type = 'checkbox'; check.dataset.dose = medication.id;
     check.addEventListener('change', () => recordDose(medication, check.checked));
     const copy = node('span', ''); copy.append(node('strong', ''), node('small', ''));
     row.append(check, copy); if (!isNew) document.getElementById('medication-checks').append(row);
-    Object.assign(view, { card, row, linkText, openLinked, linkField, linkSelect, linkPicker, title, iconUse, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, doseState, restock, restockToggle, quantity, restockLabel: label, add, check });
+    Object.assign(view, { card, row, linkText, openLinked, linkedName, unlinked, linkField, linkSelect, linkPicker, title, iconUse, handle, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, doseState, restock, restockToggle, cancelStock, quantity, restockLabel: label, add, check });
     if (isNew) { card.hidden = true; edit.hidden = true; } else cards.set(medication.id, view);
     return view;
   }
@@ -509,10 +681,11 @@ function createHealth(panel) {
   function render() {
     day = today();
     const entries = read();
-    const medications = entries.filter(entry => entry.type === 'settings').map(fromSetup);
+    const medications = orderedSettings(entries).map(fromSetup);
     const signedIn = Boolean(account?.uid);
     const readOnly = !account?.ready || account.cached || !navigator.onLine;
     const locked = busy || readOnly;
+    if (locked && (pickedUp || drag)) clearReorder();
     for (const medication of medications) if (!cards.has(medication.id)) createCard(medication);
     const medicationIds = new Set(medications.map(medication => medication.id));
     for (const [id, view] of cards) {
@@ -522,8 +695,11 @@ function createHealth(panel) {
       view.row.remove();
       cards.delete(id);
     }
-    for (const medication of medications) {
+    let nextCard = medicationList.firstElementChild;
+    for (const [index, medication] of medications.entries()) {
       const view = cards.get(medication.id);
+      if (view.card !== nextCard) medicationList.insertBefore(view.card, nextCard);
+      nextCard = view.card.nextElementSibling;
       const count = stock(medication, entries);
       const checked = taken(medication, entries, day);
       const current = configured(medication, entries);
@@ -531,11 +707,17 @@ function createHealth(panel) {
       const link = binding(medication, entries); const linked = linkedChecklist(link);
       const visibleHere = Boolean(linked && workspace.selected && linked.id === workspace.selected.id);
       view.row.hidden = !visibleHere;
-      view.linkText.textContent = linked ? `Linked to ${linked.name}` : link ? 'Linked checklist unavailable in this workspace' : 'Not linked to a checklist';
+      view.linkText.textContent = link ? 'Checklist unavailable' : 'No linked checklist';
       view.openLinked.hidden = !linked; view.openLinked.disabled = locked;
+      view.unlinked.hidden = Boolean(linked);
+      view.linkText.hidden = Boolean(linked);
+      view.linkedName.textContent = linked?.name ?? '';
       if (linked) view.openLinked.setAttribute('aria-label', `Open ${linked.name} for ${current.name}`);
       updateLinkChoices(view, entries);
       view.title.textContent = current.name;
+      view.handle.setAttribute('aria-label', `Reorder ${current.name}, position ${index + 1} of ${medications.length}`);
+      view.handle.hidden = medications.length < 2;
+      view.handle.disabled = locked;
       const iconHref = `#med-icon-${medicationIcon(current)}`;
       if (view.iconUse.getAttribute('href') !== iconHref) view.iconUse.setAttribute('href', iconHref);
       view.schedule.textContent = scheduleText(current);
@@ -545,6 +727,8 @@ function createHealth(panel) {
       view.edit.setAttribute('aria-label', `Edit ${current.name}`); view.save.setAttribute('aria-label', `Save ${current.name} changes`); view.cancel.setAttribute('aria-label', `Cancel ${current.name} changes`);
       view.add.setAttribute('aria-label', `Save stock for ${current.name}`);
       view.restockToggle.setAttribute('aria-label', `Add stock for ${current.name}`);
+      view.cancelStock.setAttribute('aria-label', `Cancel stock addition for ${current.name}`);
+      view.cancelStock.disabled = busy;
       view.edit.disabled = locked;
       renderEditorFields(view, locked);
       view.count.textContent = `${count} ${stockOnly ? 'units' : 'tablets'} left`;
@@ -596,7 +780,8 @@ function createHealth(panel) {
       updateLinkChoices(newView, entries);
       renderEditorFields(newView, locked);
     }
-    status.textContent = routineStatus.textContent = busy ? 'Saving medication change…' : message;
+    status.textContent = busy ? 'Saving medication change…' : reorderHint || message;
+    routineStatus.textContent = busy ? 'Saving medication change…' : message;
     status.dataset.warning = routineStatus.dataset.warning = String(failed);
     const focused = history.contains(document.activeElement);
     history.replaceChildren();
@@ -608,8 +793,11 @@ function createHealth(panel) {
       const units = asNeeded(configured(medication, entries)) ? 'units' : 'tablets';
       const text = entry.type === 'settings' ? 'Medication setup updated' : entry.type === 'restock' ? `Added ${entry.quantity} ${units}` : entry.taken ? `Taken · ${tabletCount(quantity)}` : 'Dose undone · stock restored';
       row.append(node('strong', '', entry.name || medication.name), node('span', '', text), node('small', '', `${stampFormat.format(entry.at)}${entry.type === 'dose' ? ' · Dose for ' + entry.date : ''}`));
-      if (entry.type === 'dose' && entry.taken) {
-        const undo = action('Undo', `Undo ${entry.name || medication.name} dose for ${entry.date}`, () => recordDose(medication, false, entry.date));
+      if (entry.type === 'restock' || entry.type === 'dose' && entry.taken) {
+        const name = entry.name || medication.name;
+        const undo = entry.type === 'restock'
+          ? action('Undo', `Undo stock addition for ${name}`, () => undoRestock(medication, entry))
+          : action('Undo', `Undo ${name} dose for ${entry.date}`, () => recordDose(medication, false, entry.date));
         undo.disabled = locked; row.append(undo);
       }
       history.append(row);
@@ -652,8 +840,19 @@ function createHealth(panel) {
   };
   panel.addEventListener('click', closingClick, true);
   panel.addEventListener('submit', event => { if (hasDraft() || busy) { event.preventDefault(); event.stopImmediatePropagation(); requestExit(() => panel.close()); } }, true);
-  panel.addEventListener('cancel', event => { if (hasDraft() || busy) { event.preventDefault(); event.stopImmediatePropagation(); requestExit(() => panel.close()); } }, true);
+  panel.addEventListener('cancel', event => {
+    if (pickedUp || drag) {
+      event.preventDefault();
+      clearReorder();
+      render();
+    } else if (hasDraft() || busy) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      requestExit(() => panel.close());
+    }
+  }, true);
   panel.addEventListener('close', () => {
+    clearReorder();
     for (const view of allViews()) cancelEditor(view);
     for (const view of cards.values()) {
       view.restock.hidden = true;
@@ -719,6 +918,7 @@ function createHealth(panel) {
     connect(createAccount) {
       account = createAccount(() => {
         if (accountId !== account.uid) {
+          clearReorder();
           for (const view of allViews()) cancelEditor(view);
           resetImport();
           selectTab(todayTab);

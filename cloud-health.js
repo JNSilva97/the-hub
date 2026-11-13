@@ -87,6 +87,36 @@ export function createHealthAccount(onChange, validate) {
       }
       return added;
     },
+    async reorder(order, positions) {
+      if (!uid || !ready || cached || !navigator.onLine) throw new Error('Health requires an online connection to save.');
+      const current = generation;
+      const { sdk, database } = cloudWorkspace.connection;
+      const references = order.map(id => sdk.doc(database, 'users', uid, 'health', id));
+      const saved = await sdk.runTransaction(database, async transaction => {
+        const snapshots = await Promise.all(references.map(reference => transaction.get(reference)));
+        if (current !== generation) throw new Error('Health account changed');
+        const updated = new Map();
+        snapshots.forEach((snapshot, index) => {
+          const id = order[index];
+          const ledger = parse(id, snapshot.data());
+          const settings = ledger.entries.find(entry => entry.type === 'settings');
+          if (settings.position !== positions.get(id)) throw new Error('Medication order changed on another device.');
+          if (settings.position === index) return;
+          const entries = ledger.entries.map(entry => entry === settings ? { ...settings, position: index } : entry);
+          const revision = ledger.revision + 1;
+          const payload = JSON.stringify(entries);
+          if (new TextEncoder().encode(payload).length > 450000) throw new Error('Health history is full.');
+          transaction.set(references[index], { version: 1, revision, payload });
+          updated.set(id, { revision, entries });
+        });
+        return updated;
+      });
+      if (current !== generation) return false;
+      for (const [id, ledger] of saved) {
+        if (ledger.revision > (ledgers.get(id)?.revision ?? 0)) ledgers.set(id, ledger);
+      }
+      return true;
+    },
     async change(id, update) {
       if (!uid || !ready || cached || !navigator.onLine) throw new Error('Health requires an online connection to save.');
       const current = generation;
@@ -100,7 +130,8 @@ export function createHealthAccount(onChange, validate) {
         readRevision = saved.revision;
         const change = update(saved.entries);
         if (!change) return saved;
-        const entries = [...saved.entries.filter(entry => entry.key !== change.key), change];
+        const entries = saved.entries.filter(entry => entry.key !== change.key);
+        if (!change.remove) entries.push(change);
         validate(id, entries);
         const payload = JSON.stringify(entries);
         if (new TextEncoder().encode(payload).length > 450000) throw new Error('Health history is full.');
