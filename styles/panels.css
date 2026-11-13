@@ -1,11 +1,11 @@
 /* Shared dialogs, quick access and interface settings. */
 
 dialog {
-  --panel-glass: radial-gradient(ellipse at 18% 0%, #0d2238f0, #060e1af5 48%, #030810f7 100%);
-  --panel-header: linear-gradient(108deg, #102941f7, #07111ef9 80%);
-  --panel-surface: #08121f;
-  --panel-inset: #050c16;
-  --panel-raised: linear-gradient(125deg, #102339, #08121f 75%);
+  --panel-glass: radial-gradient(ellipse at 18% 0%, #091725a6, #040a12ad 48%, #03070dba 100%);
+  --panel-header: linear-gradient(108deg, #0b1a29b8, #050d18bf 80%);
+  --panel-surface: #09121e94;
+  --panel-inset: #050c16bf;
+  --panel-raised: linear-gradient(125deg, #10203494, #07111c9e 75%);
   width: min(440px, calc(100% - 40px));
   padding: 38px 30px 30px;
   border: 1px solid #3c88cf;
@@ -49,7 +49,7 @@ dialog h2 {
 }
 
 dialog::backdrop {
-  background: #020610cb;
+  background: #02061080;
 }
 
 .panel-eyebrow {
