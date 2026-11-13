@@ -27,6 +27,7 @@ function playInterfaceCue(context, output, buffer, kind, offset = 0, duration) {
 }
 
 function createInterfaceSound() {
+  if (typeof AudioContext !== 'function') return;
   let context;
   let output;
   const buffers = new Map();
@@ -59,27 +60,41 @@ function createInterfaceSound() {
   }
 
   return {
+    get autoplayAllowed() { return context?.state === 'running'; },
     async prepare() {
       context ??= new AudioContext();
       await Promise.allSettled(Object.keys(interfaceCueFiles).map(loadCue));
     },
-    async play(kind, automatic = false) {
+    async play(kind, { automatic = false, intro, reveal } = {}) {
       if (document.hidden) return false;
       const generation = playbackGeneration;
       context ??= new AudioContext();
       if (automatic && context.state !== 'running') return false;
-      const resumed = context.state === 'suspended' ? context.resume() : undefined;
-      const [, cue] = await Promise.all([resumed, loadCue(kind)]);
-      if (!cue || generation !== playbackGeneration || document.hidden || context.currentTime - lastPlay < .045) return false;
-      if (!output) {
-        output = context.createGain();
-        output.connect(context.destination);
+      const resumed = context.state !== 'running' ? context.resume() : undefined;
+      const loading = Promise.all([resumed, loadCue(kind)]);
+      let timeout;
+      try {
+        // Keep the intro responsive when the audio host is slow or audio stays blocked.
+        const [, cue] = intro ? await Promise.race([loading, new Promise(resolve => {
+          timeout = setTimeout(() => resolve([]), 850);
+        })]) : await loading;
+        if (!cue) return false;
+        if (intro?.isConnected && !document.hidden) await new Promise(requestAnimationFrame);
+        if (generation !== playbackGeneration || document.hidden || (intro && !intro.isConnected)) return false;
+        if (kind !== 'startup' && context.currentTime - lastPlay < .045) return false;
+        if (reveal && !reveal()) return false;
+        if (!output) {
+          output = context.createGain();
+          output.connect(context.destination);
+        }
+        output.gain.cancelScheduledValues(context.currentTime);
+        output.gain.setTargetAtTime(1, context.currentTime, .005);
+        lastPlay = context.currentTime;
+        playInterfaceCue(context, output, cue.buffer, kind, cue.offset, cue.duration);
+        return true;
+      } finally {
+        clearTimeout(timeout);
       }
-      output.gain.cancelScheduledValues(context.currentTime);
-      output.gain.setTargetAtTime(1, context.currentTime, .005);
-      lastPlay = context.currentTime;
-      playInterfaceCue(context, output, cue.buffer, kind, cue.offset, cue.duration);
-      return true;
     },
     silence() {
       playbackGeneration++;

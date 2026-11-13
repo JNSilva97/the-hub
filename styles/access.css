@@ -15,6 +15,10 @@
   background: #01040955;
 }
 
+.access-sequence[hidden] { display: none; }
+
+#startup-dialog[open] { animation: section-arrive 260ms var(--ease-arrive) both; }
+
 .blast-door {
   position: absolute;
   top: 0px;

@@ -167,7 +167,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.12.1');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.1');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -1406,6 +1406,58 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
       await play(() => page.keyboard.press('Escape'), [1.25, [0, .065, .565]]);
       assert.deepEqual([...requests].sort((a, b) => a - b), [901, 914, 3114]);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('blocked autoplay starts the sound and animation together on request', async () => {
+    const { context, page, errors } = await fixture(browser);
+    try {
+      await context.addInitScript(() => {
+        localStorage.setItem('thehub:interface-sound:v1', 'on');
+        window.introEvents = [];
+        document.addEventListener('animationstart', event => {
+          if (event.animationName === 'vault-reveal') window.introEvents.push(['animation', performance.now()]);
+        });
+        const start = AudioBufferSourceNode.prototype.start;
+        AudioBufferSourceNode.prototype.start = function (...args) {
+          window.introEvents.push(['sound', performance.now(), ...args]);
+          return start.apply(this, args);
+        };
+      });
+      let deliverStartup;
+      const delayed = new Promise(resolve => { deliverStartup = resolve; });
+      await context.route('https://assets.mixkit.co/**', async route => {
+        if (route.request().url().endsWith('/914-preview.mp3')) await delayed;
+        return route.fulfill({
+          path: path.join(root, 'assets/audio/interface-glide.mp3'),
+          contentType: 'audio/mpeg',
+          headers: { 'access-control-allow-origin': '*' }
+        });
+      });
+      await ready(page);
+      const start = page.getByRole('button', { name: 'Start intro' });
+      const intro = page.locator('.access-sequence');
+      assert.equal(await start.isVisible(), true);
+      assert.equal(await intro.count(), 0);
+      assert.deepEqual(await page.evaluate(() => window.introEvents), []);
+      await start.press('Enter');
+      assert.equal(await intro.getAttribute('hidden'), '');
+      deliverStartup();
+      await page.waitForFunction(() => window.introEvents.length === 2);
+      const [sound, animation] = await page.evaluate(() => window.introEvents);
+      assert.equal(sound[0], 'sound');
+      assert.deepEqual(sound.slice(2), [0, .09, .93]);
+      assert.equal(animation[0], 'animation');
+      const firstFrame = await intro.evaluate(el => el.getAnimations().find(animation => animation.animationName === 'vault-reveal').startTime);
+      assert.ok(Math.abs(firstFrame - sound[1]) < 100);
+
+      await ready(page);
+      await page.getByRole('button', { name: 'Skip intro' }).click();
+      assert.equal(await start.isVisible(), false);
+      assert.equal(await intro.count(), 0);
+      assert.deepEqual(await page.evaluate(() => window.introEvents), []);
+      await openRoutines(page);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });

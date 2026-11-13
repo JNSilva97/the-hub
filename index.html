@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="styles/base.css?v=control-2">
   <link rel="stylesheet" href="styles/shell.css?v=health-sync-1">
   <link rel="stylesheet" href="styles/core.css?v=intro-quick-1">
-  <link rel="stylesheet" href="styles/access.css?v=intro-quick-1">
+  <link rel="stylesheet" href="styles/access.css?v=intro-sound-1">
   <link rel="stylesheet" href="styles/panels.css?v=mobile-1">
   <link rel="stylesheet" href="styles/routines.css?v=free-9">
   <link rel="stylesheet" href="styles/routine-tools.css?v=review-1">
@@ -25,7 +25,8 @@
 <body>
   <div class="cityscape" aria-hidden="true"><div class="city-buildings"></div><div class="city-horizon"></div></div>
   <div class="ambient-beam" aria-hidden="true"></div>
-  <div class="access-sequence" aria-hidden="true">
+  <template id="intro-template">
+  <div class="access-sequence" aria-hidden="true" hidden>
     <div class="blast-door blast-door-left"></div><div class="blast-door blast-door-right"></div><div class="access-seam"></div>
     <div class="access-content">
       <div class="access-ring"><span class="access-crosshair"></span></div>
@@ -35,6 +36,7 @@
       <p class="access-note">NIGHTFALL EDITION / PRESS ANY KEY TO ENTER</p>
     </div>
   </div>
+  </template>
   <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <symbol id="projects" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z"/><path d="M3 11h18"/></symbol>
     <symbol id="goals" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m12 12 8-8m-4 0h4v4"/></symbol>
@@ -238,12 +240,20 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.12.1</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.13.1</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
     </div>
     <form method="dialog"><button class="close" type="submit">Back to the Hub</button></form>
+  </dialog>
+  <dialog id="startup-dialog" aria-labelledby="startup-title">
+    <h2 id="startup-title">The Hub</h2>
+    <p>Start the intro with sound.</p>
+    <form method="dialog" class="restart-actions">
+      <button id="startup-play" class="restart-keep" type="button" autofocus>Start intro</button>
+      <button class="restart-keep" type="submit">Skip intro</button>
+    </form>
   </dialog>
   <dialog id="medication-discard-dialog" class="restart-dialog" role="alertdialog" aria-labelledby="medication-discard-title" aria-describedby="medication-discard-description">
     <h2 id="medication-discard-title">Discard medication edits?</h2><p id="medication-discard-description">Your saved medication setup and dose records will stay as they are.</p>
@@ -372,9 +382,9 @@
   <script defer src="checklist-picker.js?v=review-1"></script>
   <script defer src="health.js?v=review-1"></script>
   <script defer src="interface.js?v=review-1"></script>
-  <script defer src="interface-sound.js?v=sound-preview-1"></script>
+  <script defer src="interface-sound.js?v=intro-sound-1"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>
-  <script defer src="experience.js?v=sound-preview-1"></script>
+  <script defer src="experience.js?v=intro-sound-1"></script>
   <script defer src="install.js?v=flow-5"></script>
 </body>
 </html>
