@@ -167,7 +167,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.2');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.3');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -1436,13 +1436,16 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         });
       });
       await ready(page);
-      const start = page.getByRole('button', { name: 'Start intro' });
+      const entry = page.getByRole('dialog', { name: 'The Hub' });
+      const start = entry.getByRole('button', { name: 'Open The Hub' });
       const intro = page.locator('.access-sequence');
       await start.waitFor();
-      assert.equal(await start.isVisible(), true);
+      assert.equal(await entry.getByRole('button').count(), 1);
+      assert.equal(await start.evaluate(button => document.activeElement === button), true);
       assert.equal(await intro.count(), 0);
       assert.deepEqual(await page.evaluate(() => window.introEvents), []);
       await start.press('Enter');
+      assert.equal(await entry.isVisible(), true);
       assert.equal(await intro.getAttribute('hidden'), '');
       deliverStartup();
       await page.waitForFunction(() => window.introEvents.length === 2);
@@ -1452,10 +1455,12 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(animation[0], 'animation');
       const firstFrame = await intro.evaluate(el => el.getAnimations().find(animation => animation.animationName === 'vault-reveal').startTime);
       assert.ok(Math.abs(firstFrame - sound[1]) < 100);
+      assert.equal(await entry.isVisible(), false);
 
       await ready(page);
-      await page.getByRole('button', { name: 'Skip intro' }).click();
-      assert.equal(await start.isVisible(), false);
+      await start.waitFor();
+      await page.keyboard.press('Escape');
+      await entry.waitFor({ state: 'hidden' });
       assert.equal(await intro.count(), 0);
       assert.deepEqual(await page.evaluate(() => window.introEvents), []);
       await openRoutines(page);

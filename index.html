@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="styles/base.css?v=control-2">
   <link rel="stylesheet" href="styles/shell.css?v=health-sync-1">
   <link rel="stylesheet" href="styles/core.css?v=intro-quick-1">
-  <link rel="stylesheet" href="styles/access.css?v=intro-sound-1">
+  <link rel="stylesheet" href="styles/access.css?v=fingerprint-1">
   <link rel="stylesheet" href="styles/panels.css?v=mobile-1">
   <link rel="stylesheet" href="styles/routines.css?v=free-9">
   <link rel="stylesheet" href="styles/routine-tools.css?v=review-1">
@@ -240,7 +240,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.13.2</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.13.3</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -248,12 +248,20 @@
     <form method="dialog"><button class="close" type="submit">Back to the Hub</button></form>
   </dialog>
   <dialog id="startup-dialog" aria-labelledby="startup-title">
-    <h2 id="startup-title">The Hub</h2>
-    <p>Start the intro with sound.</p>
-    <form method="dialog" class="restart-actions">
-      <button id="startup-play" class="restart-keep" type="button" autofocus>Start intro</button>
-      <button class="restart-keep" type="submit">Skip intro</button>
-    </form>
+    <div class="startup-entry">
+      <h2 id="startup-title" class="access-title">The Hub</h2>
+      <button id="startup-play" class="startup-play" type="button" autofocus>
+        <span class="startup-print" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M13 9a19 19 0 0 1 23 1M7 27a27 27 0 0 1 2-9m29-3c4 5 4 10 4 17"/>
+            <path d="M9 36c3-5 2-10 4-15a12 12 0 0 1 11-8c8 0 13 6 13 13 0 4 0 8 2 12"/>
+            <path d="M14 40c3-5 4-10 4-15a6 6 0 0 1 6-6c4 0 7 3 7 7 0 6 1 12 4 17"/>
+            <path d="M20 43c3-5 4-11 4-17m2 19c2-4 3-8 3-12"/>
+          </svg>
+        </span>
+        <span>Open The Hub</span>
+      </button>
+    </div>
   </dialog>
   <dialog id="medication-discard-dialog" class="restart-dialog" role="alertdialog" aria-labelledby="medication-discard-title" aria-describedby="medication-discard-description">
     <h2 id="medication-discard-title">Discard medication edits?</h2><p id="medication-discard-description">Your saved medication setup and dose records will stay as they are.</p>
@@ -384,7 +392,7 @@
   <script defer src="interface.js?v=review-1"></script>
   <script defer src="interface-sound.js?v=intro-autoplay-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>
-  <script defer src="experience.js?v=intro-autoplay-2"></script>
+  <script defer src="experience.js?v=fingerprint-1"></script>
   <script defer src="install.js?v=flow-5"></script>
 </body>
 </html>

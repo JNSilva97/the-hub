@@ -4,6 +4,7 @@
   const motionAllowed = () => !reducedMotion.matches && !document.body.classList.contains('motion-paused');
   const introTemplate = document.getElementById('intro-template');
   const startupDialog = document.getElementById('startup-dialog');
+  const startupPlay = document.getElementById('startup-play');
   const replay = document.getElementById('replay-intro');
   const settingsMotion = document.getElementById('settings-motion');
   const settingsSound = document.getElementById('settings-sound');
@@ -68,7 +69,7 @@
     replay.disabled = !motionAllowed();
     replay.title = replay.disabled ? 'Enable motion to replay the intro' : 'Replay the opening sequence';
   }
-  async function startIntro(automatic = false) {
+  async function startIntro(automatic = false, onReveal) {
     if (!motionAllowed()) return;
     document.querySelector('.access-sequence')?.remove();
     const intro = introTemplate.content.firstElementChild.cloneNode(true);
@@ -78,8 +79,10 @@
       if (!intro.isConnected) return;
       if (!motionAllowed()) {
         intro.remove();
+        onReveal?.();
         return false;
       }
+      onReveal?.();
       intro.hidden = false;
       document.body.classList.remove('interface-ready');
       stageIntro(intro);
@@ -89,9 +92,18 @@
   }
 
   replay.addEventListener('click', () => startIntro());
-  document.getElementById('startup-play').addEventListener('click', () => {
-    startupDialog.close();
-    startIntro();
+  startupPlay.addEventListener('click', async () => {
+    if (startupPlay.hasAttribute('aria-disabled')) return;
+    if (!motionAllowed()) {
+      startupDialog.close();
+      return;
+    }
+    startupPlay.setAttribute('aria-disabled', 'true');
+    try {
+      await startIntro(false, () => startupDialog.close());
+    } finally {
+      startupPlay.removeAttribute('aria-disabled');
+    }
   });
   startupDialog.addEventListener('close', () => {
     if (!document.querySelector('.access-sequence')) document.body.classList.add('interface-ready');
