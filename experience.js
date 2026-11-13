@@ -98,14 +98,23 @@
   });
   reducedMotion.addEventListener('change', updateMotionControls);
   document.querySelector('.motion-toggle').addEventListener('click', updateMotionControls);
-  updateMotionControls();
-  if (soundEnabled) interfaceSound?.prepare().catch(() => {});
-  if (soundEnabled && interfaceSound && motionAllowed() && !interfaceSound.autoplayAllowed && !document.hidden) {
-    document.body.classList.add('interface-ready');
-    startupDialog.showModal();
-  } else {
-    startIntro(true);
+  async function openWorkspace() {
+    if (!soundEnabled || !interfaceSound) {
+      startIntro(true);
+      return;
+    }
+    interfaceSound.prepare().catch(() => {});
+    if (!motionAllowed() || document.hidden) return;
+    const allowed = await interfaceSound.allowsAutoplay().catch(() => false);
+    if (!motionAllowed() || document.hidden || document.body.classList.contains('interface-ready') || document.querySelector('dialog[open]')) return;
+    if (allowed) startIntro(true);
+    else {
+      document.body.classList.add('interface-ready');
+      startupDialog.showModal();
+    }
   }
+  updateMotionControls();
+  openWorkspace();
 
   const skyline = document.querySelector('.city-buildings');
   [28, 46, 33, 72, 49, 100, 65, 38, 58, 80, 43, 67, 93, 51, 76, 36, 60, 85, 47, 32].forEach((height, index) => {

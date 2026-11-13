@@ -60,7 +60,23 @@ function createInterfaceSound() {
   }
 
   return {
-    get autoplayAllowed() { return context?.state === 'running'; },
+    async allowsAutoplay() {
+      context ??= new AudioContext();
+      if (context.state === 'running') return true;
+      // Some browsers initialize the audio device asynchronously even when allowed.
+      let timeout;
+      try {
+        await Promise.race([
+          context.resume(),
+          new Promise(resolve => { timeout = setTimeout(resolve, 300); })
+        ]);
+      } catch {
+        return false;
+      } finally {
+        clearTimeout(timeout);
+      }
+      return context.state === 'running';
+    },
     async prepare() {
       context ??= new AudioContext();
       await Promise.allSettled(Object.keys(interfaceCueFiles).map(loadCue));

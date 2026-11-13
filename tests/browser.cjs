@@ -167,7 +167,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.1');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.2');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -1438,6 +1438,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await ready(page);
       const start = page.getByRole('button', { name: 'Start intro' });
       const intro = page.locator('.access-sequence');
+      await start.waitFor();
       assert.equal(await start.isVisible(), true);
       assert.equal(await intro.count(), 0);
       assert.deepEqual(await page.evaluate(() => window.introEvents), []);
@@ -1458,6 +1459,44 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(await intro.count(), 0);
       assert.deepEqual(await page.evaluate(() => window.introEvents), []);
       await openRoutines(page);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('autoplay allowed after audio initialization starts the intro without a click', async () => {
+    const { context, page, errors } = await fixture(browser);
+    try {
+      await context.addInitScript(() => {
+        localStorage.setItem('thehub:interface-sound:v1', 'on');
+        window.startupPlayed = false;
+        const NativeContext = window.AudioContext;
+        window.AudioContext = class extends NativeContext {
+          resumed = false;
+          get state() { return this.resumed ? 'running' : 'suspended'; }
+          async resume() {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            this.resumed = true;
+          }
+          createBufferSource() {
+            const source = super.createBufferSource();
+            const start = source.start.bind(source);
+            source.start = (...args) => {
+              if (args[2] === .93) window.startupPlayed = true;
+              return start(...args);
+            };
+            return source;
+          }
+        };
+      });
+      await context.route('https://assets.mixkit.co/**', route => route.fulfill({
+        path: path.join(root, 'assets/audio/interface-glide.mp3'),
+        contentType: 'audio/mpeg',
+        headers: { 'access-control-allow-origin': '*' }
+      }));
+      await ready(page);
+      await page.waitForFunction(() => window.startupPlayed);
+      assert.equal(await page.locator('#startup-dialog').isVisible(), false);
+      assert.equal(await page.locator('.access-sequence').getAttribute('hidden'), null);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });
