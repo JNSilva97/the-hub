@@ -122,6 +122,15 @@ function createHealth(panel) {
 
   const normalizedName = name => name.trim().normalize('NFKC').toLowerCase();
 
+  function medicationIcon({ name, time }) {
+    const label = normalizedName(name);
+    if (/\b(memory|memória|memoria)\b/.test(label)) return 'brain';
+    if (/\b(cabelo|unhas|hair|nails?)\b/.test(label)) return 'hair';
+    if (/\bomega[\s-]*3\b/.test(label)) return 'fish';
+    if (/\b(nicotina|nicotine|pastilhas?|lozenges?)\b/.test(label)) return 'lozenge';
+    return time === 'bedtime' ? 'moon' : 'capsule';
+  }
+
   async function importMedicationId(name) {
     const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(name)));
     const hex = Array.from(bytes.slice(0, 16), byte => byte.toString(16).padStart(2, '0')).join('');
@@ -380,7 +389,14 @@ function createHealth(panel) {
     const card = node('article', 'medication-card'); card.dataset.medication = medication.id;
     const heading = node('div', 'medication-heading');
     const title = node('h3', '', medication.name);
-    heading.append(title);
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const iconUse = document.createElementNS(icon.namespaceURI, 'use');
+    icon.classList.add('medication-icon');
+    icon.setAttribute('viewBox', '0 0 24 24');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.append(iconUse);
+    iconUse.setAttribute('href', '#med-icon-capsule');
+    heading.append(icon, title);
     const schedule = node('p', 'medication-schedule');
     const count = node('strong', 'medication-stock');
     const packSize = node('p', 'medication-estimate');
@@ -485,7 +501,7 @@ function createHealth(panel) {
     check.addEventListener('change', () => recordDose(medication, check.checked));
     const copy = node('span', ''); copy.append(node('strong', ''), node('small', ''));
     row.append(check, copy); if (!isNew) document.getElementById('medication-checks').append(row);
-    Object.assign(view, { card, row, linkText, openLinked, linkField, linkSelect, linkPicker, title, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, doseState, restock, restockToggle, quantity, restockLabel: label, add, check });
+    Object.assign(view, { card, row, linkText, openLinked, linkField, linkSelect, linkPicker, title, iconUse, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, doseState, restock, restockToggle, quantity, restockLabel: label, add, check });
     if (isNew) { card.hidden = true; edit.hidden = true; } else cards.set(medication.id, view);
     return view;
   }
@@ -520,6 +536,8 @@ function createHealth(panel) {
       if (linked) view.openLinked.setAttribute('aria-label', `Open ${linked.name} for ${current.name}`);
       updateLinkChoices(view, entries);
       view.title.textContent = current.name;
+      const iconHref = `#med-icon-${medicationIcon(current)}`;
+      if (view.iconUse.getAttribute('href') !== iconHref) view.iconUse.setAttribute('href', iconHref);
       view.schedule.textContent = scheduleText(current);
       view.copy.querySelector('strong').textContent = `Take ${current.name}`;
       view.copy.querySelector('small').textContent = `${tabletCount(current.quantity)} · ${timing(current)}`;

@@ -5,7 +5,7 @@
   max-height: calc(100dvh - 48px);
   padding: 0;
   text-align: left;
-  background: #030912;
+  background: var(--panel-glass);
   overflow: hidden;
 }
 
@@ -26,7 +26,7 @@
   gap: 16px;
   padding: 24px 26px;
   border-bottom: 1px solid #204467;
-  background: linear-gradient(110deg, #08213a, #030912 80%);
+  background: var(--panel-header);
 }
 
 .notes-heading .panel-eyebrow {
