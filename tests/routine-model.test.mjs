@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { validateRoutines, parseProgress, getProgress, restartRoutine, getProgressPatch } from '../routine-model.mjs';
+import { validateRoutines, parseProgress, getProgress, restartRoutine, getProgressPatch, lisbonDay, setSkinCareChoice, skinCareProgress } from '../routine-model.mjs';
+import { createBackup, parseBackup } from '../workspace-model.mjs';
 
 const demo = JSON.parse(readFileSync(new URL('../routines.demo.json', import.meta.url), 'utf8'));
 const work = validateRoutines(demo).find(routine => routine.id === 'workday');
@@ -62,4 +63,27 @@ test('cloud patches contain only changed ticks and preserve explicit resets', ()
   next.checks['training/training/item-2'] = true;
   assert.deepEqual(getProgressPatch(previous, next), { checks: { 'workday/work/item-1': false, 'training/training/item-2': true }, optional: { 'workday/after-work': false } });
   assert.throws(() => getProgressPatch(previous, { checks: { bad: 'true' }, optional: {} }));
+});
+
+test('shared skincare choices follow the Lisbon day and survive a checklist backup', () => {
+  const routines = ['morning', 'going-out'].map(id => ({
+    id, name: id, description: 'Daily checklist',
+    groups: [{ id: 'daily', title: 'Daily', optional: false, items: [{ id: 'skin', label: 'Put moisturiser or sunscreen' }] }]
+  }));
+  const morning = 'morning/daily/skin';
+  const goingOut = 'going-out/daily/skin';
+  const day = lisbonDay(new Date('2026-07-01T22:59:59Z'));
+  const nextDay = lisbonDay(new Date('2026-07-01T23:00:00Z'));
+  assert.equal(nextDay, '2026-07-02');
+  const initial = parseProgress(null);
+  const first = setSkinCareChoice(routines, initial, morning, 'm', true, day);
+  assert.throws(() => setSkinCareChoice(routines, first, goingOut, 'm', true, day), /changed on another device/);
+  const both = setSkinCareChoice(routines, first, goingOut, 's', true, day);
+  const restored = parseBackup(JSON.stringify(createBackup(routines, both))).progress;
+  assert.deepEqual(skinCareProgress(restored.checks, day).selected, new Map([[morning, 'm'], [goingOut, 's']]));
+  const undone = setSkinCareChoice(routines, restored, morning, 'm', false, day);
+  assert.deepEqual(skinCareProgress(undone.checks, day).used, new Set(['s']));
+  assert.equal(getProgress(routines[1], restored, skinCareProgress(restored.checks, day)).done, 1);
+  assert.equal(getProgress(routines[1], restored, skinCareProgress(restored.checks, nextDay)).done, 0);
+  assert.deepEqual(skinCareProgress(restartRoutine(routines[1], both).checks, day).used, new Set(['m']));
 });

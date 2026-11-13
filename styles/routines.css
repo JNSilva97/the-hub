@@ -347,10 +347,47 @@
   z-index: 1;
 }
 
-.check-row:has(input:checked) {
+.check-row:has(input:checked),
+.skin-care-row[data-done="true"] {
   color: #91b6d1;
   background: linear-gradient(90deg, #0b3350, #061420);
 }
+
+.skin-care-row {
+  display: grid;
+  gap: 6px;
+  cursor: default;
+}
+
+.skin-care-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skin-care-actions button {
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid #2e6d9d;
+  border-radius: 3px;
+  background: #0c2236;
+  color: #dbedff;
+  font: 600 15px var(--font-interface);
+  cursor: pointer;
+}
+
+.skin-care-actions button:hover:not(:disabled) {
+  background: #143b5d;
+}
+
+.skin-care-status,
+.skin-care-error {
+  font-size: 13px;
+}
+
+.skin-care-error { color: #ffca9e; }
+.skin-care-row :is(.skin-care-status, .skin-care-error, .skin-care-actions):empty,
+.skin-care-actions:not(:has(button:not([hidden]))) { display: none; }
 
 .optional-group {
   display: flex;

@@ -31,6 +31,27 @@ async function copyHealth(from, to, publish = true) {
 
 test('Account Health', { timeout: 150000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true }); t.after(() => browser.close());
+  await t.test('Morning Routine shows linked doses in order independently of the Health cards', async () => {
+    const account = makeAccount();
+    account.routines.routines[0].name = 'Morning Routine';
+    const health = seededHealth();
+    for (const [id, name] of [[firstId, 'Memory example'], [secondId, 'Omega-3 example']]) {
+      const [settings] = JSON.parse(health[id].payload);
+      settings.name = name;
+      health[id].payload = JSON.stringify([settings]);
+    }
+    const { context, page } = await fixture(browser, {
+      width: 390, mobile: true, motion: 'reduce', firebase: true, cloudDocuments: { 'account-a': { ...account, health } }
+    });
+    try {
+      await ready(page);
+      await openRoutines(page);
+      await page.locator('#medication-checks .medication-row').first().waitFor();
+      assert.deepEqual(await page.locator('#medication-checks .medication-row strong').allTextContents(), ['Take Omega-3 example', 'Take Memory example']);
+      await page.locator('#medication-open-health').click();
+      assert.deepEqual(await page.locator('#health-medications [data-medication]').evaluateAll(cards => cards.map(card => card.dataset.medication)), [firstId, secondId]);
+    } finally { await context.close(); }
+  });
   for (const width of [320, 390, 1440]) await t.test(`Personal Care and Health share doses without changing saved checklist data at ${width}px`, async () => {
     const { context, page, errors } = await accountFixture(browser, { width, height: 740, motion: 'reduce' });
     try {

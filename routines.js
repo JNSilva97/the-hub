@@ -1,9 +1,9 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, getProgress, restartRoutine } from './routine-model.mjs?v=control-1';
-import { cloudWorkspace } from './cloud.js?v=review-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=control-1';
-import { createRoutineTools } from './routine-tools.js?v=review-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, getProgress, restartRoutine, lisbonDay, isSkinCareChoice, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice } from './routine-model.mjs?v=morning-1';
+import { cloudWorkspace } from './cloud.js?v=morning-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=morning-1';
+import { createRoutineTools } from './routine-tools.js?v=morning-1';
 
-export { createHealthAccount } from './cloud-health.js?v=health-order-1';
+export { createHealthAccount } from './cloud-health.js?v=morning-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -27,6 +27,8 @@ let selectionKey;
 let localOverride = false;
 let storageAvailable = true;
 let loadGeneration = 0;
+let progressDay;
+let pendingSkinCare;
 
 const inAccount = () => dialog.dataset.source === 'account';
 function workspaceIdentity() {
@@ -100,26 +102,92 @@ function save() {
 
 function updateProgress() {
   const signals = [];
+  progressDay = lisbonDay();
+  const skinCare = skinCareProgress(state.checks, progressDay);
+  for (const row of content.querySelectorAll('[data-skin-care]')) {
+    const choice = skinCare.selected.get(row.dataset.skinCare);
+    const legacy = state.checks[row.dataset.skinCare] === true;
+    const bothUsed = skinCare.used.size === 2;
+    const status = row.querySelector('.skin-care-status');
+    status.textContent = choice ? `${skinCareOptions[choice]} applied today` : bothUsed ? 'Both options already applied today' : legacy ? 'Previously ticked · choose what you applied today' : '';
+    row.dataset.done = String(Boolean(choice) || bothUsed || legacy);
+    for (const button of row.querySelectorAll('button')) {
+      const option = button.dataset.skinCareOption;
+      button.hidden = option ? Boolean(choice) || skinCare.used.has(option) : !choice;
+      button.disabled = Boolean(pendingSkinCare);
+    }
+  }
   for (const input of content.querySelectorAll('input[data-check]')) input.checked = state.checks[input.dataset.check] === true;
   for (const input of content.querySelectorAll('input[data-group]')) {
     input.checked = state.optional[input.dataset.group] === true;
     input.closest('.check-section').querySelector('.check-items').hidden = !input.checked;
   }
   for (const routine of routines) {
-    const progress = getProgress(routine, state);
+    const progress = getProgress(routine, state, skinCare);
     const card = list.querySelector(`[data-routine="${routine.id}"]`);
     card.querySelector('.routine-count').textContent = `${progress.done} / ${progress.total}`;
     card.querySelector('.routine-mini-fill').style.transform = `scaleX(${progress.percent / 100})`;
     signals.push({ id: routine.id, name: routine.name, ...progress });
   }
-  const progress = getProgress(selected, state);
+  const progress = getProgress(selected, state, skinCare);
   content.closest('.routine-detail').dataset.complete = String(progress.total > 0 && progress.done === progress.total);
   document.getElementById('routine-progress-label').textContent = progress.done === progress.total && progress.total ? 'All set. You’re ready.' : `${progress.done} of ${progress.total} ready`;
   const bar = document.getElementById('routine-progress');
   bar.setAttribute('aria-valuenow', progress.percent);
   bar.firstElementChild.style.transform = `scaleX(${progress.percent / 100})`;
-  document.getElementById('routine-restart').disabled = !Object.entries(state.checks).some(([key, checked]) => key.startsWith(`${selected.id}/`) && checked);
+  const prefix = `${selected.id}/`;
+  const hasTicks = Object.entries(state.checks).some(([key, checked]) => checked && key.startsWith(prefix) && !skinCareItemKey(key));
+  document.getElementById('routine-restart').disabled = Boolean(pendingSkinCare) || !(hasTicks || [...skinCare.selected.keys()].some(key => key.startsWith(prefix)));
   document.dispatchEvent(new CustomEvent('hub:progress', { detail: signals }));
+}
+
+function createSkinCareRow(key, title) {
+  const row = make('div', 'check-row skin-care-row');
+  row.dataset.skinCare = key;
+  const status = make('span', 'skin-care-status');
+  status.setAttribute('role', 'status');
+  const error = make('span', 'skin-care-error');
+  error.setAttribute('role', 'status');
+  const buttons = make('div', 'skin-care-actions');
+  async function choose(button, option, checked) {
+    if (!option || pendingSkinCare) return;
+    const identity = workspaceIdentity();
+    const day = lisbonDay();
+    pendingSkinCare = row;
+    error.textContent = '';
+    updateProgress();
+    try {
+      if (inAccount()) {
+        await cloudWorkspace.chooseSkinCare(key, option, checked, day);
+        if (identity === workspaceIdentity()) state = latestProgress();
+      } else {
+        state = setSkinCareChoice(routines, latestProgress(), key, option, checked, day);
+        save();
+      }
+    } catch (failure) {
+      error.textContent = failure.message;
+    } finally {
+      pendingSkinCare = undefined;
+      if (selected) updateProgress();
+      if (row.isConnected && [button, document.body].includes(document.activeElement)) {
+        (button.hidden ? buttons.querySelector('button:not([hidden])') : button)?.focus();
+      }
+    }
+  }
+  for (const [option, label] of Object.entries(skinCareOptions)) {
+    const button = make('button', '', label);
+    button.type = 'button';
+    button.dataset.skinCareOption = option;
+    button.addEventListener('click', () => choose(button, option, true));
+    buttons.append(button);
+  }
+  const undo = make('button', '', 'Undo');
+  undo.type = 'button';
+  undo.setAttribute('aria-label', 'Undo skincare choice');
+  undo.addEventListener('click', () => choose(undo, skinCareProgress(state.checks).selected.get(key), false));
+  buttons.append(undo);
+  row.append(make('span', '', title), status, buttons, error);
+  return row;
 }
 
 function selectRoutine(routine, remember = true) {
@@ -156,10 +224,14 @@ function selectRoutine(routine, remember = true) {
       section.append(make('h4', 'check-section-title', group.title));
     }
     for (const item of group.items) {
+      const key = itemKey(routine, group, item);
+      if (isSkinCareChoice(item.label)) {
+        body.append(createSkinCareRow(key, item.label));
+        continue;
+      }
       const label = make('label', 'check-row');
       const input = document.createElement('input');
       input.type = 'checkbox';
-      const key = itemKey(routine, group, item);
       input.dataset.check = key;
       input.checked = state.checks[key] === true;
       input.addEventListener('change', () => {
@@ -346,3 +418,9 @@ document.addEventListener('hub:cloudprogress', () => {
   state = cloudWorkspace.progress;
   updateProgress();
 });
+
+function refreshProgressDay() {
+  if (selected && progressDay !== lisbonDay()) updateProgress();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshProgressDay(); });
+setInterval(refreshProgressDay, 30000);

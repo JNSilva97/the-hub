@@ -33,13 +33,57 @@ export function parseProgress(raw) {
 export const groupKey = (routine, group) => `${routine.id}/${group.id}`;
 export const itemKey = (routine, group, item) => `${groupKey(routine, group)}/${item.id}`;
 
-export function getProgress(routine, state) {
+export const skinCareOptions = { m: 'Moisturiser', s: 'Sunscreen' };
+export const isSkinCareChoice = label => /^(?:apply|put(?: on)?) (?:moisturi[sz]er or sunscreen|sunscreen or moisturi[sz]er)(?:,.*)?[.!]?$/i.test(label.trim());
+const lisbonDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Lisbon', dateStyle: 'short' });
+export const lisbonDay = (date = new Date()) => lisbonDate.format(date);
+// The compact suffix fits inside the existing progress key limit, even with three 50-character IDs.
+const dayToken = day => Math.floor(Date.parse(day + 'T00:00:00Z') / 86400000).toString(36);
+const skinCareMarker = /^([a-z][a-z0-9-]*\/[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*)~([0-9a-z]{1,5})([ms])$/;
+export const skinCareItemKey = key => skinCareMarker.exec(key)?.[1];
+
+export function skinCareProgress(checks, day = lisbonDay()) {
+  const token = dayToken(day);
+  const selected = new Map();
+  const used = new Set();
+  for (const key of Object.keys(checks)) {
+    if (checks[key] !== true) continue;
+    const marker = skinCareMarker.exec(key);
+    if (marker?.[2] !== token) continue;
+    selected.set(marker[1], marker[3]);
+    used.add(marker[3]);
+  }
+  return { selected, used };
+}
+
+export function setSkinCareChoice(routines, progress, key, option, checked, day = lisbonDay()) {
+  const rowExists = routines.some(routine => routine.groups.some(group =>
+    group.items.some(item => itemKey(routine, group, item) === key && isSkinCareChoice(item.label))));
+  if (!rowExists || !Object.hasOwn(skinCareOptions, option)) throw new Error('This checklist item changed. Open the checklist again.');
+  const { selected, used } = skinCareProgress(progress.checks, day);
+  const previous = selected.get(key);
+  if ((checked && previous === option) || (!checked && previous !== option)) return progress;
+  if (checked && (previous || used.has(option))) throw new Error('A skincare choice changed on another device. Check the available options.');
+
+  const token = dayToken(day);
+  const checks = Object.fromEntries(Object.entries(progress.checks).filter(([savedKey, value]) => {
+    const marker = skinCareMarker.exec(savedKey);
+    return savedKey !== key && (!marker || marker[2] === token && marker[1] !== key && value);
+  }));
+  if (checked) checks[`${key}~${token}${option}`] = true;
+  return parseProgress(JSON.stringify({ checks, optional: progress.optional }));
+}
+
+export function getProgress(routine, state, skinCare = skinCareProgress(state.checks)) {
   let done = 0;
   let total = 0;
   for (const group of routine.groups) {
     if (group.optional && state.optional[groupKey(routine, group)] !== true) continue;
     total += group.items.length;
-    for (const item of group.items) if (state.checks[itemKey(routine, group, item)] === true) done++;
+    for (const item of group.items) {
+      const key = itemKey(routine, group, item);
+      if (state.checks[key] === true || isSkinCareChoice(item.label) && (skinCare.selected.has(key) || skinCare.used.size === 2)) done++;
+    }
   }
   return { done, total, percent: total ? Math.round(done / total * 100) : 0 };
 }

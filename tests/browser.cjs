@@ -10,6 +10,48 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   t.after(() => browser.close());
 
+  await t.test('a skincare choice syncs between checklists and devices at mobile width', async () => {
+    const routines = JSON.parse(demo);
+    for (const [index, label] of ['Put moisturiser or sunscreen', 'Apply moisturiser OR sunscreen', 'Apply moisturiser or sunscreen, according to your usual routine'].entries()) {
+      routines.routines[index].groups[0].items.push({ id: 'skin-care', label });
+    }
+    const { context, page, errors } = await fixture(browser, {
+      width: 390, mobile: true, motion: 'reduce', firebase: true,
+      cloudDocuments: { 'account-a': { routines, progress: { checks: {}, optional: {} } } }
+    });
+    try {
+      const other = await context.newPage();
+      await Promise.all([ready(page), ready(other)]);
+      await Promise.all([openRoutines(page), openRoutines(other)]);
+      const choice = (tab, name) => tab.locator('.skin-care-row').getByRole('button', { name, exact: true });
+      const sync = async (from, to) => {
+        const progress = await from.evaluate(() => window.__hubFirebase.docs['account-a'].progress);
+        await to.evaluate(progress => {
+          const account = window.__hubFirebase;
+          account.docs['account-a'].progress = progress;
+          account.publish();
+        }, progress);
+      };
+      await chooseRoutine(other, routines.routines[1].id);
+      await choice(page, 'Moisturiser').tap();
+      await choice(page, 'Undo skincare choice').waitFor();
+      await sync(page, other);
+      assert.equal(await choice(other, 'Moisturiser').count(), 0);
+      assert.equal(await choice(other, 'Sunscreen').isVisible(), true);
+      await choice(other, 'Sunscreen').tap();
+      await choice(other, 'Undo skincare choice').waitFor();
+      await sync(other, page);
+      await chooseRoutine(page, routines.routines[2].id);
+      assert.equal(await page.locator('.skin-care-status').textContent(), 'Both options already applied today');
+      await choice(other, 'Undo skincare choice').tap();
+      await choice(other, 'Sunscreen').waitFor();
+      await sync(other, page);
+      assert.equal(await choice(page, 'Sunscreen').isVisible(), true);
+      assert.equal(await choice(page, 'Moisturiser').count(), 0);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
   await t.test('editor preserves ticks through rename/reorder and confirms removal; backup round-trips at mobile width', async () => {
     const { context, page, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
     try {
@@ -167,7 +209,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.15');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.16');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);

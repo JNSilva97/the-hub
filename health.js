@@ -138,6 +138,7 @@ function createHealth(panel) {
   }
 
   const normalizedName = name => name.trim().normalize('NFKC').toLowerCase();
+  const morningDoseOrder = new Map(['fish', 'brain', 'hair'].map((icon, index) => [icon, index]));
 
   function medicationIcon({ name, time }) {
     const label = normalizedName(name);
@@ -772,6 +773,17 @@ function createHealth(panel) {
     sync.textContent = signedIn ? account.error || (!account.ready ? navigator.onLine ? 'Loading account Health…' : 'Connect to load account Health.' : readOnly ? 'Offline copy. Connect to record changes.' : busy ? 'Syncing…' : 'Synced to your account.') : 'Sign in to see your medication and stock.';
     sync.dataset.state = signedIn && !account.error && !locked ? 'synced' : '';
     const visible = workspace.selected ? medications.filter(medication => linkedChecklist(binding(medication, entries))?.id === workspace.selected.id) : [];
+    if (workspace.selected && normalizedName(workspace.selected.name) === 'morning routine') {
+      const rank = medication => morningDoseOrder.get(medicationIcon(configured(medication, entries))) ?? morningDoseOrder.size;
+      visible.sort((first, second) => rank(first) - rank(second));
+    }
+    const visibleRows = visible.map(medication => cards.get(medication.id).row);
+    const doseList = document.getElementById('medication-checks');
+    let nextRow = doseList.firstElementChild;
+    for (const row of visibleRows) {
+      if (row !== nextRow) doseList.insertBefore(row, nextRow);
+      nextRow = row.nextElementSibling;
+    }
     routineSection.hidden = !visible.length;
     const completed = visible.filter(medication => taken(medication, entries, day)).length;
     document.getElementById('medication-today').textContent = `${completed} of ${visible.length} doses recorded today`;

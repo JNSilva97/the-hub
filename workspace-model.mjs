@@ -1,4 +1,4 @@
-import { validateRoutines, parseProgress, groupKey, itemKey } from './routine-model.mjs?v=control-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey } from './routine-model.mjs?v=morning-1';
 
 export const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 
@@ -14,12 +14,17 @@ export function cleanRoutines(routines) {
 export function keepProgress(routines, progress) {
   const saved = parseProgress(JSON.stringify(progress));
   const checks = new Set();
+  const skinCare = new Set();
   const optional = new Set();
   for (const routine of routines) for (const group of routine.groups) {
     optional.add(groupKey(routine, group));
-    for (const item of group.items) checks.add(itemKey(routine, group, item));
+    for (const item of group.items) {
+      const key = itemKey(routine, group, item);
+      checks.add(key);
+      if (isSkinCareChoice(item.label)) skinCare.add(key);
+    }
   }
-  return { checks: Object.fromEntries(Object.entries(saved.checks).filter(([key]) => checks.has(key))),
+  return { checks: Object.fromEntries(Object.entries(saved.checks).filter(([key, value]) => checks.has(key) || value && skinCare.has(skinCareItemKey(key)))),
     optional: Object.fromEntries(Object.entries(saved.optional).filter(([key]) => optional.has(key))) };
 }
 
