@@ -167,7 +167,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.3');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.4');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -1440,6 +1440,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       const start = entry.getByRole('button', { name: 'Open The Hub' });
       const intro = page.locator('.access-sequence');
       await start.waitFor();
+      assert.equal(await page.locator('#startup-cover').count(), 0);
       assert.equal(await entry.getByRole('button').count(), 1);
       assert.equal(await start.evaluate(button => document.activeElement === button), true);
       assert.equal(await intro.count(), 0);

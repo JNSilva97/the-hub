@@ -17,6 +17,14 @@
 
 .access-sequence[hidden] { display: none; }
 
+/* The first paint stays covered even while the startup scripts are loading. */
+#startup-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: radial-gradient(ellipse at center, #07182c, #010409 70%);
+}
+
 #startup-dialog[open] {
   position: fixed;
   inset: 0;
@@ -30,54 +38,136 @@
   padding: 24px;
   border: 0;
   border-radius: 0;
-  background: radial-gradient(ellipse at center, #071b35, #010409 65%);
+  background:
+    radial-gradient(ellipse at center, #0b2440, transparent 62%),
+    linear-gradient(155deg, #071120, #010409 72%);
   box-shadow: none;
+  isolation: isolate;
+  overflow: auto;
   animation: none;
+}
+
+#startup-dialog::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(#479ad218 1px, transparent 1px),
+    linear-gradient(90deg, #479ad218 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse at center, #000 12%, transparent 69%);
 }
 
 .startup-entry {
   display: grid;
   justify-items: center;
-  gap: 28px;
+  gap: clamp(18px, 4vh, 36px);
 }
 
 #startup-title {
+  font-size: clamp(22px, 6vw, 36px);
+  letter-spacing: .19em;
   text-transform: uppercase;
 }
 
 .startup-play {
   display: grid;
   justify-items: center;
-  gap: 16px;
-  padding: 14px 24px;
-  border: 1px solid transparent;
-  border-radius: 3px;
+  gap: 20px;
+  padding: 8px;
+  border: 0;
+  border-radius: 16px;
   background: transparent;
   color: #c7ebff;
   font: 600 20px var(--font-interface);
 }
 
 .startup-print {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 96px;
+  width: clamp(128px, 24vh, 180px);
   aspect-ratio: 1;
-  border: 1px solid #448ac0;
+}
+
+.startup-dial {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.startup-dial-arcs {
+  transform-origin: center;
+  animation: orbit 11s linear infinite;
+}
+
+.startup-sensor {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 67%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid #438ac0;
   border-radius: 50%;
-  background: radial-gradient(circle, #123963, #07192f 74%);
+  background: radial-gradient(circle, #163d62, #061526 76%);
   box-shadow: 0 0 30px #1c7fda45, inset 0 0 18px #2171b840;
   color: #82d7ff;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.startup-print svg {
-  width: 52px;
-  height: 52px;
+.startup-sensor::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 38%, #50adff28 48%, #b8f4ff 50%, #55b9ff38 51%, transparent 65%);
+  animation: startup-scan 3s var(--ease-arrive) infinite;
 }
 
-.startup-play:is(:hover, :focus-visible, [aria-disabled="true"]) .startup-print {
+.startup-fingerprint {
+  width: 58%;
+  height: 58%;
+  filter: drop-shadow(0 0 7px #46caff90);
+}
+
+.startup-label {
+  display: grid;
+  place-items: center;
+  min-height: 46px;
+  padding: 8px 25px;
+  border: 1px solid #468abd;
+  border-radius: 6px;
+  background: #0b2037;
+  box-shadow: inset 0 1px #b1eaff20;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.startup-play:is(:hover, :focus-visible, [aria-disabled="true"]) .startup-sensor {
   border-color: #99e5ff;
   box-shadow: 0 0 32px #3ba3ff80, inset 0 0 18px #3ba3ff60;
+}
+
+.startup-play:is(:hover, :focus-visible, [aria-disabled="true"]) .startup-label {
+  border-color: #99e5ff;
+  background: #123559;
+}
+
+.startup-play[aria-disabled="true"] .startup-sensor::after {
+  animation: startup-scan-active 550ms ease-in-out infinite;
+}
+
+@keyframes startup-scan {
+  0%, 100% { transform: translateY(-100%); opacity: 0; }
+  12%, 52% { opacity: .85; }
+  68% { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes startup-scan-active {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(100%); }
 }
 
 .blast-door {
