@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="styles/base.css?v=control-2">
   <link rel="stylesheet" href="styles/shell.css?v=health-sync-1">
   <link rel="stylesheet" href="styles/core.css?v=intro-quick-1">
-  <link rel="stylesheet" href="styles/access.css?v=finger-reader-1">
+  <link rel="stylesheet" href="styles/access.css?v=full-print-1">
   <link rel="stylesheet" href="styles/panels.css?v=mobile-1">
   <link rel="stylesheet" href="styles/routines.css?v=free-9">
   <link rel="stylesheet" href="styles/routine-tools.css?v=review-1">
@@ -241,7 +241,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.13.6</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.13.7</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -260,20 +260,16 @@
             <path d="M62 5h36m-36 150h36M5 62v36m150-36v36" stroke="#64bbf4" stroke-opacity=".55"/>
           </svg>
           <span class="startup-sensor">
-            <svg class="startup-finger" viewBox="0 0 100 152" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-              <path class="startup-finger-outline" d="M50 5c-18 0-28 13-29 32l-1 22c-1 9 2 17 2 25l-2 15c0 8 2 12 1 20l-3 20c8 6 19 8 32 8s24-2 32-8l-3-20c-1-8 1-13 1-20l-2-15c0-8 3-16 2-25l-1-22C78 18 68 5 50 5Z" stroke-width="2.4"/>
-              <g class="startup-finger-folds" stroke-width="1.8">
-                <path d="M29 81c11-4 26-5 41 0m-35 6c9-2 19-2 28 0"/>
-                <path d="M28 112c13 3 31 3 44 0m-35 7c8 2 17 2 25 0"/>
-              </g>
-              <g class="startup-fingerprint" stroke-width="2">
-                <path d="M33 30c7-12 23-14 34-4m3 6c2 5 3 11 3 17"/>
-                <path d="M28 50c0-15 8-25 21-25 12 0 21 10 21 23l1 10"/>
-                <path d="M28 61c4-4 5-9 5-15 1-9 7-15 16-15 10 0 15 8 15 16 0 7 0 13 4 18"/>
-                <path d="M33 66c5-5 6-13 6-20 0-5 4-10 10-10 7 0 10 5 10 11 0 8 1 16 5 22"/>
-                <path d="M39 69c5-7 5-16 5-22 0-3 2-6 5-6s5 3 5 6c0 9 1 17 5 24"/>
-                <path d="M45 71c3-5 4-13 4-22m3 15c0 3 1 6 2 8"/>
-              </g>
+            <svg class="startup-fingerprint" viewBox="0 0 100 112" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 19C35 2 60 0 77 13m5 5c9 9 13 22 12 36"/>
+              <path d="M10 40C16 19 30 10 47 10c20-1 35 12 39 30 3 12-1 23 4 35"/>
+              <path d="M7 59c3-6 5-14 8-21m4-8c8-11 18-15 29-15 16 0 29 11 32 27 3 13-1 30 6 43"/>
+              <path d="M9 74c9-12 7-23 13-35 5-11 15-18 26-18 14-1 25 10 27 24m1 7c0 16 1 29 6 40"/>
+              <path d="M13 84c12-14 10-26 15-43 4-10 12-15 21-15 12 0 20 9 21 21 1 16-5 29 6 49"/>
+              <path d="M18 91c9-8 13-20 14-31m1-7c0-13 6-21 15-21 10 0 16 7 17 17 1 14-5 31 6 51"/>
+              <path d="M24 97c11-10 14-26 14-42 0-11 4-17 11-17 6 0 10 6 10 13 0 8-2 16-1 24m1 7c1 8 3 15 7 21"/>
+              <path d="M30 102c6-6 10-14 12-24m1-7c1-7 1-12 1-18 0-5 2-9 5-9s5 3 5 8c0 10-2 19-1 29 1 9 3 17 7 24"/>
+              <path d="M36 105c9-9 12-24 13-38l1-14m-7 54c3-5 6-11 7-17 1 6 3 12 5 17m-7 1 2-5"/>
             </svg>
           </span>
         </span>

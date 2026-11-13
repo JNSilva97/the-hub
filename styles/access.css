@@ -130,21 +130,9 @@
   animation: startup-scan 3s var(--ease-arrive) infinite;
 }
 
-.startup-finger {
-  width: 58%;
-  height: 81%;
-}
-
-.startup-finger-outline {
-  fill: #4ba5e81f;
-  color: #a1dbff;
-}
-
-.startup-finger-folds {
-  opacity: .65;
-}
-
 .startup-fingerprint {
+  width: 64%;
+  height: 73%;
   color: #bef1ff;
   filter: drop-shadow(0 0 4px #46caff9c);
 }
