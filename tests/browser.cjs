@@ -52,6 +52,37 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
+  await t.test('an optional linked item opens its saved destination without ticking the item on mobile', async () => {
+    const data = JSON.parse(demo);
+    const source = data.routines[0];
+    const target = data.routines[1];
+    const { context, page, errors } = await fixture(browser, {
+      width: 390, mobile: true, motion: 'reduce', firebase: true,
+      cloudDocuments: { 'account-a': { routines: data, progress: { checks: {}, optional: {} } } }
+    });
+    try {
+      await ready(page); await openRoutines(page);
+      await page.locator('#control-launch').click();
+      const section = page.locator('.editor-section').first();
+      await section.getByRole('checkbox', { name: 'Optional section' }).check();
+      const row = section.locator('.editor-item').first();
+      await row.getByText('Link checklist', { exact: true }).click();
+      await row.getByRole('combobox', { name: 'Link item 1 to a checklist' }).selectOption(target.id);
+      await page.locator('#editor-save').click();
+      await page.getByText('Saved. Your checklists and ticks are ready.', { exact: true }).waitFor();
+      await page.locator('#control-close').click();
+      const open = page.getByRole('button', { name: `Open ${target.name}`, exact: true });
+      assert.equal(await open.isVisible(), false);
+      await page.getByRole('checkbox', { name: `Include ${source.groups[0].title}`, exact: true }).check();
+      await open.tap();
+      assert.equal(await page.locator('#routine-name').textContent(), target.name);
+      await chooseRoutine(page, source.id);
+      assert.equal(await open.isVisible(), true);
+      assert.equal(await page.locator('.linked-check-row input').isChecked(), false);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
   await t.test('editor preserves ticks through rename/reorder and confirms removal; backup round-trips at mobile width', async () => {
     const { context, page, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
     try {
@@ -209,7 +240,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.17');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.18');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);

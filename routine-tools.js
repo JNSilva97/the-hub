@@ -1,4 +1,4 @@
-import { cleanRoutines, createBackup, parseBackup, countItems, removedItems, MAX_BACKUP_BYTES } from './workspace-model.mjs?v=self-tanner-1';
+import { cleanRoutines, createBackup, parseBackup, countItems, removedItems, MAX_BACKUP_BYTES } from './workspace-model.mjs?v=checklist-links-1';
 
 // Drafts own their IDs; text edits and moves never change saved tick identities.
 export function createRoutineTools(workspace) {
@@ -59,7 +59,13 @@ export function createRoutineTools(workspace) {
       move.disabled = index + step < 0 || index + step >= array.length; bar.append(move);
     }
     const remove = button('Remove', () => {
-      array.splice(index, 1); if (kind === 'checklist') chosen = Math.min(chosen, draft.length - 1);
+      const [removed] = array.splice(index, 1);
+      if (kind === 'checklist') {
+        chosen = Math.min(chosen, draft.length - 1);
+        for (const routine of draft) for (const section of routine.groups) for (const item of section.items) {
+          if (item.linkedChecklist === removed.id) delete item.linkedChecklist;
+        }
+      }
       rerender(); status('Removed from your draft. Save will ask before deleting saved items.');
     }, `Remove ${kind} ${index + 1}`);
     remove.disabled = array.length <= 1; bar.append(remove);
@@ -100,7 +106,27 @@ export function createRoutineTools(workspace) {
           if (row.nextElementSibling?.classList.contains('editor-item')) focusField(row.nextElementSibling);
           else add.click();
         });
-        row.append(label, actions(section.items, index, 'item', render));
+        const link = document.createElement('details');
+        link.className = 'editor-item-link';
+        const summary = document.createElement('summary');
+        const linked = document.createElement('select');
+        const linkLabel = `Link item ${index + 1} to a checklist`;
+        linked.setAttribute('aria-label', linkLabel);
+        linked.append(new Option('No checklist', ''));
+        for (const target of draft) if (target.id !== routine.id) linked.append(new Option(target.name, target.id));
+        linked.value = entry.linkedChecklist || '';
+        const updateLinkSummary = () => {
+          summary.textContent = linked.value ? `Linked to ${linked.selectedOptions[0].textContent}` : 'Link checklist';
+        };
+        updateLinkSummary();
+        linked.addEventListener('change', () => {
+          if (linked.value) entry.linkedChecklist = linked.value;
+          else delete entry.linkedChecklist;
+          updateLinkSummary();
+          updateSave(true);
+        });
+        link.append(summary, linked);
+        row.append(label, actions(section.items, index, 'item', render), link);
         card.append(row);
       });
       card.append(add); editor.append(card);

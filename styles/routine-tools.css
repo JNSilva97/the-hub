@@ -65,6 +65,12 @@
 .editor-actions { display: flex; gap: 6px; }
 .editor-actions button { min-width: 44px; }
 .editor-item { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin: 14px 0; }
+.editor-item-link { grid-column: 1 / -1; color: #a4c8e4; font-size: 13px; }
+.editor-item-link summary { cursor: pointer; width: fit-content; }
+.editor-item-link select {
+  width: 100%; min-height: 44px; margin-top: 8px; padding: 8px 10px; border: 1px solid #275277;
+  border-radius: 2px; background: #020914; color: #e5f5ff; font: 16px system-ui, sans-serif;
+}
 .control-footer { position: sticky; bottom: -24px; padding: 10px 0; margin-top: 20px; border-top: 1px solid #245171; background: #020915; }
 .control-footer button { background: #124378; border-color: #67bded; }
 .control-footer p { margin: 8px 0 0; }

@@ -1,9 +1,9 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, getProgress, restartRoutine, lisbonDay, skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice } from './routine-model.mjs?v=self-tanner-1';
-import { cloudWorkspace } from './cloud.js?v=self-tanner-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=self-tanner-1';
-import { createRoutineTools } from './routine-tools.js?v=self-tanner-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, getProgress, restartRoutine, lisbonDay, skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice } from './routine-model.mjs?v=checklist-links-1';
+import { cloudWorkspace } from './cloud.js?v=checklist-links-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=checklist-links-1';
+import { createRoutineTools } from './routine-tools.js?v=checklist-links-1';
 
-export { createHealthAccount } from './cloud-health.js?v=self-tanner-1';
+export { createHealthAccount } from './cloud-health.js?v=checklist-links-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -244,7 +244,21 @@ function selectRoutine(routine, remember = true) {
         updateProgress();
       });
       label.append(input, make('span', '', item.label));
-      body.append(label);
+      const target = routines.find(candidate => candidate.id === item.linkedChecklist);
+      if (target) {
+        const linkedRow = make('div', 'linked-check-row');
+        const open = make('button', 'routine-linked-button', `Open ${target.name}`);
+        open.type = 'button';
+        open.addEventListener('click', () => {
+          selectRoutine(target);
+          const heading = document.getElementById('routine-name');
+          heading.tabIndex = -1;
+          heading.focus({ preventScroll: true });
+          heading.scrollIntoView({ block: 'start' });
+        });
+        linkedRow.append(label, open);
+        body.append(linkedRow);
+      } else body.append(label);
     }
     section.append(body);
     content.append(section);

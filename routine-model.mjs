@@ -13,7 +13,8 @@ export function validateRoutines(data) {
       groupIds.add(group.id);
       const itemIds = new Set();
       for (const item of group.items) {
-        if (!validId(item.id) || itemIds.has(item.id) || !validText(item.label)) throw new Error('Invalid checklist item.');
+        if (!validId(item.id) || itemIds.has(item.id) || !validText(item.label)
+          || item.linkedChecklist !== undefined && (!validId(item.linkedChecklist) || item.linkedChecklist === routine.id)) throw new Error('Invalid checklist item.');
         itemIds.add(item.id);
       }
     }

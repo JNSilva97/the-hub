@@ -1,4 +1,4 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey } from './routine-model.mjs?v=self-tanner-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey } from './routine-model.mjs?v=checklist-links-1';
 
 export const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 
@@ -6,7 +6,10 @@ export function cleanRoutines(routines) {
   validateRoutines({ version: 1, routines });
   const cleaned = routines.map(routine => ({ id: routine.id, name: routine.name.trim(), description: routine.description.trim(),
     groups: routine.groups.map(group => ({ id: group.id, title: group.title.trim(), optional: group.optional,
-      items: group.items.map(item => ({ id: item.id, label: item.label.trim() })) })) }));
+      items: group.items.map(item => ({
+        id: item.id, label: item.label.trim(),
+        ...(item.linkedChecklist && { linkedChecklist: item.linkedChecklist })
+      })) })) }));
   if (new TextEncoder().encode(JSON.stringify(cleaned)).length > 750000) throw new Error('Checklists are too large. Shorten some text before saving.');
   return cleaned;
 }

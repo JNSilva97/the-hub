@@ -365,7 +365,8 @@
   gap: 8px;
 }
 
-.skin-care-actions button {
+.skin-care-actions button,
+.routine-linked-button {
   min-height: 44px;
   padding: 6px 12px;
   border: 1px solid #2e6d9d;
@@ -376,9 +377,19 @@
   cursor: pointer;
 }
 
-.skin-care-actions button:hover:not(:disabled) {
+.skin-care-actions button:hover:not(:disabled),
+.routine-linked-button:hover {
   background: #143b5d;
 }
+
+.linked-check-row {
+  display: grid;
+  border: 1px solid #17334b;
+  background: #060e1a;
+}
+
+.linked-check-row .check-row { border: 0; }
+.routine-linked-button { justify-self: start; margin: 0 13px 10px; text-align: start; }
 
 .skin-care-status,
 .skin-care-error {
