@@ -15,6 +15,7 @@ function createHealth(panel) {
   const healthScope = () => usingAccount() ? account.uid : '';
   const scopeMatches = () => !usingAccount() || workspace.scope === `account:${account.uid}`;
   const mode = document.getElementById('health-mode');
+  const demoSetting = document.getElementById('health-demo-setting');
   const sync = document.getElementById('health-sync-status');
   const addMedication = document.getElementById('health-add-medication');
   const allViews = () => [...cards.values(), newView].filter(Boolean);
@@ -450,8 +451,8 @@ function createHealth(panel) {
     const totalTaken = daily.filter(medication => taken(medication, entries, day)).length;
     document.getElementById('health-today').textContent = daily.length ? `${totalTaken} of ${daily.length} taken` : '';
     document.getElementById('health-empty').hidden = !accountMode || !account.ready || medications.length > 0 || !newView?.card.hidden;
-    mode.hidden = !account?.uid;
-    mode.textContent = accountMode ? 'Try local demo' : 'Open account Health';
+    mode.hidden = !account?.uid || accountMode;
+    demoSetting.hidden = !account?.uid;
     document.getElementById('health-sign-in').hidden = Boolean(account?.uid);
     document.getElementById('health-sync-retry').hidden = !accountMode || !account.error;
     sync.textContent = accountMode ? account.error || (!account.ready ? navigator.onLine ? 'Loading account Health…' : 'Connect to load account Health.' : readOnly ? 'Offline copy. Connect to record changes.' : busy ? 'Syncing…' : 'Synced to your account.') : '';
@@ -537,10 +538,18 @@ function createHealth(panel) {
   });
   mode.addEventListener('click', () => requestExit(() => {
     for (const view of allViews()) cancelEditor(view);
-    showDemo = !showDemo;
+    showDemo = false;
     message = ''; failed = false;
     render();
+    if (!addMedication.disabled) addMedication.focus();
   }));
+  document.getElementById('health-open-demo').addEventListener('click', () => {
+    if (!account?.uid) return;
+    showDemo = true;
+    message = ''; failed = false;
+    panel.close();
+    document.querySelector('.app[data-icon="health"]').click();
+  });
   document.getElementById('health-sign-in').addEventListener('click', () => requestExit(() => {
     panel.close();
     document.getElementById('account-launch').click();

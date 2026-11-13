@@ -48,7 +48,7 @@ A medication has one dose per Lisbon calendar day. Recording it from either view
 
 Once the Health rules are published, signing in opens your private, initially empty Health account. Medication setup, doses and stock sync across devices. An offline device can view a previously cached account. Connect before making account changes. A conflicting edit or a rejected write keeps the editor open so you can review or retry.
 
-Signed-out Health shows fictional samples. **Try local demo** opens those same browser records when signed in. Demo data stays in its original browser and account Health starts with a separate ledger. Health has its own storage, separate from checklist backups. See [Health activation](FIREBASE_SETUP.md#account-health-activation).
+Signed-out Health shows fictional samples. When signed in, open **Settings → Health demo** to access those same browser records. Demo data stays in its original browser and account Health starts with a separate ledger. Health has its own storage, separate from checklist backups. See [Health activation](FIREBASE_SETUP.md#account-health-activation).
 
 ## Preview locally
 

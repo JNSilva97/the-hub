@@ -227,11 +227,11 @@
       </div>
       <div class="health-mode-actions">
         <button id="health-sign-in" class="health-button" type="button">Sign in to sync Health</button>
-        <button id="health-mode" class="health-button" type="button" hidden>Try local demo</button>
+        <button id="health-mode" class="health-button" type="button" hidden>Open account Health</button>
         <button id="health-sync-retry" class="health-button" type="button" hidden>Retry Health sync</button>
       </div>
       <div class="health-today"><h3>Today</h3><span id="health-today"></span></div>
-      <p id="health-empty" hidden>Add your first medication to start tracking doses and stock.</p>
+      <p id="health-empty" hidden>Add your first medication to track doses and stock across your devices.</p>
       <div id="health-new-medication"></div>
       <div id="health-medications"></div>
       <p id="health-status" role="status" tabindex="-1"></p>
@@ -241,7 +241,10 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.13.8</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.13.9</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div id="health-demo-setting" hidden>
+        <div class="setting-row"><div><strong>Health demo</strong><small id="health-demo-note">Try sample data on this device.</small></div><button id="health-open-demo" type="button" aria-label="Open Health demo" aria-describedby="health-demo-note">Open</button></div>
+      </div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -401,7 +404,7 @@
   <script defer src="core-transition.js?v=dock-alignment-1"></script>
   <script defer src="notes.js?v=review-1"></script>
   <script defer src="checklist-picker.js?v=review-1"></script>
-  <script defer src="health.js?v=health-schedules-1"></script>
+  <script defer src="health.js?v=health-account-ui-1"></script>
   <script defer src="interface.js?v=review-1"></script>
   <script defer src="interface-sound.js?v=intro-autoplay-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>

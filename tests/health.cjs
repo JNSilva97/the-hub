@@ -6,6 +6,10 @@ const stock = (page, id) => page.locator(`[data-medication="${id}"] .medication-
 const waitStock = (page, id, value) => page.waitForFunction(({ id, value }) => document.querySelector(`[data-medication="${id}"] .medication-stock`).textContent === `${value} tablets left`, { id, value });
 const openHealth = page => page.locator('.app[data-icon="health"]').click();
 const closeHealth = page => page.getByRole('button', { name: 'Close Health', exact: true }).click();
+const openLocalDemo = async page => {
+  await page.locator('.app[data-icon="settings"]').click();
+  await page.getByRole('button', { name: 'Open Health demo', exact: true }).click();
+};
 
 test('Health medication demo', { timeout: 150000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true }); t.after(() => browser.close());
@@ -252,7 +256,7 @@ test('Health medication demo', { timeout: 150000 }, async t => {
     try {
       await ready(page); await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
       const original = await page.evaluate(() => JSON.stringify(window.__hubFirebase.docs));
-      await openHealth(page); await page.getByRole('button', { name: 'Try local demo' }).click();
+      await openLocalDemo(page);
       const id = await newMedication(page, 'Account linked example', 'Workday');
       const card = page.locator(`[data-medication="${id}"]`);
       const switchAccount = uid => page.evaluate(uid => { const service = window.__hubFirebase; service.user = { uid, email: uid + '@example.invalid' }; service.authListener(service.user); }, uid);
@@ -287,6 +291,11 @@ test('Health medication demo', { timeout: 150000 }, async t => {
       await openHealth(page);
       await waitSync(page);
       assert.equal(await page.locator('#health-empty').isVisible(), true);
+      assert.equal(await page.locator('#health-mode').isVisible(), false);
+      await closeHealth(page); await openLocalDemo(page);
+      assert.equal(await page.locator('#health-data-badge').textContent(), 'DEMO / THIS BROWSER');
+      await page.getByRole('button', { name: 'Open account Health', exact: true }).click();
+      await waitSync(page);
       assert.equal(await page.locator('[data-medication="sample-a"]').count(), 0);
       const id = await newMedication(page, 'Private example', 'Workday');
       await waitStock(page, id, 12);
@@ -436,7 +445,7 @@ test('Health medication demo', { timeout: 150000 }, async t => {
     try {
       await ready(page); await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
       const before = await page.evaluate(() => JSON.stringify(window.__hubFirebase.docs));
-      await openHealth(page); await page.getByRole('button', { name: 'Try local demo' }).click();
+      await openLocalDemo(page);
       await closeHealth(page); await openRoutines(page);
       await page.evaluate(() => { const original = Storage.prototype.setItem; Storage.prototype.setItem = function(key, value) { if (key.startsWith('thehub:health-demo:')) throw new Error('Storage full'); return original.call(this, key, value); }; });
       await page.locator('[data-dose="sample-a"]').click();
