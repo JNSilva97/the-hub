@@ -35,7 +35,7 @@
   max-width: none;
   max-height: none;
   margin: 0;
-  padding: 24px;
+  padding: 18px;
   border: 0;
   border-radius: 0;
   background:
@@ -74,21 +74,24 @@
 
 .startup-play {
   display: grid;
-  justify-items: center;
-  gap: 20px;
-  padding: 8px;
+  place-items: center;
+  width: min(calc(100vw - 36px), 65svh, 390px);
+  padding: 0;
   border: 0;
-  border-radius: 16px;
+  border-radius: 50%;
   background: transparent;
-  color: #c7ebff;
-  font: 600 20px var(--font-interface);
+}
+
+.startup-play:focus-visible {
+  outline: 2px solid #b8efff;
+  outline-offset: 3px;
 }
 
 .startup-print {
   position: relative;
   display: grid;
   place-items: center;
-  width: clamp(128px, 24vh, 180px);
+  width: 100%;
   aspect-ratio: 1;
 }
 
@@ -108,7 +111,7 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 67%;
+  width: 83%;
   aspect-ratio: 1;
   overflow: hidden;
   border: 1px solid #438ac0;
@@ -128,31 +131,14 @@
 }
 
 .startup-fingerprint {
-  width: 58%;
-  height: 58%;
+  width: 79%;
+  height: 85%;
   filter: drop-shadow(0 0 7px #46caff90);
-}
-
-.startup-label {
-  display: grid;
-  place-items: center;
-  min-height: 46px;
-  padding: 8px 25px;
-  border: 1px solid #468abd;
-  border-radius: 6px;
-  background: #0b2037;
-  box-shadow: inset 0 1px #b1eaff20;
-  transition: border-color 160ms ease, background 160ms ease;
 }
 
 .startup-play:is(:hover, :focus-visible, [aria-disabled="true"]) .startup-sensor {
   border-color: #99e5ff;
   box-shadow: 0 0 32px #3ba3ff80, inset 0 0 18px #3ba3ff60;
-}
-
-.startup-play:is(:hover, :focus-visible, [aria-disabled="true"]) .startup-label {
-  border-color: #99e5ff;
-  background: #123559;
 }
 
 .startup-play[aria-disabled="true"] .startup-sensor::after {
