@@ -63,6 +63,30 @@ export function createHealthAccount(onChange, validate) {
     get cached() { return cached; },
     get error() { return error; },
     get entries() { return [...ledgers.values()].flatMap(ledger => ledger.entries); },
+    async importSetup(records) {
+      if (!uid || !ready || cached || !navigator.onLine) throw new Error('Connect to import medication.');
+      const current = generation;
+      const { sdk, database } = cloudWorkspace.connection;
+      const references = records.map(record => sdk.doc(database, 'users', uid, 'health', record.medication));
+      const added = await sdk.runTransaction(database, async transaction => {
+        const snapshots = await Promise.all(references.map(reference => transaction.get(reference)));
+        if (current !== generation) throw new Error('Health account changed');
+        const created = [];
+        records.forEach((record, index) => {
+          if (snapshots[index].exists()) return;
+          const entries = [record];
+          validate(record.medication, entries);
+          transaction.set(references[index], { version: 1, revision: 1, payload: JSON.stringify(entries) });
+          created.push(record);
+        });
+        return created;
+      });
+      if (current !== generation) return [];
+      for (const record of added) {
+        if (!ledgers.has(record.medication)) ledgers.set(record.medication, { revision: 1, entries: [record] });
+      }
+      return added;
+    },
     async change(id, update) {
       if (!uid || !ready || cached || !navigator.onLine) throw new Error('Health requires an online connection to save.');
       const current = generation;

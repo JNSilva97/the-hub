@@ -1,25 +1,22 @@
-// Medication tracking with separate account and browser demo ledgers.
+// Medication tracking for the signed-in account.
 function createHealth(panel) {
+  // Existing cloud ledger keys use this prefix.
   const prefix = 'thehub:health-demo:v1:';
-  const samples = [
-    { id: 'sample-a', name: 'Sample A', quantity: 1, time: '08:00', initial: 28 },
-    { id: 'sample-b', name: 'Sample B', quantity: 2, time: '20:00', initial: 10 }
-  ];
-  let medications = [...samples];
   let workspace = { scope: '', routines: [], selected: null };
   let newView;
   let account;
   let accountId;
-  let showDemo = false;
-  const usingAccount = () => Boolean(account?.uid && !showDemo);
-  const healthScope = () => usingAccount() ? account.uid : '';
-  const scopeMatches = () => !usingAccount() || workspace.scope === `account:${account.uid}`;
-  const mode = document.getElementById('health-mode');
-  const demoSetting = document.getElementById('health-demo-setting');
+  const healthScope = () => account?.uid;
+  const scopeMatches = () => account?.uid && workspace.scope === `account:${account.uid}`;
   const sync = document.getElementById('health-sync-status');
+  const toolbar = document.getElementById('health-toolbar-actions');
   const addMedication = document.getElementById('health-add-medication');
+  const importer = document.getElementById('health-import');
+  const importText = document.getElementById('health-import-text');
+  const importSave = document.getElementById('health-import-save');
+  const importStatus = document.getElementById('health-import-status');
   const allViews = () => [...cards.values(), newView].filter(Boolean);
-  const validMedicationId = id => typeof id === 'string' && (samples.some(med => med.id === id) || /^med-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id));
+  const validMedicationId = id => typeof id === 'string' && /^med-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id);
   const dateFormat = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon', year: 'numeric', month: '2-digit', day: '2-digit' });
   const stampFormat = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const today = () => {
@@ -50,7 +47,7 @@ function createHealth(panel) {
   const setupKey = id => prefix + 'settings:' + id;
   const setup = (medication, entries) => entries.find(entry => entry.type === 'settings' && entry.medication === medication.id);
   const configured = (medication, entries) => ({ ...medication, ...setup(medication, entries), id: medication.id });
-  const doseQuantity = entry => entry.quantity ?? samples.find(medication => medication.id === entry.medication).quantity;
+  const doseQuantity = entry => entry.quantity;
   let busy = false;
   let day = today();
   let message = 'Record a dose here or in its linked checklist.';
@@ -70,13 +67,7 @@ function createHealth(panel) {
   }
   const validLink = link => link === null || link && typeof link === 'object' && !Array.isArray(link) && typeof link.scope === 'string' && link.scope.length > 0 && link.scope.length <= 180 && typeof link.id === 'string' && /^[a-z][a-z0-9-]{0,49}$/.test(link.id);
   const linkValue = link => link ? JSON.stringify({ scope: link.scope, id: link.id }) : '';
-  function binding(medication, entries) {
-    const saved = setup(medication, entries);
-    if (saved && Object.hasOwn(saved, 'link')) return saved.link;
-    if (!samples.some(sample => sample.id === medication.id)) return null;
-    const care = workspace.routines.find(routine => routine.id === 'personal-care' || routine.name.trim().toLowerCase() === 'personal care');
-    return care ? { scope: workspace.scope, id: care.id } : null;
-  }
+  const binding = (medication, entries) => setup(medication, entries)?.link ?? null;
   function linkedChecklist(link) {
     return scopeMatches() && link && link.scope === workspace.scope ? workspace.routines.find(routine => routine.id === link.id) : undefined;
   }
@@ -84,7 +75,7 @@ function createHealth(panel) {
     const id = record?.medication;
     if (!validMedicationId(id) || record.version !== 1 || !Number.isSafeInteger(record.at) || record.at < 0 || record.at > 8640000000000000) throw new Error('Unreadable medication record');
     if (record.type === 'dose') {
-      if (typeof record.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) || key !== doseKey(record.date, id) || typeof record.taken !== 'boolean' || record.quantity !== undefined && !validQuantity(record.quantity) || record.quantity === undefined && !samples.some(sample => sample.id === id) || record.name !== undefined && !validName(record.name)) throw new Error('Unreadable dose');
+      if (typeof record.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) || key !== doseKey(record.date, id) || typeof record.taken !== 'boolean' || !validQuantity(record.quantity) || record.name !== undefined && !validName(record.name)) throw new Error('Unreadable dose');
     } else if (record.type === 'restock') {
       if (!key.startsWith(prefix + 'restock:') || !Number.isSafeInteger(record.quantity) || record.quantity < 1 || record.quantity > 10000 || record.name !== undefined && !validName(record.name)) throw new Error('Unreadable stock');
     } else if (record.type === 'settings') {
@@ -99,7 +90,7 @@ function createHealth(panel) {
   const fromSetup = entry => ({ id: entry.medication, name: entry.name, quantity: 1, time: '08:00', initial: 0 });
 
   function validateLedger(id, entries) {
-    if (!validMedicationId(id) || !id.startsWith('med-') || !Array.isArray(entries)) throw new Error('Unreadable Health ledger');
+    if (!validMedicationId(id) || !Array.isArray(entries)) throw new Error('Unreadable Health ledger');
     const keys = new Set();
     for (const entry of entries) {
       if (entry?.medication !== id || typeof entry.key !== 'string' || keys.has(entry.key)) throw new Error('Unreadable Health ledger');
@@ -111,23 +102,80 @@ function createHealth(panel) {
     stock(fromSetup(settings), entries);
   }
 
-  function read() {
-    const accountMode = usingAccount();
-    const defaults = accountMode ? [] : samples;
-    medications = [...defaults];
-    const entries = accountMode && account.ready ? account.entries : [];
-    if (!accountMode) for (let index = 0; index < localStorage.length; index++) {
-      const key = localStorage.key(index);
-      if (!key?.startsWith(prefix)) continue;
-      const record = JSON.parse(localStorage.getItem(key));
-      validateRecord(key, record);
-      entries.push({ ...record, key });
+  const normalizedName = name => name.trim().normalize('NFKC').toLowerCase();
+
+  async function importMedicationId(name) {
+    const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(name)));
+    const hex = Array.from(bytes.slice(0, 16), byte => byte.toString(16).padStart(2, '0')).join('');
+    return 'med-' + hex.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
+  }
+
+  async function importMedicationList() {
+    if (importSave.disabled || hasDraft()) return;
+    const scope = healthScope();
+    let items;
+    try {
+      const parsed = JSON.parse(importText.value);
+      items = parsed?.medications;
+      if (parsed?.version !== 1 || !Array.isArray(items) || !items.length || items.length > 50) throw new Error();
+    } catch {
+      importStatus.textContent = 'Paste a valid Health setup list with 1 to 50 medications.';
+      return;
     }
-    const custom = entries.filter(entry => entry.type === 'settings' && !defaults.some(sample => sample.id === entry.medication));
-    const known = new Set([...defaults.map(sample => sample.id), ...custom.map(entry => entry.medication)]);
-    if ((!accountMode && known.size > 50) || entries.some(entry => !known.has(entry.medication))) throw new Error('Medication setup missing');
-    medications = [...defaults, ...custom.map(fromSetup)];
-    return entries;
+    const names = new Set();
+    for (const item of items) {
+      if (!validName(item?.name) || typeof item.stock !== 'number' || !Number.isSafeInteger(item.stock * 4) ||
+          item.stock < 0 || item.stock > 100000 || !validPackSize(item.packSize) ||
+          !(validTime(item.schedule) || schedules.has(item.schedule)) ||
+          (item.schedule === 'as-needed' ? item.quantity !== null || item.linkedChecklist != null : !validQuantity(item.quantity)) ||
+          item.linkedChecklist != null && (typeof item.linkedChecklist !== 'string' || !item.linkedChecklist.trim() || item.linkedChecklist.length > 240) ||
+          names.has(normalizedName(item.name))) {
+        importStatus.textContent = 'Check the names, schedules, stock and checklist names. Each medication needs a unique name.';
+        return;
+      }
+      names.add(normalizedName(item.name));
+    }
+    const existing = new Set(read().filter(entry => entry.type === 'settings').map(entry => normalizedName(entry.name)));
+    const missing = new Map();
+    const checklistScope = workspace.scope;
+    const checklists = scopeMatches() ? workspace.routines : [];
+    busy = true;
+    importStatus.textContent = 'Saving your medication list…';
+    document.dispatchEvent(new CustomEvent('hub:healthsync', { detail: true }));
+    render();
+    try {
+      const records = await Promise.all(items.filter(item => !existing.has(normalizedName(item.name))).map(async item => {
+        const medication = await importMedicationId(normalizedName(item.name));
+        const matches = item.linkedChecklist ? checklists.filter(routine => normalizedName(routine.name) === normalizedName(item.linkedChecklist)) : [];
+        const link = matches.length === 1 ? { scope: checklistScope, id: matches[0].id } : null;
+        if (item.linkedChecklist && !link) missing.set(medication, item.linkedChecklist);
+        return { key: setupKey(medication), version: 1, type: 'settings', medication, name: item.name.trim(),
+          quantity: item.quantity, time: item.schedule, packSize: item.packSize ?? null, adjustment: item.stock, link, at: Date.now() };
+      }));
+      if (scope !== healthScope()) return;
+      if (checklistScope !== workspace.scope) {
+        importStatus.textContent = 'Your checklist workspace changed. Try the import again.';
+        return;
+      }
+      const added = records.length ? await account.importSetup(records) : [];
+      if (scope !== healthScope()) return;
+      const unlinked = [...new Set(added.map(record => missing.get(record.medication)).filter(Boolean))];
+      const skipped = items.length - added.length;
+      importText.value = '';
+      importStatus.textContent = `Added ${added.length} medication${added.length === 1 ? '' : 's'}.` +
+        (skipped ? ` ${skipped} already in your account.` : '') +
+        (unlinked.length ? ` Checklists to link: ${unlinked.join(', ')}.` : '');
+    } catch {
+      if (scope === healthScope()) importStatus.textContent = 'Your list could not be saved. Check the connection and try again.';
+    } finally {
+      busy = false;
+      document.dispatchEvent(new CustomEvent('hub:healthsync', { detail: false }));
+      render();
+    }
+  }
+
+  function read() {
+    return account?.ready ? account.entries : [];
   }
   function stock(medication, entries) {
     const value = entries.filter(entry => entry.medication === medication.id).reduce((count, entry) => entry.type === 'settings' ? count + entry.adjustment : entry.type === 'restock' ? count + entry.quantity : count - (entry.taken ? doseQuantity(entry) : 0), medication.initial);
@@ -138,24 +186,12 @@ function createHealth(panel) {
     return entries.some(entry => entry.type === 'dose' && entry.medication === medication.id && entry.date === date && entry.taken);
   }
   async function change(id, write, success) {
-    if (busy) return false;
     const scope = healthScope();
+    if (!scope || busy) return false;
     busy = true; render();
-    if (scope) document.dispatchEvent(new CustomEvent('hub:healthsync', { detail: true }));
+    document.dispatchEvent(new CustomEvent('hub:healthsync', { detail: true }));
     try {
-      if (scope) {
-        if (!await account.change(id, write)) return false;
-      } else {
-        const update = () => {
-          if (scope !== healthScope()) return;
-          const changed = write(read());
-          if (!changed) return;
-          const { key, ...record } = changed;
-          localStorage.setItem(key, JSON.stringify(record));
-        };
-        if (navigator.locks?.request) await navigator.locks.request(prefix, update);
-        else update();
-      }
+      if (!await account.change(id, write)) return false;
       if (scope !== healthScope()) return false;
       message = success; failed = false;
       return true;
@@ -163,13 +199,12 @@ function createHealth(panel) {
       if (scope !== healthScope()) return false;
       message = error.medicationConflict ? error.message : error.message === 'Not enough stock' ? 'Not enough stock for this dose. Add stock first.'
         : error.message === 'Health history is full.' ? 'This medication’s account history is full.'
-        : scope ? 'Change could not be saved to your account. Check the connection and try again.'
-          : 'Demo change could not be saved. Stored records are unchanged; check browser storage and try again.';
+        : 'Change could not be saved to your account. Check the connection and try again.';
       failed = true;
       return false;
     } finally {
       busy = false;
-      if (scope) document.dispatchEvent(new CustomEvent('hub:healthsync', { detail: false }));
+      document.dispatchEvent(new CustomEvent('hub:healthsync', { detail: false }));
       render();
     }
   }
@@ -223,6 +258,10 @@ function createHealth(panel) {
     view.save.disabled = locked || !dirty(view);
     view.cancel.disabled = busy;
   }
+
+  function updateImportButton() {
+    importSave.disabled = busy || !account?.ready || account.cached || !navigator.onLine || hasDraft() || !importText.value.trim();
+  }
   function dirty(view) {
     return view.baseline && JSON.stringify(editorValues(view)) !== JSON.stringify(view.baseline.values);
   }
@@ -253,7 +292,6 @@ function createHealth(panel) {
     const target = view.isNew ? { id: view.draftId, initial: 0, quantity: 1 } : medication;
     return change(target.id, entries => {
       if (scope !== healthScope() || baseline.scope !== workspace.scope) conflict('Checklist workspace changed. Cancel and reopen the editor before saving.');
-      if (view.isNew && !scope && medications.length >= 50) conflict('This browser supports up to 50 medications.');
       if (JSON.stringify(setup(target, entries) || null) !== baseline.setup) conflict('Medication changed elsewhere. Cancel and reopen Edit medication to review the latest setup.');
       const currentStock = stock(target, entries);
       const stockEdited = values.stock !== baseline.values.stock;
@@ -291,8 +329,7 @@ function createHealth(panel) {
     const card = node('article', 'medication-card'); card.dataset.medication = medication.id;
     const heading = node('div', 'medication-heading');
     const title = node('h3', '', medication.name);
-    const badge = node('span', 'health-demo-badge', 'DEMO');
-    heading.append(title, badge);
+    heading.append(title);
     const schedule = node('p', 'medication-schedule');
     const count = node('strong', 'medication-stock');
     const packSize = node('p', 'medication-estimate');
@@ -342,7 +379,7 @@ function createHealth(panel) {
     const linkSelect = node('select', ''); linkSelect.id = `medication-${medication.id}-checklist`; linkSelect.setAttribute('aria-label', 'Linked checklist'); linkSelect.setAttribute('aria-labelledby', linkLabel.id);
     linkField.append(linkLabel, linkSelect); editor.append(linkField);
     const linkPicker = createChecklistPicker(linkSelect);
-    linkSelect.addEventListener('change', () => { view.linkChoice = linkSelect.value; view.save.disabled = busy || !dirty(view); });
+    linkSelect.addEventListener('change', () => { view.linkChoice = linkSelect.value; view.save.disabled = busy || !dirty(view); updateImportButton(); });
     const save = action(isNew ? 'Save medication' : 'Save changes', isNew ? 'Save new medication' : `Save ${medication.name} changes`, () => saveEditor(medication, view));
     const cancel = action('Cancel', `Cancel ${medication.name} changes`, () => { cancelEditor(view); render(); (view.isNew ? addMedication : view.edit).focus(); });
     const editorActions = node('div', 'medication-dose-actions'); editorActions.append(save, cancel);
@@ -357,8 +394,8 @@ function createHealth(panel) {
         editor.hidden = false; edit.hidden = true; render(); fields.name.focus(); fields.name.select();
       } catch { message = 'Medication setup could not be read. Stored data is unchanged.'; failed = true; render(); }
     });
-    fields.schedule.addEventListener('change', () => renderEditorFields(view, fields.schedule.disabled));
-    editor.addEventListener('input', () => { fields.name.setCustomValidity(''); save.disabled = busy || !dirty(view); });
+    fields.schedule.addEventListener('change', () => { renderEditorFields(view, fields.schedule.disabled); updateImportButton(); });
+    editor.addEventListener('input', () => { fields.name.setCustomValidity(''); save.disabled = busy || !dirty(view); updateImportButton(); });
     editor.addEventListener('keydown', event => { if (event.key === 'Enter' && event.target.matches('input')) { event.preventDefault(); save.click(); } });
     heading.append(edit);
     const linkInfo = node('div', 'medication-link-info'); const linkText = node('span', '');
@@ -374,21 +411,18 @@ function createHealth(panel) {
     check.addEventListener('change', () => recordDose(medication, check.checked));
     const copy = node('span', ''); copy.append(node('strong', ''), node('small', ''));
     row.append(check, copy); if (!isNew) document.getElementById('medication-checks').append(row);
-    Object.assign(view, { card, row, linkText, openLinked, linkField, linkSelect, linkPicker, title, badge, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, doseState, quantity, restockLabel: label, add, check });
+    Object.assign(view, { card, row, linkText, openLinked, linkField, linkSelect, linkPicker, title, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, doseState, quantity, restockLabel: label, add, check });
     if (isNew) { card.hidden = true; edit.hidden = true; } else cards.set(medication.id, view);
     return view;
   }
 
   function render() {
     day = today();
-    let entries = [];
-    let error = '';
-    const accountMode = usingAccount();
-    const readOnly = accountMode && (!account.ready || account.cached || !navigator.onLine);
-    try { entries = read(); medications.forEach(medication => stock(medication, entries)); }
-    catch { error = 'Demo storage could not be read. Stored records are unchanged. No stock changes are available until storage is accessible.'; }
-    const locked = Boolean(error) || busy || readOnly;
-    const demoLabel = accountMode ? '' : ' · Demo';
+    const entries = read();
+    const medications = entries.filter(entry => entry.type === 'settings').map(fromSetup);
+    const signedIn = Boolean(account?.uid);
+    const readOnly = !account?.ready || account.cached || !navigator.onLine;
+    const locked = busy || readOnly;
     for (const medication of medications) if (!cards.has(medication.id)) createCard(medication);
     const medicationIds = new Set(medications.map(medication => medication.id));
     for (const [id, view] of cards) {
@@ -400,11 +434,10 @@ function createHealth(panel) {
     }
     for (const medication of medications) {
       const view = cards.get(medication.id);
-      const count = error ? 0 : stock(medication, entries);
+      const count = stock(medication, entries);
       const checked = taken(medication, entries, day);
       const current = configured(medication, entries);
       const stockOnly = asNeeded(current);
-      const custom = Boolean(setup(medication, entries));
       const link = binding(medication, entries); const linked = linkedChecklist(link);
       const visibleHere = Boolean(linked && workspace.selected && linked.id === workspace.selected.id);
       view.row.hidden = !visibleHere;
@@ -412,27 +445,27 @@ function createHealth(panel) {
       view.openLinked.hidden = !linked; view.openLinked.disabled = locked;
       if (linked) view.openLinked.setAttribute('aria-label', `Open ${linked.name} for ${current.name}`);
       updateLinkChoices(view, entries);
-      view.title.textContent = current.name; view.badge.hidden = accountMode; view.badge.textContent = custom ? 'CUSTOM DEMO' : 'DEMO';
+      view.title.textContent = current.name;
       view.schedule.textContent = scheduleText(current);
       view.copy.querySelector('strong').textContent = `Take ${current.name}`;
-      view.copy.querySelector('small').textContent = `${tabletCount(current.quantity)} · ${timing(current)}${demoLabel}`;
+      view.copy.querySelector('small').textContent = `${tabletCount(current.quantity)} · ${timing(current)}`;
       view.dose.setAttribute('aria-label', `Mark ${current.name} taken`); view.undo.setAttribute('aria-label', `Undo ${current.name} dose`);
       view.edit.setAttribute('aria-label', `Edit ${current.name}`); view.save.setAttribute('aria-label', `Save ${current.name} changes`); view.cancel.setAttribute('aria-label', `Cancel ${current.name} changes`);
       view.add.setAttribute('aria-label', `Add stock for ${current.name}`);
       view.edit.disabled = locked;
       renderEditorFields(view, locked);
-      view.count.textContent = error ? 'Stock unavailable' : `${count} ${stockOnly ? 'units' : 'tablets'} left`;
+      view.count.textContent = `${count} ${stockOnly ? 'units' : 'tablets'} left`;
       view.restockLabel.textContent = stockOnly ? 'Units to add' : 'Tablets to add';
       view.packSize.textContent = current.packSize ? `Pack of ${stockOnly ? current.packSize + ' units' : tabletCount(current.packSize)}` : '';
       view.packSize.hidden = !current.packSize;
-      view.estimate.hidden = Boolean(error) || stockOnly;
+      view.estimate.hidden = stockOnly;
       view.estimate.textContent = view.estimate.hidden ? '' : `About ${Math.floor(count / current.quantity)} days at this daily schedule.`;
       view.warning.textContent = count < current.quantity ? 'Not enough stock for the next dose.' : 'Low stock · add more soon';
-      view.warning.hidden = Boolean(error) || stockOnly || count > current.quantity * 7;
+      view.warning.hidden = stockOnly || count > current.quantity * 7;
       const todayDose = entries.find(entry => entry.key === doseKey(day, medication.id));
       const recordedQuantity = checked ? doseQuantity(todayDose) : 0;
       view.doseState.textContent = checked ? `Taken today · ${recordedQuantity} tablet${recordedQuantity === 1 ? '' : 's'} recorded` : 'Not recorded today';
-      if (checked) view.copy.querySelector('small').textContent = `${recordedQuantity} tablet${recordedQuantity === 1 ? '' : 's'} recorded today${demoLabel}`;
+      if (checked) view.copy.querySelector('small').textContent = `${recordedQuantity} tablet${recordedQuantity === 1 ? '' : 's'} recorded today`;
       view.dose.textContent = checked ? 'Taken today' : 'Mark taken';
       view.dose.hidden = stockOnly;
       view.doseState.hidden = stockOnly;
@@ -442,31 +475,30 @@ function createHealth(panel) {
       if (!busy) view.check.checked = checked;
       view.check.disabled = locked || !checked && count < current.quantity;
     }
-    const customSetup = entries.some(entry => entry.type === 'settings');
-    document.getElementById('health-data-badge').textContent = accountMode ? 'PRIVATE / YOUR ACCOUNT' : customSetup ? 'CUSTOM DEMO / THIS BROWSER' : 'DEMO / THIS BROWSER';
-    document.getElementById('medication-demo-title').textContent = accountMode ? 'Medication' : 'Medication demo';
-    document.getElementById('medication-data-note').textContent = accountMode ? 'Doses and stock sync with your Health account.' : 'Demo doses stay in this browser.';
-    if (panel.dataset.app === 'health') document.getElementById('app-description').textContent = accountMode ? 'Track today’s doses and see what is left.' : 'Fictional samples for trying Health. Demo records stay in this browser and are not synced.';
+    document.getElementById('health-data-badge').hidden = !signedIn;
+    document.getElementById('health-account-content').hidden = !signedIn;
+    toolbar.hidden = !signedIn;
+    importer.hidden = !signedIn;
+    importText.disabled = busy;
+    updateImportButton();
     const daily = medications.filter(medication => !asNeeded(configured(medication, entries)));
     const totalTaken = daily.filter(medication => taken(medication, entries, day)).length;
     document.getElementById('health-today').textContent = daily.length ? `${totalTaken} of ${daily.length} taken` : '';
-    document.getElementById('health-empty').hidden = !accountMode || !account.ready || medications.length > 0 || !newView?.card.hidden;
-    mode.hidden = !account?.uid || accountMode;
-    demoSetting.hidden = !account?.uid;
-    document.getElementById('health-sign-in').hidden = Boolean(account?.uid);
-    document.getElementById('health-sync-retry').hidden = !accountMode || !account.error;
-    sync.textContent = accountMode ? account.error || (!account.ready ? navigator.onLine ? 'Loading account Health…' : 'Connect to load account Health.' : readOnly ? 'Offline copy. Connect to record changes.' : busy ? 'Syncing…' : 'Synced to your account.') : '';
+    document.getElementById('health-empty').hidden = !account?.ready || medications.length > 0 || !newView?.card.hidden;
+    document.getElementById('health-sign-in').hidden = signedIn;
+    document.getElementById('health-sync-retry').hidden = !signedIn || !account.error;
+    sync.textContent = signedIn ? account.error || (!account.ready ? navigator.onLine ? 'Loading account Health…' : 'Connect to load account Health.' : readOnly ? 'Offline copy. Connect to record changes.' : busy ? 'Syncing…' : 'Synced to your account.') : 'Sign in to see your medication and stock.';
     const visible = workspace.selected ? medications.filter(medication => linkedChecklist(binding(medication, entries))?.id === workspace.selected.id) : [];
     routineSection.hidden = !visible.length;
     const completed = visible.filter(medication => taken(medication, entries, day)).length;
-    document.getElementById('medication-today').textContent = `${completed} of ${visible.length} ${accountMode ? '' : 'demo '}doses recorded today`;
-    addMedication.disabled = locked || (!accountMode && medications.length >= 50);
+    document.getElementById('medication-today').textContent = `${completed} of ${visible.length} doses recorded today`;
+    addMedication.disabled = locked;
     if (newView) {
       updateLinkChoices(newView, entries);
       renderEditorFields(newView, locked);
     }
-    status.textContent = routineStatus.textContent = busy ? 'Saving medication change…' : error || message;
-    status.dataset.warning = routineStatus.dataset.warning = String(Boolean(error) || failed);
+    status.textContent = routineStatus.textContent = busy ? 'Saving medication change…' : message;
+    status.dataset.warning = routineStatus.dataset.warning = String(failed);
     const focused = history.contains(document.activeElement);
     history.replaceChildren();
     for (const entry of entries.sort((a, b) => b.at - a.at).slice(0, 12)) {
@@ -505,7 +537,6 @@ function createHealth(panel) {
     workspace = event.detail || { scope: '', routines: [], selected: null };
     render();
   });
-  window.addEventListener('storage', event => { if (event.key === null || event.key.startsWith(prefix)) render(); });
   window.addEventListener('focus', render);
   window.addEventListener('online', render);
   window.addEventListener('offline', render);
@@ -522,7 +553,17 @@ function createHealth(panel) {
   panel.addEventListener('click', closingClick, true);
   panel.addEventListener('submit', event => { if (hasDraft() || busy) { event.preventDefault(); event.stopImmediatePropagation(); requestExit(() => panel.close()); } }, true);
   panel.addEventListener('cancel', event => { if (hasDraft() || busy) { event.preventDefault(); event.stopImmediatePropagation(); requestExit(() => panel.close()); } }, true);
-  panel.addEventListener('close', () => { for (const view of allViews()) cancelEditor(view); });
+  panel.addEventListener('close', () => {
+    for (const view of allViews()) cancelEditor(view);
+    importText.value = '';
+    importStatus.textContent = '';
+    importer.open = false;
+  });
+  importText.addEventListener('input', () => {
+    importStatus.textContent = '';
+    updateImportButton();
+  });
+  importSave.addEventListener('click', importMedicationList);
   document.getElementById('medication-discard-confirm').addEventListener('click', () => { const run = discardAction; discardAction = undefined; for (const view of allViews()) cancelEditor(view); discard.close(); run?.(); });
   discard.addEventListener('close', () => { if (!discard.open) discardAction = undefined; });
   window.addEventListener('beforeunload', event => { if (hasDraft() || busy) { event.preventDefault(); event.returnValue = ''; } });
@@ -536,20 +577,6 @@ function createHealth(panel) {
     newView.card.hidden = false; newView.editor.hidden = false; addMedication.hidden = true;
     render(); newView.fields.name.focus();
   });
-  mode.addEventListener('click', () => requestExit(() => {
-    for (const view of allViews()) cancelEditor(view);
-    showDemo = false;
-    message = ''; failed = false;
-    render();
-    if (!addMedication.disabled) addMedication.focus();
-  }));
-  document.getElementById('health-open-demo').addEventListener('click', () => {
-    if (!account?.uid) return;
-    showDemo = true;
-    message = ''; failed = false;
-    panel.close();
-    document.querySelector('.app[data-icon="health"]').click();
-  });
   document.getElementById('health-sign-in').addEventListener('click', () => requestExit(() => {
     panel.close();
     document.getElementById('account-launch').click();
@@ -560,8 +587,10 @@ function createHealth(panel) {
     connect(createAccount) {
       account = createAccount(() => {
         if (accountId !== account.uid) {
-          if (!showDemo) for (const view of allViews()) cancelEditor(view);
-          if (!account.uid) showDemo = false;
+          for (const view of allViews()) cancelEditor(view);
+          importText.value = '';
+          importStatus.textContent = '';
+          importer.open = false;
           accountId = account.uid;
           message = ''; failed = false;
         }

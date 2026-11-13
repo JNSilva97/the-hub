@@ -4,8 +4,8 @@
 #app-dialog[data-app="health"] .panel-eyebrow { margin-bottom: 12px; }
 #app-dialog[data-app="health"] #app-description { margin: 12px 0; }
 #health-close { position: sticky; top: 0; float: right; z-index: 2; background: #07192e; }
-#health-content[hidden], #health-close[hidden], .medication-demo[hidden], #health-content [hidden] { display: none; }
-.health-demo-badge { display: inline-block; padding: 5px 8px; border: 1px solid #3476ae; color: #a9d9f5; font: 600 11px var(--font-interface); letter-spacing: .1em; }
+#health-content[hidden], #health-close[hidden], .routine-medications[hidden], #health-content [hidden] { display: none; }
+.health-account-badge { display: inline-block; padding: 5px 8px; border: 1px solid #3476ae; color: #a9d9f5; font: 600 11px var(--font-interface); letter-spacing: .1em; }
 .health-toolbar, .medication-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .health-toolbar { padding: 8px 0 14px; }
 .health-today { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
@@ -39,10 +39,16 @@
 .health-history-row button { grid-column: 2; grid-row: 1 / 4; align-self: center; }
 #health-status, #medication-status { color: #9cbcd5; font-size: 12px; line-height: 1.5; }
 #health-status[data-warning="true"], #medication-status[data-warning="true"] { color: #ffd294; }
-.medication-demo { margin-top: 24px; padding-top: 20px; border-top: 1px solid #245880; }
-.medication-demo h4 { color: #9dc6e8; margin: 0; text-transform: uppercase; letter-spacing: .12em; font: 600 13px var(--font-interface); }
-.medication-demo .health-toolbar { padding: 0 0 12px; }
-.medication-demo p { margin: 8px 0 14px; font-size: 12px; }
+.routine-medications { margin-top: 24px; padding-top: 20px; border-top: 1px solid #245880; }
+.routine-medications h4 { color: #9dc6e8; margin: 0; text-transform: uppercase; letter-spacing: .12em; font: 600 13px var(--font-interface); }
+.routine-medications .health-toolbar { padding: 0 0 12px; }
+.routine-medications p { margin: 8px 0 14px; font-size: 12px; }
+#health-import { border-top: 1px solid #245880; margin: 16px 0; }
+#health-import summary { padding: 12px 0; min-height: 44px; color: #c8ecff; cursor: pointer; }
+#health-import label { display: block; margin: 0 0 6px; font-size: 13px; color: #b1cde0; }
+#health-import-text { display: block; width: 100%; padding: 9px; margin-bottom: 8px; border: 1px solid #3476ae; background: #061523; color: #e6f6ff; font: inherit; font-size: 16px; }
+#health-import-status { overflow-wrap: anywhere; }
+#health-import-status:empty { display: none; }
 .medication-row { display: flex; align-items: center; gap: 13px; min-height: 56px; padding: 12px; border: 1px solid #245880; background: #061523; cursor: pointer; }
 .medication-row + .medication-row { border-top: 0; }
 .medication-row input { width: 20px; height: 20px; flex-shrink: 0; accent-color: #218bff; }

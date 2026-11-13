@@ -66,7 +66,7 @@ Before considering activation complete, verify in Rules Playground: owner read/c
 
 ## Account Health activation
 
-Publish the full current `firestore.rules` in **Firebase Console → Firestore Database → Rules** before publishing the Health update. The existing Google login opens the account. Each medication has its own ledger at `users/<UID>/health/<medication ID>`. The rules allow only that UID to read and write it, require a bounded payload, and require each update to advance its revision by one. Demo records stay on the device.
+Publish the full current `firestore.rules` in **Firebase Console → Firestore Database → Rules** before publishing the Health update. The existing Google login opens the account. Each medication has its own ledger at `users/<UID>/health/<medication ID>`. The rules allow only that UID to read and write it, require a bounded payload, and require each update to advance its revision by one.
 
 Account changes require a connection because each transaction reads the latest ledger before saving. A duplicate dose for the same Lisbon day is a no-op, and Undo restores the original amount. Devices receive updates through a Firestore listener. Previously loaded account data can be viewed offline. Each medication ledger has a 450 KB payload limit.
 
