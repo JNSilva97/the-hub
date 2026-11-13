@@ -75,7 +75,7 @@
 .startup-play {
   display: grid;
   place-items: center;
-  width: min(calc(100vw - 36px), 65svh, 390px);
+  width: min(clamp(164px, 55vw, 240px), 60svh);
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -130,10 +130,23 @@
   animation: startup-scan 3s var(--ease-arrive) infinite;
 }
 
+.startup-finger {
+  width: 58%;
+  height: 81%;
+}
+
+.startup-finger-outline {
+  fill: #4ba5e81f;
+  color: #a1dbff;
+}
+
+.startup-finger-folds {
+  opacity: .65;
+}
+
 .startup-fingerprint {
-  width: 79%;
-  height: 85%;
-  filter: drop-shadow(0 0 7px #46caff90);
+  color: #bef1ff;
+  filter: drop-shadow(0 0 4px #46caff9c);
 }
 
 .startup-play:is(:hover, :focus-visible, [aria-disabled="true"]) .startup-sensor {
