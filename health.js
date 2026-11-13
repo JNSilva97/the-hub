@@ -11,10 +11,16 @@ function createHealth(panel) {
   const sync = document.getElementById('health-sync-status');
   const toolbar = document.getElementById('health-toolbar-actions');
   const addMedication = document.getElementById('health-add-medication');
-  const importer = document.getElementById('health-import');
+  const tabs = [...document.querySelectorAll('.health-tabs [role="tab"]')];
+  const todayTab = tabs[0];
+  const importFile = document.getElementById('health-import-file');
   const importText = document.getElementById('health-import-text');
   const importSave = document.getElementById('health-import-save');
   const importStatus = document.getElementById('health-import-status');
+  const importPreview = document.getElementById('health-import-preview');
+  const importNames = document.getElementById('health-import-names');
+  let importItems = [];
+  let importFileRead = 0;
   const allViews = () => [...cards.values(), newView].filter(Boolean);
   const validMedicationId = id => typeof id === 'string' && /^med-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id);
   const dateFormat = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -41,8 +47,8 @@ function createHealth(panel) {
   const timing = medication => schedules.get(medication.time) || medication.time;
   function scheduleText(medication) {
     if (asNeeded(medication)) return 'As needed · Stock only';
-    const schedule = validTime(medication.time) ? `Daily at ${medication.time} · Lisbon time` : `Daily · ${timing(medication)}`;
-    return `${tabletCount(medication.quantity)} · ${schedule}`;
+    const schedule = validTime(medication.time) ? `${medication.time} Lisbon` : timing(medication);
+    return `${schedule} · ${tabletCount(medication.quantity)} daily`;
   }
   const setupKey = id => prefix + 'settings:' + id;
   const setup = (medication, entries) => entries.find(entry => entry.type === 'settings' && entry.medication === medication.id);
@@ -50,7 +56,7 @@ function createHealth(panel) {
   const doseQuantity = entry => entry.quantity;
   let busy = false;
   let day = today();
-  let message = 'Record a dose here or in its linked checklist.';
+  let message = '';
   let failed = false;
 
   function node(tag, className, text) {
@@ -64,6 +70,18 @@ function createHealth(panel) {
     button.type = 'button'; button.setAttribute('aria-label', label);
     button.addEventListener('click', run);
     return button;
+  }
+
+  function selectTab(selected, scroll = true) {
+    const active = tabs.find(tab => tab.getAttribute('aria-selected') === 'true');
+    if (active === selected) return;
+    for (const tab of tabs) {
+      const isSelected = tab === selected;
+      tab.setAttribute('aria-selected', String(isSelected));
+      tab.tabIndex = isSelected ? 0 : -1;
+      document.getElementById(tab.getAttribute('aria-controls')).hidden = !isSelected;
+    }
+    if (scroll) panel.scrollTop = 0;
   }
   const validLink = link => link === null || link && typeof link === 'object' && !Array.isArray(link) && typeof link.scope === 'string' && link.scope.length > 0 && link.scope.length <= 180 && typeof link.id === 'string' && /^[a-z][a-z0-9-]{0,49}$/.test(link.id);
   const linkValue = link => link ? JSON.stringify({ scope: link.scope, id: link.id }) : '';
@@ -110,17 +128,14 @@ function createHealth(panel) {
     return 'med-' + hex.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
   }
 
-  async function importMedicationList() {
-    if (importSave.disabled || hasDraft()) return;
-    const scope = healthScope();
+  function parseImport(text) {
     let items;
     try {
-      const parsed = JSON.parse(importText.value);
+      const parsed = JSON.parse(text.replace(/^\uFEFF/, ''));
       items = parsed?.medications;
       if (parsed?.version !== 1 || !Array.isArray(items) || !items.length || items.length > 50) throw new Error();
     } catch {
-      importStatus.textContent = 'Paste a valid Health setup list with 1 to 50 medications.';
-      return;
+      throw new Error('Choose or paste a Health setup list with 1 to 50 medications.');
     }
     const names = new Set();
     for (const item of items) {
@@ -130,11 +145,43 @@ function createHealth(panel) {
           (item.schedule === 'as-needed' ? item.quantity !== null || item.linkedChecklist != null : !validQuantity(item.quantity)) ||
           item.linkedChecklist != null && (typeof item.linkedChecklist !== 'string' || !item.linkedChecklist.trim() || item.linkedChecklist.length > 240) ||
           names.has(normalizedName(item.name))) {
-        importStatus.textContent = 'Check the names, schedules, stock and checklist names. Each medication needs a unique name.';
-        return;
+        throw new Error('Check the names, schedules, stock and checklist names. Each medication needs a unique name.');
       }
       names.add(normalizedName(item.name));
     }
+    return items;
+  }
+
+  function previewImport(text) {
+    importItems = [];
+    importStatus.textContent = '';
+    try {
+      if (text.trim()) importItems = parseImport(text);
+    } catch (error) {
+      importStatus.textContent = error.message;
+    }
+    importPreview.hidden = !importItems.length;
+    document.getElementById('health-import-count').textContent = `${importItems.length} medication${importItems.length === 1 ? '' : 's'} in this list`;
+    importNames.replaceChildren(...importItems.map(item => {
+      const row = node('li', '');
+      const schedule = item.schedule === 'as-needed' ? 'As needed' : timing({ time: item.schedule });
+      row.append(node('strong', '', item.name), node('span', '', `${schedule} · ${item.stock} left`));
+      return row;
+    }));
+    updateImportButton();
+  }
+
+  function resetImport() {
+    importFileRead++;
+    importFile.value = '';
+    importText.value = '';
+    previewImport('');
+  }
+
+  async function importMedicationList() {
+    if (importSave.disabled || hasDraft()) return;
+    const scope = healthScope();
+    const items = importItems;
     const existing = new Set(read().filter(entry => entry.type === 'settings').map(entry => normalizedName(entry.name)));
     const missing = new Map();
     const checklistScope = workspace.scope;
@@ -161,12 +208,16 @@ function createHealth(panel) {
       if (scope !== healthScope()) return;
       const unlinked = [...new Set(added.map(record => missing.get(record.medication)).filter(Boolean))];
       const skipped = items.length - added.length;
-      importText.value = '';
+      resetImport();
       importStatus.textContent = `Added ${added.length} medication${added.length === 1 ? '' : 's'}.` +
         (skipped ? ` ${skipped} already in your account.` : '') +
         (unlinked.length ? ` Checklists to link: ${unlinked.join(', ')}.` : '');
+      if (panel.open && !importStatus.closest('[role="tabpanel"]').hidden) importStatus.focus();
     } catch {
-      if (scope === healthScope()) importStatus.textContent = 'Your list could not be saved. Check the connection and try again.';
+      if (scope === healthScope()) {
+        importStatus.textContent = 'Your list could not be saved. Check the connection and try again.';
+        if (panel.open && !importStatus.closest('[role="tabpanel"]').hidden) importStatus.focus();
+      }
     } finally {
       busy = false;
       document.dispatchEvent(new CustomEvent('hub:healthsync', { detail: false }));
@@ -260,7 +311,7 @@ function createHealth(panel) {
   }
 
   function updateImportButton() {
-    importSave.disabled = busy || !account?.ready || account.cached || !navigator.onLine || hasDraft() || !importText.value.trim();
+    importSave.disabled = busy || !account?.ready || account.cached || !navigator.onLine || hasDraft() || !importItems.length;
   }
   function dirty(view) {
     return view.baseline && JSON.stringify(editorValues(view)) !== JSON.stringify(view.baseline.values);
@@ -340,16 +391,34 @@ function createHealth(panel) {
     const doseState = node('p', 'medication-dose-state');
     const buttons = node('div', 'medication-dose-actions'); buttons.append(dose, undo);
     const restock = node('div', 'medication-restock');
+    restock.hidden = true;
     const label = node('label', '', 'Tablets to add');
     const quantity = node('input', ''); quantity.type = 'number'; quantity.min = '1'; quantity.max = '10000'; quantity.step = '1'; quantity.value = '30'; quantity.required = true; quantity.inputMode = 'numeric';
     quantity.id = `restock-${medication.id}`; label.htmlFor = quantity.id;
-    const add = action('Add stock', `Add stock for ${medication.name}`, () => {
+    restock.id = `stock-form-${medication.id}`;
+    const restockToggle = action('Add stock', `Add stock for ${medication.name}`, () => {
+      restock.hidden = !restock.hidden;
+      restockToggle.setAttribute('aria-expanded', String(!restock.hidden));
+      if (!restock.hidden) { quantity.value = quantity.defaultValue; quantity.focus(); quantity.select(); }
+    });
+    restockToggle.classList.add('medication-stock-toggle');
+    restockToggle.setAttribute('aria-expanded', 'false');
+    restockToggle.setAttribute('aria-controls', restock.id);
+    restockToggle.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && event.repeat) event.preventDefault();
+    });
+    const add = action('Save stock', `Save stock for ${medication.name}`, () => {
       if (!quantity.reportValidity()) return;
       const amount = Number(quantity.value);
       const key = prefix + 'restock:' + crypto.randomUUID();
       change(medication.id, entries => ({ key, version: 1, type: 'restock', medication: medication.id,
         name: configured(medication, entries).name, quantity: amount, at: Date.now() }),
-      `${view.title.textContent}: stock increased by ${amount}.`);
+      `${view.title.textContent}: stock increased by ${amount}.`).then(saved => {
+        if (!saved) return;
+        restock.hidden = true;
+        restockToggle.setAttribute('aria-expanded', 'false');
+        restockToggle.focus({ preventScroll: true });
+      });
     });
     quantity.addEventListener('keydown', event => {
       if (event.key !== 'Enter' || event.isComposing) return;
@@ -384,7 +453,7 @@ function createHealth(panel) {
     const cancel = action('Cancel', `Cancel ${medication.name} changes`, () => { cancelEditor(view); render(); (view.isNew ? addMedication : view.edit).focus(); });
     const editorActions = node('div', 'medication-dose-actions'); editorActions.append(save, cancel);
     editor.append(editorActions);
-    const edit = action('Edit medication', `Edit ${medication.name}`, () => {
+    const edit = action('Edit', `Edit ${medication.name}`, () => {
       try {
         const entries = read(); const current = configured(medication, entries);
         const values = { name: current.name, quantity: current.quantity, time: current.time, stock: stock(medication, entries), packSize: current.packSize ?? null, link: linkValue(binding(medication, entries)) };
@@ -403,7 +472,12 @@ function createHealth(panel) {
       const link = binding(medication, read()); const routine = linkedChecklist(link); if (routine) openRoutine(routine.id);
     });
     linkInfo.append(linkText, openLinked);
-    const details = node('div', 'medication-details'); details.append(schedule, buttons, doseState, count, packSize, estimate, warning, restock, linkInfo); details.hidden = isNew;
+    const stockLine = node('div', 'medication-stock-line');
+    const stockInfo = node('div', 'medication-stock-info'); stockInfo.append(count, packSize, estimate);
+    stockLine.append(stockInfo, restockToggle);
+    const details = node('div', 'medication-details');
+    details.append(schedule, stockLine, warning, buttons, doseState, restock, linkInfo);
+    details.hidden = isNew;
     card.append(heading, editor, details);
     document.getElementById(isNew ? 'health-new-medication' : 'health-medications').append(card);
     const row = node('label', 'medication-row');
@@ -411,7 +485,7 @@ function createHealth(panel) {
     check.addEventListener('change', () => recordDose(medication, check.checked));
     const copy = node('span', ''); copy.append(node('strong', ''), node('small', ''));
     row.append(check, copy); if (!isNew) document.getElementById('medication-checks').append(row);
-    Object.assign(view, { card, row, linkText, openLinked, linkField, linkSelect, linkPicker, title, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, doseState, quantity, restockLabel: label, add, check });
+    Object.assign(view, { card, row, linkText, openLinked, linkField, linkSelect, linkPicker, title, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, doseState, restock, restockToggle, quantity, restockLabel: label, add, check });
     if (isNew) { card.hidden = true; edit.hidden = true; } else cards.set(medication.id, view);
     return view;
   }
@@ -451,43 +525,50 @@ function createHealth(panel) {
       view.copy.querySelector('small').textContent = `${tabletCount(current.quantity)} · ${timing(current)}`;
       view.dose.setAttribute('aria-label', `Mark ${current.name} taken`); view.undo.setAttribute('aria-label', `Undo ${current.name} dose`);
       view.edit.setAttribute('aria-label', `Edit ${current.name}`); view.save.setAttribute('aria-label', `Save ${current.name} changes`); view.cancel.setAttribute('aria-label', `Cancel ${current.name} changes`);
-      view.add.setAttribute('aria-label', `Add stock for ${current.name}`);
+      view.add.setAttribute('aria-label', `Save stock for ${current.name}`);
+      view.restockToggle.setAttribute('aria-label', `Add stock for ${current.name}`);
       view.edit.disabled = locked;
       renderEditorFields(view, locked);
       view.count.textContent = `${count} ${stockOnly ? 'units' : 'tablets'} left`;
       view.restockLabel.textContent = stockOnly ? 'Units to add' : 'Tablets to add';
+      view.quantity.defaultValue = current.packSize ?? 30;
       view.packSize.textContent = current.packSize ? `Pack of ${stockOnly ? current.packSize + ' units' : tabletCount(current.packSize)}` : '';
       view.packSize.hidden = !current.packSize;
       view.estimate.hidden = stockOnly;
-      view.estimate.textContent = view.estimate.hidden ? '' : `About ${Math.floor(count / current.quantity)} days at this daily schedule.`;
+      view.estimate.textContent = view.estimate.hidden ? '' : `~${Math.floor(count / current.quantity)} days left`;
       view.warning.textContent = count < current.quantity ? 'Not enough stock for the next dose.' : 'Low stock · add more soon';
       view.warning.hidden = stockOnly || count > current.quantity * 7;
       const todayDose = entries.find(entry => entry.key === doseKey(day, medication.id));
       const recordedQuantity = checked ? doseQuantity(todayDose) : 0;
-      view.doseState.textContent = checked ? `Taken today · ${recordedQuantity} tablet${recordedQuantity === 1 ? '' : 's'} recorded` : 'Not recorded today';
+      view.doseState.textContent = checked ? `${tabletCount(recordedQuantity)} recorded` : '';
       if (checked) view.copy.querySelector('small').textContent = `${recordedQuantity} tablet${recordedQuantity === 1 ? '' : 's'} recorded today`;
       view.dose.textContent = checked ? 'Taken today' : 'Mark taken';
+      view.card.dataset.taken = String(checked && !stockOnly);
       view.dose.hidden = stockOnly;
-      view.doseState.hidden = stockOnly;
+      view.doseState.hidden = stockOnly || !checked;
       view.dose.disabled = locked || stockOnly || checked || count < current.quantity;
       view.undo.hidden = stockOnly || !checked; view.undo.disabled = locked;
-      view.add.disabled = view.quantity.disabled = locked;
+      view.add.disabled = view.quantity.disabled = view.restockToggle.disabled = locked;
       if (!busy) view.check.checked = checked;
       view.check.disabled = locked || !checked && count < current.quantity;
     }
     document.getElementById('health-data-badge').hidden = !signedIn;
     document.getElementById('health-account-content').hidden = !signedIn;
     toolbar.hidden = !signedIn;
-    importer.hidden = !signedIn;
-    importText.disabled = busy;
+    importFile.disabled = importText.disabled = busy;
     updateImportButton();
     const daily = medications.filter(medication => !asNeeded(configured(medication, entries)));
     const totalTaken = daily.filter(medication => taken(medication, entries, day)).length;
     document.getElementById('health-today').textContent = daily.length ? `${totalTaken} of ${daily.length} taken` : '';
+    document.getElementById('health-summary').hidden = !daily.length;
+    const progress = document.getElementById('health-dose-progress');
+    progress.max = daily.length || 1;
+    progress.value = totalTaken;
     document.getElementById('health-empty').hidden = !account?.ready || medications.length > 0 || !newView?.card.hidden;
     document.getElementById('health-sign-in').hidden = signedIn;
     document.getElementById('health-sync-retry').hidden = !signedIn || !account.error;
     sync.textContent = signedIn ? account.error || (!account.ready ? navigator.onLine ? 'Loading account Health…' : 'Connect to load account Health.' : readOnly ? 'Offline copy. Connect to record changes.' : busy ? 'Syncing…' : 'Synced to your account.') : 'Sign in to see your medication and stock.';
+    sync.dataset.state = signedIn && !account.error && !locked ? 'synced' : '';
     const visible = workspace.selected ? medications.filter(medication => linkedChecklist(binding(medication, entries))?.id === workspace.selected.id) : [];
     routineSection.hidden = !visible.length;
     const completed = visible.filter(medication => taken(medication, entries, day)).length;
@@ -504,6 +585,7 @@ function createHealth(panel) {
     for (const entry of entries.sort((a, b) => b.at - a.at).slice(0, 12)) {
       const medication = medications.find(med => med.id === entry.medication);
       const row = node('li', 'health-history-row');
+      row.dataset.event = entry.type === 'dose' ? entry.taken ? 'taken' : 'undone' : entry.type;
       const quantity = entry.type === 'dose' ? doseQuantity(entry) : 0;
       const units = asNeeded(configured(medication, entries)) ? 'units' : 'tablets';
       const text = entry.type === 'settings' ? 'Medication setup updated' : entry.type === 'restock' ? `Added ${entry.quantity} ${units}` : entry.taken ? `Taken · ${tabletCount(quantity)}` : 'Dose undone · stock restored';
@@ -555,20 +637,52 @@ function createHealth(panel) {
   panel.addEventListener('cancel', event => { if (hasDraft() || busy) { event.preventDefault(); event.stopImmediatePropagation(); requestExit(() => panel.close()); } }, true);
   panel.addEventListener('close', () => {
     for (const view of allViews()) cancelEditor(view);
-    importText.value = '';
-    importStatus.textContent = '';
-    importer.open = false;
+    for (const view of cards.values()) {
+      view.restock.hidden = true;
+      view.restockToggle.setAttribute('aria-expanded', 'false');
+    }
+    resetImport();
+    selectTab(todayTab, false);
   });
   importText.addEventListener('input', () => {
-    importStatus.textContent = '';
-    updateImportButton();
+    importFileRead++;
+    importFile.value = '';
+    previewImport(importText.value);
+  });
+  importFile.addEventListener('change', async () => {
+    const file = importFile.files[0];
+    if (!file) return;
+    const request = ++importFileRead;
+    importText.value = '';
+    previewImport('');
+    try {
+      if (file.size > 120000) throw new Error('Choose a JSON file smaller than 120 KB.');
+      const text = await file.text();
+      if (request !== importFileRead) return;
+      if (text.length > importText.maxLength) throw new Error('This file is too long. Use a list with up to 50 medications.');
+      importText.value = text;
+      previewImport(text);
+    } catch (error) {
+      if (request === importFileRead) importStatus.textContent = error instanceof DOMException ? 'This file could not be read.' : error.message;
+    }
   });
   importSave.addEventListener('click', importMedicationList);
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => selectTab(tab));
+    tab.addEventListener('keydown', event => {
+      const target = { ArrowLeft: (index + tabs.length - 1) % tabs.length, ArrowRight: (index + 1) % tabs.length, Home: 0, End: tabs.length - 1 }[event.key];
+      if (target === undefined) return;
+      event.preventDefault();
+      selectTab(tabs[target]);
+      tabs[target].focus({ preventScroll: true });
+    });
+  });
   document.getElementById('medication-discard-confirm').addEventListener('click', () => { const run = discardAction; discardAction = undefined; for (const view of allViews()) cancelEditor(view); discard.close(); run?.(); });
   discard.addEventListener('close', () => { if (!discard.open) discardAction = undefined; });
   window.addEventListener('beforeunload', event => { if (hasDraft() || busy) { event.preventDefault(); event.returnValue = ''; } });
   newView = createCard({ id: 'new-medication', name: 'New medication', quantity: 1, time: '08:00', initial: 0 }, true);
   addMedication.addEventListener('click', () => {
+    selectTab(todayTab);
     newView.draftId = 'med-' + crypto.randomUUID();
     const values = { name: '', quantity: 1, time: '08:00', stock: 0, packSize: null, link: '' };
     newView.baseline = { values, scope: workspace.scope, setup: 'null' }; newView.linkChoice = '';
@@ -588,9 +702,8 @@ function createHealth(panel) {
       account = createAccount(() => {
         if (accountId !== account.uid) {
           for (const view of allViews()) cancelEditor(view);
-          importText.value = '';
-          importStatus.textContent = '';
-          importer.open = false;
+          resetImport();
+          selectTab(todayTab);
           accountId = account.uid;
           message = ''; failed = false;
         }

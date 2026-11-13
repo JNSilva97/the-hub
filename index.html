@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="styles/routines.css?v=free-9">
   <link rel="stylesheet" href="styles/routine-tools.css?v=review-1">
   <link rel="stylesheet" href="styles/notes.css?v=daily-8">
-  <link rel="stylesheet" href="styles/health.css?v=health-account-list-1">
+  <link rel="stylesheet" href="styles/health.css?v=health-dashboard-1">
   <link rel="stylesheet" href="styles/motion.css?v=free-9">
 </head>
 <body>
@@ -215,10 +215,12 @@
     <button id="phone-settings" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#settings"/></svg><span>Settings</span></button>
   </nav>
   <dialog id="app-dialog" aria-labelledby="app-title" aria-describedby="app-description">
-    <button id="health-close" class="routine-exit" type="button" aria-label="Close Health" hidden>×</button>
-    <div class="panel-eyebrow" aria-hidden="true">THE HUB / MODULE INTERFACE</div>
-    <div id="app-icon" aria-hidden="true"></div>
-    <h2 id="app-title"></h2>
+    <header class="app-heading">
+      <button id="health-close" class="routine-exit" type="button" aria-label="Close Health" hidden>×</button>
+      <div class="panel-eyebrow" aria-hidden="true">THE HUB / MODULE INTERFACE</div>
+      <div id="app-icon" aria-hidden="true"></div>
+      <h2 id="app-title"></h2>
+    </header>
     <p id="app-description">This app is yet to be built.</p>
     <section id="health-content" hidden aria-label="Medication tracking">
       <div class="health-toolbar">
@@ -230,26 +232,46 @@
         <button id="health-sync-retry" class="health-button" type="button" hidden>Retry Health sync</button>
       </div>
       <div id="health-account-content" hidden>
-        <div class="health-today"><h3>Today</h3><span id="health-today"></span></div>
-        <p id="health-empty" hidden>Add your first medication to track doses and stock across your devices.</p>
-        <div id="health-new-medication"></div>
-        <div id="health-medications"></div>
+        <div class="health-tabs" role="tablist" aria-label="Health views">
+          <button id="health-tab-today" type="button" role="tab" aria-selected="true" aria-controls="health-view-today">Today</button>
+          <button id="health-tab-activity" type="button" role="tab" aria-selected="false" aria-controls="health-view-activity" tabindex="-1">Activity</button>
+          <button id="health-tab-import" type="button" role="tab" aria-selected="false" aria-controls="health-import" tabindex="-1">Import</button>
+        </div>
         <p id="health-status" role="status" tabindex="-1"></p>
-        <section class="health-history" aria-labelledby="health-history-title"><h3 id="health-history-title">Recent activity</h3><p id="health-history-empty">No activity yet.</p><ol id="health-history"></ol></section>
-        <details id="health-import" hidden>
-          <summary>Import medication list</summary>
-          <label for="health-import-text">Paste a Health setup list</label>
-          <textarea id="health-import-text" rows="4" maxlength="30000" spellcheck="false" autocomplete="off"></textarea>
-          <button id="health-import-save" class="health-button" type="button" disabled>Import into my account</button>
-          <p id="health-import-status" role="status"></p>
-        </details>
+        <section class="health-view" id="health-view-today" role="tabpanel" aria-labelledby="health-tab-today" tabindex="0">
+          <div class="health-today" id="health-summary" hidden>
+            <div><h3>Daily doses</h3><span id="health-today"></span></div>
+            <progress id="health-dose-progress" aria-label="Today's doses taken" max="1" value="0"></progress>
+          </div>
+          <p id="health-empty" hidden>Add your first medication or import a list to get started.</p>
+          <div id="health-new-medication"></div>
+          <div id="health-medications"></div>
+        </section>
+        <section class="health-view" id="health-view-activity" role="tabpanel" aria-labelledby="health-tab-activity" tabindex="0" hidden>
+          <h3>Recent activity</h3>
+          <p id="health-history-empty">No activity yet.</p>
+          <ol id="health-history"></ol>
+        </section>
+        <section class="health-view" id="health-import" role="tabpanel" aria-labelledby="health-tab-import" tabindex="0" hidden>
+          <div class="health-import-card">
+            <h3>Import medication list</h3>
+            <p>Choose a Health setup JSON file or paste its contents. Existing medications keep their stock and history.</p>
+            <label class="health-file-label" for="health-import-file">Choose JSON file</label>
+            <input id="health-import-file" type="file" accept=".json,application/json">
+            <label for="health-import-text">Setup JSON</label>
+            <textarea id="health-import-text" rows="5" maxlength="30000" spellcheck="false" autocomplete="off"></textarea>
+            <div id="health-import-preview" hidden><strong id="health-import-count" role="status"></strong><ul id="health-import-names"></ul></div>
+            <button id="health-import-save" class="health-button" type="button" disabled>Import into my account</button>
+            <p id="health-import-status" role="status" tabindex="-1"></p>
+          </div>
+        </section>
       </div>
     </section>
     <div id="interface-settings" hidden>
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.13.10</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.13.11</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -409,7 +431,7 @@
   <script defer src="core-transition.js?v=dock-alignment-1"></script>
   <script defer src="notes.js?v=review-1"></script>
   <script defer src="checklist-picker.js?v=review-1"></script>
-  <script defer src="health.js?v=health-account-list-1"></script>
+  <script defer src="health.js?v=health-dashboard-1"></script>
   <script defer src="interface.js?v=health-account-list-1"></script>
   <script defer src="interface-sound.js?v=intro-autoplay-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>

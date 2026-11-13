@@ -48,7 +48,7 @@ A medication has one dose per Lisbon calendar day. Recording it from either view
 
 Once the Health rules are published, signing in opens your private, initially empty Health account. Medication setup, doses and stock sync across devices. An offline device can view a previously cached account. Connect before making account changes. A conflicting edit or a rejected write keeps the editor open so you can review or retry.
 
-Health requires sign-in. **Import medication list** accepts a Health setup list, adds new medication names, and links them to matching account checklists where available. It preserves existing stock and dose history. Health storage is separate from checklist backups. See [Health activation](FIREBASE_SETUP.md#account-health-activation).
+Health requires sign-in. **Today** shows doses and stock, and **Activity** shows recent changes. The **Import** tab previews a Health setup JSON file or pasted list, adds new medication names, and links them to matching account checklists where available. It preserves existing stock and dose history. Health storage is separate from checklist backups. See [Health activation](FIREBASE_SETUP.md#account-health-activation).
 
 ## Preview locally
 
