@@ -390,6 +390,11 @@
 
 .linked-check-row .check-row { border: 0; }
 .routine-linked-button { justify-self: start; margin: 0 13px 10px; text-align: start; }
+.linked-check-row .check-row { flex-wrap: wrap; cursor: default; }
+.linked-check-row .check-row:hover { background: transparent; }
+.linked-check-status { flex-basis: 100%; padding-left: 32px; color: #8fb4d4; font-size: 13px; }
+.check-row:has(input:checked) .linked-check-status { text-decoration: none; }
+.linked-check-status:empty { display: none; }
 
 .skin-care-status,
 .skin-care-error {

@@ -1,9 +1,9 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, getProgress, restartRoutine, lisbonDay, skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice } from './routine-model.mjs?v=checklist-links-1';
-import { cloudWorkspace } from './cloud.js?v=checklist-links-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=checklist-links-1';
-import { createRoutineTools } from './routine-tools.js?v=checklist-links-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, getProgress, isComplete, restartRoutine, lisbonDay, skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice } from './routine-model.mjs?v=checklist-links-2';
+import { cloudWorkspace } from './cloud.js?v=checklist-links-2';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=checklist-links-2';
+import { createRoutineTools } from './routine-tools.js?v=checklist-links-2';
 
-export { createHealthAccount } from './cloud-health.js?v=checklist-links-1';
+export { createHealthAccount } from './cloud-health.js?v=checklist-links-2';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -120,18 +120,25 @@ function updateProgress() {
     }
   }
   for (const input of content.querySelectorAll('input[data-check]')) input.checked = state.checks[input.dataset.check] === true;
+  for (const input of content.querySelectorAll('input[data-linked]')) {
+    const target = routines.find(routine => routine.id === input.dataset.linked);
+    const linked = target && getProgress(target, state, skinCare, routines, new Set([selected.id]));
+    input.checked = isComplete(linked);
+    const status = input.closest('.check-row').querySelector('[data-linked-status]');
+    status.textContent = linked ? (input.checked ? `${target.name} complete` : `${target.name}: ${linked.done} of ${linked.total} ready`) : '';
+  }
   for (const input of content.querySelectorAll('input[data-group]')) {
     input.checked = state.optional[input.dataset.group] === true;
     input.closest('.check-section').querySelector('.check-items').hidden = !input.checked;
   }
   for (const routine of routines) {
-    const progress = getProgress(routine, state, skinCare);
+    const progress = getProgress(routine, state, skinCare, routines);
     const card = list.querySelector(`[data-routine="${routine.id}"]`);
     card.querySelector('.routine-count').textContent = `${progress.done} / ${progress.total}`;
     card.querySelector('.routine-mini-fill').style.transform = `scaleX(${progress.percent / 100})`;
     signals.push({ id: routine.id, name: routine.name, ...progress });
   }
-  const progress = getProgress(selected, state, skinCare);
+  const progress = getProgress(selected, state, skinCare, routines);
   content.closest('.routine-detail').dataset.complete = String(progress.total > 0 && progress.done === progress.total);
   document.getElementById('routine-progress-label').textContent = progress.done === progress.total && progress.total ? 'All set. You’re ready.' : `${progress.done} of ${progress.total} ready`;
   const bar = document.getElementById('routine-progress');
@@ -246,6 +253,13 @@ function selectRoutine(routine, remember = true) {
       label.append(input, make('span', '', item.label));
       const target = routines.find(candidate => candidate.id === item.linkedChecklist);
       if (target) {
+        // Ticked automatically from the linked checklist's own progress.
+        input.disabled = true;
+        input.dataset.linked = item.linkedChecklist;
+        delete input.dataset.check;
+        const status = make('span', 'linked-check-status');
+        status.dataset.linkedStatus = '';
+        label.append(status);
         const linkedRow = make('div', 'linked-check-row');
         const open = make('button', 'routine-linked-button', `Open ${target.name}`);
         open.type = 'button';

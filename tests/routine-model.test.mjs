@@ -91,3 +91,25 @@ test('shared skincare choices follow the Lisbon day and survive a checklist back
   assert.equal(getProgress(routines[1], restored, skinCareProgress(restored.checks, nextDay)).done, 0);
   assert.deepEqual(skinCareProgress(restartRoutine(routines[1], both).checks, day).used, new Set(['m']));
 });
+
+test('linked items tick themselves when their checklist is complete', () => {
+  const routines = validateRoutines({ version: 1, routines: [
+    { id: 'wind-down', name: 'Wind Down', description: 'Evening.', groups: [
+      { id: 'office', title: 'Office day', optional: true, items: [{ id: 'item-1', label: 'Complete office preparation', linkedChecklist: 'workday' }] }] },
+    { id: 'workday', name: 'Workday', description: 'Office.', groups: [
+      { id: 'bag', title: 'Bag', optional: false, items: [{ id: 'item-1', label: 'Mac' }, { id: 'item-2', label: 'Charger' }] },
+      { id: 'back', title: 'Back home', optional: false, items: [{ id: 'item-1', label: 'Wind down', linkedChecklist: 'wind-down' }] }] }] });
+  const [windDown, workday] = routines;
+  const state = parseProgress(null);
+  state.optional['wind-down/office'] = true;
+  state.checks['wind-down/office/item-1'] = true;
+  assert.deepEqual(getProgress(windDown, state, undefined, routines), { done: 0, total: 1, percent: 0 });
+  state.checks['workday/bag/item-1'] = true;
+  state.checks['workday/bag/item-2'] = true;
+  assert.equal(getProgress(workday, state, undefined, routines).done, 2);
+  assert.equal(getProgress(windDown, state, undefined, routines).done, 0, 'circular links never count as done');
+  const oneWay = [windDown, { ...workday, groups: workday.groups.slice(0, 1) }];
+  assert.deepEqual(getProgress(windDown, state, undefined, oneWay), { done: 1, total: 1, percent: 100 });
+  delete state.checks['workday/bag/item-2'];
+  assert.equal(getProgress(windDown, state, undefined, oneWay).done, 0);
+});

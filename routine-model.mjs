@@ -82,14 +82,29 @@ export function setSkinCareChoice(routines, progress, key, option, checked, day 
   return parseProgress(JSON.stringify({ checks, optional: progress.optional }));
 }
 
-export function getProgress(routine, state, skinCare = skinCareProgress(state.checks)) {
+// A linked item is done exactly when its linked checklist is complete; `routines` supplies the targets.
+export function linkedProgress(item, state, skinCare = skinCareProgress(state.checks), routines = [], seen = new Set()) {
+  const target = item.linkedChecklist ? routines.find(routine => routine.id === item.linkedChecklist) : undefined;
+  if (!target) return undefined;
+  // A circular link can never finish on its own, so it stays not done.
+  return seen.has(target.id) ? { done: 0, total: 0, percent: 0 } : getProgress(target, state, skinCare, routines, seen);
+}
+export const isComplete = progress => Boolean(progress) && progress.total > 0 && progress.done === progress.total;
+
+export function getProgress(routine, state, skinCare = skinCareProgress(state.checks), routines = [], seen = new Set()) {
   let done = 0;
   let total = 0;
+  const path = new Set(seen).add(routine.id);
   for (const group of routine.groups) {
     if (group.optional && state.optional[groupKey(routine, group)] !== true) continue;
     total += group.items.length;
     for (const item of group.items) {
       const key = itemKey(routine, group, item);
+      const linked = linkedProgress(item, state, skinCare, routines, path);
+      if (linked) {
+        if (isComplete(linked)) done++;
+        continue;
+      }
       const options = skinCareOptionsFor(item.label);
       if (state.checks[key] === true || options.includes(skinCare.selected.get(key))
         || options.length && options.every(option => skinCare.used.has(option))) done++;

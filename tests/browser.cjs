@@ -79,6 +79,8 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await chooseRoutine(page, source.id);
       assert.equal(await open.isVisible(), true);
       assert.equal(await page.locator('.linked-check-row input').isChecked(), false);
+      assert.equal(await page.locator('.linked-check-row input').isDisabled(), true);
+      assert.match(await page.locator('.linked-check-status').textContent(), new RegExp(`^${target.name}: 0 of \\d+ ready$`));
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });
