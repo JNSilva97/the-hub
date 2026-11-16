@@ -19,8 +19,8 @@
   <link rel="stylesheet" href="styles/routines.css?v=addiction-helper-1">
   <link rel="stylesheet" href="styles/routine-tools.css?v=addiction-helper-1">
   <link rel="stylesheet" href="styles/notes.css?v=dark-glass-1">
-  <link rel="stylesheet" href="styles/health.css?v=addiction-helper-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=1">
+  <link rel="stylesheet" href="styles/health.css?v=addiction-helper-2">
+  <link rel="stylesheet" href="styles/addiction.css?v=2">
   <link rel="stylesheet" href="styles/motion.css?v=free-9">
 </head>
 <body>
@@ -250,12 +250,15 @@
       </section>
     </div>
     <section class="addiction-card addiction-lozenges" aria-labelledby="addiction-lozenge-title">
-      <h3 id="addiction-lozenge-title">Nicotine lozenges</h3>
+      <div class="addiction-card-heading">
+        <h3 id="addiction-lozenge-title">Nicotine lozenges</h3>
+        <button class="health-button" type="button" id="addiction-open-health">Open Health</button>
+      </div>
+      <div class="addiction-count" id="addiction-lozenges" aria-live="polite" aria-atomic="true">0 lozenges today</div>
       <p id="addiction-lozenge-status" role="status"></p>
       <div class="addiction-actions">
         <button class="health-button addiction-red" type="button" id="addiction-log-lozenge">Log lozenge taken</button>
         <button class="health-button" type="button" id="addiction-undo-lozenge" aria-label="Undo last nicotine lozenge">Undo</button>
-        <button class="health-button" type="button" id="addiction-open-health">Open Health</button>
       </div>
     </section>
     <p class="addiction-device">Cigarette and coffee counts are saved on this device.</p>
@@ -291,7 +294,7 @@
             <progress id="health-dose-progress" aria-label="Today's doses taken" max="1" value="0"></progress>
           </div>
           <p id="health-empty" hidden>Add your first medication or import a list to get started.</p>
-          <p id="health-reorder-help" hidden>Drag a card to move it. On touch screens, press and hold the card first. You can also use Move.</p>
+          <p id="health-reorder-help" hidden>Drag a card to move it. On touch screens, press and hold the card first. With a keyboard, Tab to a card and use the arrow keys.</p>
           <div id="health-new-medication"></div>
           <div id="health-medications"></div>
         </section>
@@ -319,7 +322,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.16.2</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.16.3</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -479,8 +482,8 @@
   <script defer src="core-transition.js?v=dock-alignment-1"></script>
   <script defer src="notes.js?v=addiction-helper-1"></script>
   <script defer src="checklist-picker.js?v=review-1"></script>
-  <script defer src="health.js?v=addiction-helper-1"></script>
-  <script defer src="addiction.js?v=1"></script>
+  <script defer src="health.js?v=addiction-helper-2"></script>
+  <script defer src="addiction.js?v=2"></script>
   <script defer src="interface.js?v=addiction-helper-1"></script>
   <script defer src="interface-sound.js?v=intro-autoplay-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>

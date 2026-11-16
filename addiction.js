@@ -43,6 +43,7 @@ function createAddictionHelper(panel, health) {
     const stock = health?.nicotineState();
     lozenge.disabled = !stock?.canRecord;
     undoLozenge.disabled = !stock?.canUndo;
+    element('lozenges').textContent = stock?.count === undefined ? 'Not connected' : `${stock.count} lozenge${stock.count === 1 ? '' : 's'} today`;
     element('lozenge-status').textContent = stock?.message ?? 'Open Health to connect your lozenge stock.';
   }
 

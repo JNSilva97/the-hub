@@ -26,6 +26,9 @@
   align-content: start;
 }
 
+.addiction-grid .addiction-card { grid-template-rows: auto auto 1fr auto; align-content: stretch; align-items: start; }
+.addiction-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.addiction-card-heading .health-button { padding: 6px 12px; font-size: 14px; }
 .addiction-card h3 { margin: 0; color: #e7f5ff; font: 600 21px var(--font-interface); }
 .addiction-count { color: #a2e4ff; font: 600 25px var(--font-interface); }
 #addiction-dialog p { margin: 0; }

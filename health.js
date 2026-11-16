@@ -285,7 +285,7 @@ function createHealth(panel) {
   function showReorder(id) {
     if (pickedUp) cards.get(pickedUp)?.handle.setAttribute('aria-pressed', 'false');
     pickedUp = id;
-    reorderHint = 'Choose Move on another card, or use the arrow keys.';
+    reorderHint = 'Drop it on another card, or use the arrow keys.';
     cards.get(id).handle.setAttribute('aria-pressed', 'true');
     medicationList.dataset.reordering = id;
   }
@@ -510,7 +510,7 @@ function createHealth(panel) {
     const units = stock(medication, entries);
     const available = navigator.onLine && !account.cached && !busy;
     const status = busy ? ' · Saving…' : !available ? ' · Connect to log changes' : '';
-    return { canRecord: available && units >= 1, canUndo: available && count > 0, message: `${count} today · ${units} in stock${status}` };
+    return { count, canRecord: available && units >= 1, canUndo: available && count > 0, message: `${units} in stock${status}` };
   }
   async function change(id, write, success) {
     const scope = healthScope();
@@ -825,6 +825,7 @@ function createHealth(panel) {
       view.linkText.textContent = link ? 'Checklist unavailable' : 'No linked checklist';
       view.openLinked.hidden = !linked; view.openLinked.disabled = locked;
       view.unlinked.hidden = Boolean(linked);
+      view.openLinked.closest('.medication-link-info').hidden = stockOnly;
       view.linkText.hidden = Boolean(linked);
       view.linkedName.textContent = linked?.name ?? '';
       if (linked) view.openLinked.setAttribute('aria-label', `Open ${linked.name} for ${current.name}`);
@@ -854,10 +855,11 @@ function createHealth(panel) {
       view.cancelStock.disabled = busy;
       view.edit.disabled = locked;
       renderEditorFields(view, locked);
-      view.count.textContent = `${count} ${stockOnly ? 'units' : 'tablets'} left`;
-      view.restockLabel.textContent = stockOnly ? 'Units to add' : 'Tablets to add';
+      const unit = nicotine ? 'lozenges' : stockOnly ? 'units' : 'tablets';
+      view.count.textContent = `${count} ${unit} left`;
+      view.restockLabel.textContent = `${unit[0].toUpperCase()}${unit.slice(1)} to add`;
       view.quantity.defaultValue = current.packSize ?? 30;
-      view.packSize.textContent = current.packSize ? `Pack of ${stockOnly ? current.packSize + ' units' : tabletCount(current.packSize)}` : '';
+      view.packSize.textContent = current.packSize ? `Pack of ${stockOnly ? `${current.packSize} ${unit}` : tabletCount(current.packSize)}` : '';
       view.packSize.hidden = !current.packSize;
       view.estimate.hidden = stockOnly;
       view.estimate.textContent = view.estimate.hidden ? '' : `~${Math.floor(count / current.quantity)} days left`;

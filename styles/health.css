@@ -98,6 +98,18 @@
   color: #9dd7fa;
   background: #102840;
 }
+/* Cards drag directly; Move only appears for keyboard reordering. */
+.medication-heading > .medication-move:not(:focus-visible) {
+  position: absolute;
+  width: 1px;
+  min-width: 0;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
 .medication-move[aria-pressed="true"], #health-medications[data-reordering] .medication-card[data-drop] {
   border-color: #91dcff;
   background-color: #1a3c59;
@@ -150,6 +162,7 @@
 .health-button:disabled { opacity: .5; cursor: default; }
 .medication-dose-actions { display: flex; gap: 8px; }
 .medication-dose-actions button:first-child { flex: 1; }
+.medication-dose-actions .addiction-red { flex: 1; }
 #health-add-medication, #health-import-save, .medication-dose-actions button:first-child { background: #15446e; border-color: #508bb7; }
 #health-add-medication:hover:not(:disabled), #health-import-save:hover:not(:disabled), .medication-dose-actions button:first-child:hover:not(:disabled) { background: #1b5487; }
 .medication-stock-toggle { flex-shrink: 0; }
