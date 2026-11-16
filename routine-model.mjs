@@ -43,6 +43,14 @@ export function skinCareOptionsFor(label) {
 export const isSkinCareChoice = label => skinCareOptionsFor(label).length > 0;
 const lisbonDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Lisbon', dateStyle: 'short' });
 export const lisbonDay = (date = new Date()) => lisbonDate.format(date);
+export const isMinoxidilItem = label => /^apply minoxidil[.!]?$/i.test(label.trim());
+export const minoxidilCheckKey = day => `@daily/minoxidil/${day}`;
+export const isMinoxidilCheckKey = key => /^@daily\/minoxidil\/\d{4}-\d{2}-\d{2}$/.test(key);
+
+export function progressKey(item, key, day) {
+  return isMinoxidilItem(item.label) ? minoxidilCheckKey(day) : key;
+}
+
 // The compact suffix fits inside the existing progress key limit, even with three 50-character IDs.
 const dayToken = day => Math.floor(Date.parse(day + 'T00:00:00Z') / 86400000).toString(36);
 const skinCareMarker = /^([a-z][a-z0-9-]*\/[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*)~([0-9a-z]{1,5})([mst])$/;
@@ -82,35 +90,49 @@ export function setSkinCareChoice(routines, progress, key, option, checked, day 
   return parseProgress(JSON.stringify({ checks, optional: progress.optional }));
 }
 
-// A linked item is done exactly when its linked checklist is complete; `routines` supplies the targets.
-export function linkedProgress(item, state, skinCare = skinCareProgress(state.checks), routines = [], seen = new Set()) {
-  const target = item.linkedChecklist ? routines.find(routine => routine.id === item.linkedChecklist) : undefined;
-  if (!target) return undefined;
-  // A circular link can never finish on its own, so it stays not done.
-  return seen.has(target.id) ? { done: 0, total: 0, percent: 0 } : getProgress(target, state, skinCare, routines, seen);
-}
 export const isComplete = progress => Boolean(progress) && progress.total > 0 && progress.done === progress.total;
 
-export function getProgress(routine, state, skinCare = skinCareProgress(state.checks), routines = [], seen = new Set()) {
-  let done = 0;
-  let total = 0;
-  const path = new Set(seen).add(routine.id);
-  for (const group of routine.groups) {
-    if (group.optional && state.optional[groupKey(routine, group)] !== true) continue;
-    total += group.items.length;
-    for (const item of group.items) {
-      const key = itemKey(routine, group, item);
-      const linked = linkedProgress(item, state, skinCare, routines, path);
-      if (linked) {
-        if (isComplete(linked)) done++;
-        continue;
+export function getWorkspaceProgress(routines, state, skinCare, day = lisbonDay()) {
+  skinCare ??= skinCareProgress(state.checks, day);
+  const work = new Map(routines.map(routine => [routine.id, { done: 0, total: 0, links: [] }]));
+  for (const routine of routines) {
+    const progress = work.get(routine.id);
+    for (const group of routine.groups) {
+      if (group.optional && state.optional[groupKey(routine, group)] !== true) continue;
+      progress.total += group.items.length;
+      for (const item of group.items) {
+        if (work.has(item.linkedChecklist)) {
+          progress.links.push(item.linkedChecklist);
+          continue;
+        }
+        const key = itemKey(routine, group, item);
+        const options = skinCareOptionsFor(item.label);
+        if (state.checks[progressKey(item, key, day)] === true || options.includes(skinCare.selected.get(key))
+          || options.length && options.every(option => skinCare.used.has(option))) progress.done++;
       }
-      const options = skinCareOptionsFor(item.label);
-      if (state.checks[key] === true || options.includes(skinCare.selected.get(key))
-        || options.length && options.every(option => skinCare.used.has(option))) done++;
     }
   }
-  return { done, total, percent: total ? Math.round(done / total * 100) : 0 };
+
+  const completed = new Map();
+  function checkComplete(id) {
+    if (completed.has(id)) return completed.get(id);
+    // A dependency back to a checklist being checked cannot complete the cycle.
+    completed.set(id, false);
+    const { done, total, links } = work.get(id);
+    const complete = total > 0 && done + links.length === total && links.every(checkComplete);
+    completed.set(id, complete);
+    return complete;
+  }
+
+  return new Map([...work].map(([id, { done, total, links }]) => {
+    const finished = done + links.filter(checkComplete).length;
+    return [id, { done: finished, total, percent: total ? Math.round(finished / total * 100) : 0 }];
+  }));
+}
+
+export function getProgress(routine, state, skinCare, routines = []) {
+  const workspace = [routine, ...routines.filter(other => other.id !== routine.id)];
+  return getWorkspaceProgress(workspace, state, skinCare).get(routine.id);
 }
 
 export function restartRoutine(routine, state) {

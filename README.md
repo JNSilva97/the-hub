@@ -4,13 +4,15 @@ A personal space with a near-black, neon-blue and ice-cyan interface.
 
 ## Current version
 
-**Nightfall edition.** A staged mechanical opening, an optical core, a distant neon skyline and nine module launchers. **Routines** contains five reusable checklists with saved ticks and optional sections. **Notes** captures text with automatic saving and search. **Settings** controls motion and optional sound. The other six modules remain placeholders.
+**Nightfall edition.** A staged mechanical opening, an optical core, a distant neon skyline and nine module launchers. **Routines** supports reusable checklists with saved ticks and optional sections. **Health** tracks medication and stock. **Notes** captures text with automatic saving and search. **Settings** controls motion and optional sound. Five module launchers are placeholders.
 
 The intro is visual only and does not authenticate users. Any click or keypress skips it. Use **Pause motion** to stop interface animations; the system's reduced-motion preference is also respected.
 
 Use **Find anything** or **Ctrl/Cmd K** to search apps and checklists. Arrow keys move through results; Enter opens one and Escape closes the launcher. **Replay intro** repeats the opening when motion is enabled. Sound starts off and remembers your preference in this browser. Background CSS animations pause when the tab is hidden.
 
 Routines opens the full checklist immediately. Tick items in any order; rows stay in place as you work, and tapping a checked item clears that tick. Optional sections stay available alongside the list. Progress, completion feedback and saved ticks work across reloads and synced devices without prescribing the next task.
+
+Use **Link checklist** in the editor to attach an item to another checklist. The item shows the destination’s progress and ticks automatically when the destination is complete.
 
 The eye is a translucent neon-blue hologram with an illuminated iris, fine radial fibres and light contours. Its eye, outer rings and rotating scanner share a centered axis. It gently drifts and follows the pointer on the home screen, during travel and in the Routines header; keyboard-focused modules also guide its gaze. Motion controls and reduced-motion settings disable movement. The header and traveling artwork reuse the same SVG eye, persistent circular outline and captured pose; the opening follows a continuous trajectory and the return blends into the home layer behind the title.
 
@@ -144,7 +146,7 @@ The published site is public. Keep personal records, credentials and private dat
 
 With the page open, paste `smoke-test.js` into the browser developer console, then run `testHub()`.
 
-The check covers intro dismissal, pause/resume, reduced motion, all nine launchers, five checklist cards, dialog titles, closing, focus restoration, touch target sizes, label fit and horizontal overflow. Repeat at desktop and mobile widths.
+The check covers intro dismissal, pause/resume, reduced motion, all nine launchers, checklist navigation, dialog titles, closing, focus restoration, touch target sizes, label fit and horizontal overflow. Repeat at desktop and mobile widths.
 
 Run the data-model tests with Node.js:
 

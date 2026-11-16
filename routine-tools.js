@@ -1,4 +1,4 @@
-import { cleanRoutines, createBackup, parseBackup, countItems, removedItems, MAX_BACKUP_BYTES } from './workspace-model.mjs?v=checklist-links-2';
+import { cleanRoutines, createBackup, parseBackup, countItems, removedItems, MAX_BACKUP_BYTES } from './workspace-model.mjs?v=checklist-links-3';
 
 // Drafts own their IDs; text edits and moves never change saved tick identities.
 export function createRoutineTools(workspace) {

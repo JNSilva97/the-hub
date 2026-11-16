@@ -1,4 +1,4 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey } from './routine-model.mjs?v=checklist-links-2';
+import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey, isMinoxidilItem, isMinoxidilCheckKey } from './routine-model.mjs?v=checklist-links-3';
 
 export const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 
@@ -19,15 +19,18 @@ export function keepProgress(routines, progress) {
   const checks = new Set();
   const skinCare = new Set();
   const optional = new Set();
+  let hasMinoxidil = false;
   for (const routine of routines) for (const group of routine.groups) {
     optional.add(groupKey(routine, group));
     for (const item of group.items) {
       const key = itemKey(routine, group, item);
       checks.add(key);
       if (isSkinCareChoice(item.label)) skinCare.add(key);
+      if (isMinoxidilItem(item.label)) hasMinoxidil = true;
     }
   }
-  return { checks: Object.fromEntries(Object.entries(saved.checks).filter(([key, value]) => checks.has(key) || value && skinCare.has(skinCareItemKey(key)))),
+  return { checks: Object.fromEntries(Object.entries(saved.checks).filter(([key, value]) =>
+    checks.has(key) || value && (skinCare.has(skinCareItemKey(key)) || hasMinoxidil && isMinoxidilCheckKey(key)))),
     optional: Object.fromEntries(Object.entries(saved.optional).filter(([key]) => optional.has(key))) };
 }
 

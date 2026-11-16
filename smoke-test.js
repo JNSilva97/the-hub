@@ -20,12 +20,18 @@ async function testHub() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
     assert(getComputedStyle(ring).animationName === 'none', 'Reduced motion was ignored.');
   } else {
-    motionToggle.click();
-    assert(motionToggle.getAttribute('aria-pressed') === 'true', 'Pause state is incorrect.');
-    assert(getComputedStyle(ring).animationName === 'none', 'Ambient motion did not stop.');
-    motionToggle.click();
-    assert(motionToggle.getAttribute('aria-pressed') === 'false', 'Resume state is incorrect.');
-    assert(getComputedStyle(ring).animationName === 'orbit', 'Ambient motion did not resume.');
+    const paused = () => motionToggle.getAttribute('aria-pressed') === 'true';
+    const wasPaused = paused();
+    try {
+      if (!wasPaused) motionToggle.click();
+      assert(paused(), 'Pause state is incorrect.');
+      assert(getComputedStyle(ring).animationName === 'none', 'Ambient motion did not stop.');
+      motionToggle.click();
+      assert(!paused(), 'Resume state is incorrect.');
+      assert(getComputedStyle(ring).animationName === 'orbit', 'Ambient motion did not resume.');
+    } finally {
+      if (paused() !== wasPaused) motionToggle.click();
+    }
   }
   assert(apps.length === 8, 'The home screen must show eight apps.');
   assert(/^\d{2}:\d{2}$/.test(document.getElementById('clock').textContent), 'Clock is missing.');
@@ -51,7 +57,9 @@ async function testHub() {
   const routines = document.getElementById('routines-dialog');
   for (let attempt = 0; routines.dataset.ready !== 'true' && attempt < 40; attempt++) await new Promise(resolve => setTimeout(resolve, 100));
   assert(routines.dataset.ready === 'true', 'Routines did not load.');
-  assert(routines.querySelectorAll('.routine-card').length === 5, 'Five checklist cards should be available.');
+  const checklists = routines.querySelectorAll('.routine-card').length;
+  assert(checklists > 0, 'At least one checklist should be available.');
+  assert(routines.querySelector('#routine-picker').options.length === checklists, 'The sidebar and checklist picker disagree.');
   const routinesLauncher = document.getElementById('routines-launch');
   routinesLauncher.scrollIntoView({ block: 'center' });
   const launcherBounds = routinesLauncher.getBoundingClientRect();
@@ -65,5 +73,5 @@ async function testHub() {
   assert(!routines.open, 'Routines did not close.');
   assert(document.activeElement === routinesLauncher, 'Focus did not return to Routines.');
   if (future) future.open = futureWasOpen;
-  return { passed: true, apps: apps.length + 1, checklists: 5, source: routines.dataset.source, viewport: `${innerWidth}x${innerHeight}` };
+  return { passed: true, apps: apps.length + 1, checklists, source: routines.dataset.source, viewport: `${innerWidth}x${innerHeight}` };
 }

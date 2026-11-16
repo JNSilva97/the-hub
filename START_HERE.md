@@ -8,7 +8,7 @@ Open the homepage and choose **Routines** beneath the optical core. Pick a check
 
 Routines shows the full checklist as soon as you open it. Tick things off in whichever order suits you. Checked rows stay where they are, and tapping one again clears its tick. Optional section switches are right in the list. Progress saves automatically.
 
-**Health** opens today’s doses and stock. Use **Add medication** to get started, **Mark taken** to record a dose, and **Undo** to put the recorded amount back. A **Linked checklist** lets you record that dose from Routines. Account Health syncs after its rules are enabled. The local demo keeps its fictional records in this browser.
+Sign in to open **Health** and see today’s doses and stock. Use **Add medication** to get started, **Mark taken** to record a dose, and **Undo** to put the recorded amount back. A **Linked checklist** lets you record that dose from Routines. Account Health syncs after its rules are enabled.
 
 Choose **Notes** and start typing. Your first line becomes the title and each edit saves automatically. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Signed-out/local notes stay in this browser; public sample notes and the PC notebook are separate. Signed-in **Account notes** sync privately through Firebase after the current notes rules are published. **Local notes** returns to the original notebook. Existing local text is copied only through **Copy local notes** and its account confirmation.
 

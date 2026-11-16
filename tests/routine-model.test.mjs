@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { validateRoutines, parseProgress, getProgress, restartRoutine, getProgressPatch, lisbonDay, setSkinCareChoice, skinCareProgress } from '../routine-model.mjs';
+import { validateRoutines, parseProgress, getProgress, getWorkspaceProgress, restartRoutine, getProgressPatch, lisbonDay, setSkinCareChoice, skinCareProgress, minoxidilCheckKey } from '../routine-model.mjs';
 import { createBackup, parseBackup } from '../workspace-model.mjs';
 
 const demo = JSON.parse(readFileSync(new URL('../routines.demo.json', import.meta.url), 'utf8'));
@@ -112,4 +112,39 @@ test('linked items tick themselves when their checklist is complete', () => {
   assert.deepEqual(getProgress(windDown, state, undefined, oneWay), { done: 1, total: 1, percent: 100 });
   delete state.checks['workday/bag/item-2'];
   assert.equal(getProgress(windDown, state, undefined, oneWay).done, 0);
+});
+
+test('workspace progress stays consistent across cycles and many repeated links', () => {
+  const state = parseProgress(null);
+  const routines = Array.from({ length: 20 }, (_, index) => {
+    const id = `checklist-${index}`;
+    state.checks[`${id}/items/manual`] = true;
+    const items = [{ id: 'manual', label: 'Pack bag' }];
+    if (index < 19) for (let link = 0; link < 8; link++) {
+      items.push({ id: `link-${link}`, label: 'Finish next checklist', linkedChecklist: `checklist-${index + 1}` });
+    }
+    return { id, name: id, description: 'Checklist', groups: [{ id: 'items', title: 'Items', optional: false, items }] };
+  });
+  assert.deepEqual(getWorkspaceProgress(routines, state).get('checklist-0'), { done: 9, total: 9, percent: 100 });
+  routines.at(-1).groups[0].items.push({ id: 'back', label: 'Finish first checklist', linkedChecklist: 'checklist-0' });
+  const cyclic = getWorkspaceProgress(routines, state);
+  assert.deepEqual(cyclic.get('checklist-0'), { done: 1, total: 9, percent: 11 });
+  assert.deepEqual(cyclic.get('checklist-19'), { done: 1, total: 2, percent: 50 });
+  assert.deepEqual(cyclic, getWorkspaceProgress([...routines].reverse(), state));
+});
+
+test('minoxidil is one Lisbon-day check across routines and survives backup and routine reset', () => {
+  const routines = ['getting-ready', 'wind-down'].map(id => ({
+    id, name: id, description: 'Checklist',
+    groups: [{ id: 'care', title: 'Care', optional: false, items: [{ id: 'minoxidil', label: 'Apply minoxidil' }] }]
+  }));
+  const state = parseProgress(null);
+  const day = lisbonDay(new Date('2026-07-01T22:59:59Z'));
+  const nextDay = lisbonDay(new Date('2026-07-01T23:00:00Z'));
+  state.checks['getting-ready/care/minoxidil'] = true;
+  assert.deepEqual([...getWorkspaceProgress(routines, state, undefined, day).values()].map(progress => progress.done), [0, 0]);
+  state.checks[minoxidilCheckKey(day)] = true;
+  const restored = parseBackup(JSON.stringify(createBackup(routines, restartRoutine(routines[0], state)))).progress;
+  assert.deepEqual([...getWorkspaceProgress(routines, restored, undefined, day).values()].map(progress => progress.done), [1, 1]);
+  assert.deepEqual([...getWorkspaceProgress(routines, restored, undefined, nextDay).values()].map(progress => progress.done), [0, 0]);
 });

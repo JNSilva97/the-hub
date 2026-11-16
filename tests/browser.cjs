@@ -85,6 +85,31 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
+  await t.test('one daily minoxidil check is shared and can be undone from either list on mobile', async () => {
+    const data = JSON.parse(demo);
+    const [first, second] = data.routines;
+    for (const routine of [first, second]) {
+      routine.groups[0].items.push({ id: 'minoxidil', label: 'Apply minoxidil' });
+    }
+    const { context, page } = await fixture(browser, {
+      width: 390, mobile: true, motion: 'reduce', firebase: true,
+      cloudDocuments: { 'account-a': { routines: data, progress: { checks: {}, optional: {} } } }
+    });
+    try {
+      await ready(page); await openRoutines(page);
+      const check = page.getByRole('checkbox', { name: 'Apply minoxidil', exact: true });
+      await check.check();
+      const checks = await page.evaluate(() => window.__hubFirebase.docs['account-a'].progress.checks);
+      assert.equal(Object.keys(checks).length, 1);
+      assert.match(Object.keys(checks)[0], /^@daily\/minoxidil\//);
+      await chooseRoutine(page, second.id);
+      assert.equal(await check.isChecked(), true);
+      await check.uncheck();
+      await chooseRoutine(page, first.id);
+      assert.equal(await check.isChecked(), false);
+    } finally { await context.close(); }
+  });
+
   await t.test('editor preserves ticks through rename/reorder and confirms removal; backup round-trips at mobile width', async () => {
     const { context, page, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
     try {
@@ -242,7 +267,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.13.18');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.16.1');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
