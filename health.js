@@ -110,6 +110,9 @@ function createHealth(panel) {
     if (!validMedicationId(id) || record.version !== 1 || !Number.isSafeInteger(record.at) || record.at < 0 || record.at > 8640000000000000) throw new Error('Unreadable medication record');
     if (record.type === 'dose') {
       if (typeof record.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) || key !== doseKey(record.date, id) || typeof record.taken !== 'boolean' || !validQuantity(record.quantity) || record.name !== undefined && !validName(record.name)) throw new Error('Unreadable dose');
+    } else if (record.type === 'lozenge') {
+      if (!key.startsWith(prefix + 'lozenge:') || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) ||
+          record.quantity !== 1 || !validName(record.name)) throw new Error('Unreadable lozenge record');
     } else if (record.type === 'restock') {
       if (!key.startsWith(prefix + 'restock:') || !Number.isSafeInteger(record.quantity) || record.quantity < 1 || record.quantity > 10000 || record.name !== undefined && !validName(record.name)) throw new Error('Unreadable stock');
     } else if (record.type === 'settings') {
@@ -138,6 +141,10 @@ function createHealth(panel) {
   }
 
   const normalizedName = name => name.trim().normalize('NFKC').toLowerCase();
+  function isNicotine(medication) {
+    const name = normalizedName(medication.name);
+    return asNeeded(medication) && /\b(?:nicotine|nicotina)\b/.test(name) && /\b(?:lozenges?|pastilhas?)\b/.test(name);
+  }
   const morningDoseOrder = new Map(['fish', 'brain', 'hair'].map((icon, index) => [icon, index]));
 
   function medicationIcon({ name, time }) {
@@ -261,7 +268,12 @@ function createHealth(panel) {
   }
 
   function clearReorder() {
-    if (drag) cancelAnimationFrame(drag.frame);
+    if (drag) {
+      clearTimeout(drag.hold);
+      cancelAnimationFrame(drag.frame);
+      drag.preview?.remove();
+      drag.card.removeAttribute('data-dragging');
+    }
     drag = undefined;
     if (pickedUp) cards.get(pickedUp)?.handle.setAttribute('aria-pressed', 'false');
     pickedUp = undefined;
@@ -273,7 +285,7 @@ function createHealth(panel) {
   function showReorder(id) {
     if (pickedUp) cards.get(pickedUp)?.handle.setAttribute('aria-pressed', 'false');
     pickedUp = id;
-    reorderHint = 'Choose another grip to move here, or use the arrow keys.';
+    reorderHint = 'Choose Move on another card, or use the arrow keys.';
     cards.get(id).handle.setAttribute('aria-pressed', 'true');
     medicationList.dataset.reordering = id;
   }
@@ -312,6 +324,7 @@ function createHealth(panel) {
 
   function trackDrag() {
     if (!drag?.active) return;
+    drag.preview.style.transform = `translate(${drag.x - drag.offsetX}px, ${drag.y - drag.offsetY}px)`;
     const bounds = panel.getBoundingClientRect();
     const headerBottom = panel.querySelector('.health-tabs').getBoundingClientRect().bottom;
     const edge = 44;
@@ -334,11 +347,8 @@ function createHealth(panel) {
       showReorder(id);
       render();
     };
-    const handle = action('', 'Reorder medication', event => {
-      if (event.detail === 0) activate();
-    });
-    handle.classList.add('medication-grip');
-    handle.append(svgIcon('med-icon-grip', 'medication-grip-icon'));
+    const handle = action('Move', 'Reorder medication', activate);
+    handle.classList.add('medication-move');
     handle.setAttribute('aria-pressed', 'false');
     handle.setAttribute('aria-describedby', 'health-reorder-help');
     handle.title = 'Reorder';
@@ -353,44 +363,97 @@ function createHealth(panel) {
       const target = order[order.indexOf(id) + direction];
       if (target) moveMedication(id, target);
     });
-    handle.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || !event.isPrimary || drag) return;
-      drag = { id, pointer: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY };
-      handle.setPointerCapture(event.pointerId);
-    });
-    handle.addEventListener('pointermove', event => {
-      if (drag?.pointer !== event.pointerId) return;
-      drag.x = event.clientX;
-      drag.y = event.clientY;
-      if (!drag.active && Math.hypot(drag.x - drag.startX, drag.y - drag.startY) >= 7) {
-        drag.active = true;
-        showReorder(id);
-        trackDrag();
-      }
-    });
-    handle.addEventListener('pointerup', event => {
-      if (drag?.pointer !== event.pointerId) return;
-      const releasedOn = document.elementFromPoint(event.clientX, event.clientY);
-      if (!drag.active) {
-        drag = undefined;
-        if (handle.contains(releasedOn)) activate();
-        return;
-      }
-      const target = releasedOn?.closest('#health-medications > .medication-card');
-      if (target && target.dataset.medication !== id) moveMedication(id, target.dataset.medication);
-      else { clearReorder(); render(); }
-    });
-    const cancelDrag = event => {
-      if (drag?.pointer !== event.pointerId) return;
-      clearReorder();
-      render();
-    };
-    handle.addEventListener('pointercancel', cancelDrag);
-    handle.addEventListener('lostpointercapture', cancelDrag);
     return handle;
   }
+
+  function enableCardDrag(card, id, handle) {
+    function begin(input, target, x, y, contact) {
+      if (drag || handle.disabled || handle.hidden || !panel.open || card.querySelector('.medication-restock:not([hidden])') ||
+        target.closest('button, input, label, select, textarea, a, summary, .medication-editor, .medication-restock')) return false;
+      drag = { id, card, input, contact, x, y, startX: x, startY: y };
+      return true;
+    }
+    function lift() {
+      const bounds = card.getBoundingClientRect();
+      const preview = card.cloneNode(true);
+      preview.classList.add('medication-drag-preview');
+      preview.removeAttribute('data-medication');
+      preview.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+      preview.inert = true;
+      preview.setAttribute('aria-hidden', 'true');
+      preview.style.width = `${bounds.width}px`;
+      drag.offsetX = drag.startX - bounds.left;
+      drag.offsetY = drag.startY - bounds.top;
+      drag.preview = preview;
+      drag.active = true;
+      card.dataset.dragging = '';
+      panel.append(preview);
+      showReorder(id);
+      trackDrag();
+    }
+    function move(x, y) {
+      drag.x = x;
+      drag.y = y;
+      return Math.hypot(x - drag.startX, y - drag.startY) >= 7;
+    }
+    function drop(x, y) {
+      if (!drag.active) { clearTimeout(drag.hold); drag = undefined; return; }
+      const target = document.elementFromPoint(x, y)?.closest('#health-medications > .medication-card');
+      if (target && target !== card) moveMedication(id, target.dataset.medication);
+      else { clearReorder(); render(); }
+    }
+    const owns = (input, contact) => drag?.card === card && drag.input === input && drag.contact === contact;
+    function cancel() {
+      if (drag?.card !== card) return;
+      clearReorder();
+      render();
+    }
+    card.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'touch' || event.button !== 0 || !event.isPrimary) return;
+      if (begin('pointer', event.target, event.clientX, event.clientY, event.pointerId)) {
+        card.setPointerCapture(event.pointerId);
+      }
+    });
+    card.addEventListener('pointermove', event => {
+      if (owns('pointer', event.pointerId) && move(event.clientX, event.clientY) && !drag.active) lift();
+    });
+    card.addEventListener('pointerup', event => {
+      if (owns('pointer', event.pointerId)) drop(event.clientX, event.clientY);
+    });
+    card.addEventListener('lostpointercapture', event => {
+      if (owns('pointer', event.pointerId)) cancel();
+    });
+    card.addEventListener('touchstart', event => {
+      if (event.touches.length !== 1) { if (drag?.input === 'touch') cancel(); return; }
+      const touch = event.changedTouches[0];
+      if (begin('touch', event.target, touch.clientX, touch.clientY, touch.identifier)) {
+        drag.hold = setTimeout(lift, 300);
+      }
+    }, { passive: true });
+    card.addEventListener('touchmove', event => {
+      const touch = [...event.changedTouches].find(entry => owns('touch', entry.identifier));
+      if (!touch) return;
+      const moved = move(touch.clientX, touch.clientY);
+      if (drag.active && event.cancelable) event.preventDefault();
+      else if (moved) cancel();
+    }, { passive: false });
+    card.addEventListener('touchend', event => {
+      const touch = [...event.changedTouches].find(entry => owns('touch', entry.identifier));
+      if (touch) drop(touch.clientX, touch.clientY);
+    });
+    card.addEventListener('touchcancel', event => {
+      if ([...event.changedTouches].some(entry => owns('touch', entry.identifier))) cancel();
+    });
+    card.addEventListener('contextmenu', event => {
+      if (drag?.card === card) event.preventDefault();
+    });
+  }
   function stock(medication, entries) {
-    const value = entries.filter(entry => entry.medication === medication.id).reduce((count, entry) => entry.type === 'settings' ? count + entry.adjustment : entry.type === 'restock' ? count + entry.quantity : count - (entry.taken ? doseQuantity(entry) : 0), medication.initial);
+    const value = entries.filter(entry => entry.medication === medication.id).reduce((count, entry) => {
+      if (entry.type === 'settings') return count + entry.adjustment;
+      if (entry.type === 'restock') return count + entry.quantity;
+      return count - (entry.type === 'lozenge' || entry.taken ? doseQuantity(entry) : 0);
+    }, medication.initial);
     if (!Number.isSafeInteger(value * 4) || value < 0) throw new Error('Invalid stock');
     return value;
   }
@@ -405,6 +468,49 @@ function createHealth(panel) {
   }
   function taken(medication, entries, date = today()) {
     return entries.some(entry => entry.type === 'dose' && entry.medication === medication.id && entry.date === date && entry.taken);
+  }
+  const lozengesToday = (medication, entries, date = today()) => entries
+    .filter(entry => entry.type === 'lozenge' && entry.medication === medication?.id && entry.date === date)
+    .reverse()
+    .sort((first, second) => second.at - first.at);
+
+  function nicotineMedication(entries) {
+    const matches = orderedSettings(entries).filter(isNicotine);
+    return matches.length === 1 ? fromSetup(matches[0]) : undefined;
+  }
+
+  function logNicotine(medication = nicotineMedication(read())) {
+    if (!medication) return false;
+    const key = prefix + 'lozenge:' + crypto.randomUUID();
+    const date = today();
+    const at = Date.now();
+    return change(medication.id, entries => {
+      const current = configured(medication, entries);
+      if (!isNicotine(current)) conflict('This nicotine item changed. Open Health and try again.');
+      if (stock(medication, entries) < 1) conflict('No nicotine lozenges in stock.');
+      return { key, version: 1, type: 'lozenge', name: current.name, medication: medication.id, quantity: 1, date, at };
+    }, 'Lozenge recorded. Stock updated.');
+  }
+
+  function undoNicotine(medication = nicotineMedication(read()), entry) {
+    const recorded = entry ?? lozengesToday(medication, read())[0];
+    if (!medication || !recorded) return false;
+    return change(medication.id, entries => {
+      if (entries.some(item => item.key === recorded.key && item.type === 'lozenge')) return { key: recorded.key, remove: true };
+    }, 'Lozenge record undone. Stock restored.');
+  }
+
+  function nicotineState() {
+    if (!account?.uid) return { message: 'Sign in to Health to use your lozenge stock.' };
+    if (!account.ready) return { message: account.error || 'Loading your Health account…' };
+    const entries = read();
+    const medication = nicotineMedication(entries);
+    if (!medication) return { message: 'Set up one as-needed nicotine lozenge item in Health.' };
+    const count = lozengesToday(medication, entries).length;
+    const units = stock(medication, entries);
+    const available = navigator.onLine && !account.cached && !busy;
+    const status = busy ? ' · Saving…' : !available ? ' · Connect to log changes' : '';
+    return { canRecord: available && units >= 1, canUndo: available && count > 0, message: `${count} today · ${units} in stock${status}` };
   }
   async function change(id, write, success) {
     const scope = healthScope();
@@ -562,7 +668,10 @@ function createHealth(panel) {
     const dose = action('Mark taken', `Mark ${medication.name} taken`, () => recordDose(medication, true));
     const undo = action('Undo', `Undo ${medication.name} dose`, () => recordDose(medication, false));
     const doseState = node('p', 'medication-dose-state');
-    const buttons = node('div', 'medication-dose-actions'); buttons.append(dose, undo);
+    const logLozenge = action('Log lozenge taken', `Log lozenge taken for ${medication.name}`, () => logNicotine(medication));
+    logLozenge.classList.add('addiction-red');
+    const undoLozenge = action('Undo', `Undo last lozenge for ${medication.name}`, () => undoNicotine(medication));
+    const buttons = node('div', 'medication-dose-actions'); buttons.append(dose, undo, logLozenge, undoLozenge);
     const restock = node('div', 'medication-restock');
     restock.hidden = true;
     const label = node('label', '', 'Tablets to add');
@@ -647,7 +756,10 @@ function createHealth(panel) {
     editor.addEventListener('input', () => { fields.name.setCustomValidity(''); save.disabled = busy || !dirty(view); updateImportButton(); });
     editor.addEventListener('keydown', event => { if (event.key === 'Enter' && event.target.matches('input')) { event.preventDefault(); save.click(); } });
     heading.append(edit);
-    if (handle) heading.prepend(handle);
+    if (handle) {
+      heading.prepend(handle);
+      enableCardDrag(card, medication.id, handle);
+    }
     const linkInfo = node('div', 'medication-link-info');
     const linkText = node('span', 'medication-checklist-name');
     const openLinked = action('', 'Open linked checklist', () => {
@@ -674,7 +786,7 @@ function createHealth(panel) {
     check.addEventListener('change', () => recordDose(medication, check.checked));
     const copy = node('span', ''); copy.append(node('strong', ''), node('small', ''));
     row.append(check, copy); if (!isNew) document.getElementById('medication-checks').append(row);
-    Object.assign(view, { card, row, linkText, openLinked, linkedName, unlinked, linkField, linkSelect, linkPicker, title, iconUse, handle, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, doseState, restock, restockToggle, cancelStock, quantity, restockLabel: label, add, check });
+    Object.assign(view, { card, row, linkText, openLinked, linkedName, unlinked, linkField, linkSelect, linkPicker, title, iconUse, handle, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, logLozenge, undoLozenge, doseState, restock, restockToggle, cancelStock, quantity, restockLabel: label, add, check });
     if (isNew) { card.hidden = true; edit.hidden = true; } else cards.set(medication.id, view);
     return view;
   }
@@ -705,6 +817,8 @@ function createHealth(panel) {
       const checked = taken(medication, entries, day);
       const current = configured(medication, entries);
       const stockOnly = asNeeded(current);
+      const nicotine = isNicotine(current);
+      const lozengeCount = nicotine ? lozengesToday(medication, entries, day).length : 0;
       const link = binding(medication, entries); const linked = linkedChecklist(link);
       const visibleHere = Boolean(linked && workspace.selected && linked.id === workspace.selected.id);
       view.row.hidden = !visibleHere;
@@ -718,10 +832,18 @@ function createHealth(panel) {
       view.title.textContent = current.name;
       view.handle.setAttribute('aria-label', `Reorder ${current.name}, position ${index + 1} of ${medications.length}`);
       view.handle.hidden = medications.length < 2;
-      view.handle.disabled = locked;
+      view.handle.disabled = locked || !view.editor.hidden;
+      view.card.toggleAttribute('data-movable', !view.handle.disabled && !view.handle.hidden);
       const iconHref = `#med-icon-${medicationIcon(current)}`;
       if (view.iconUse.getAttribute('href') !== iconHref) view.iconUse.setAttribute('href', iconHref);
       view.schedule.textContent = scheduleText(current);
+      if (nicotine) view.schedule.textContent = `As needed · ${lozengeCount} logged today`;
+      view.logLozenge.hidden = !nicotine;
+      view.logLozenge.disabled = locked || count < 1;
+      view.logLozenge.setAttribute('aria-label', `Log lozenge taken for ${current.name}`);
+      view.undoLozenge.hidden = !lozengeCount;
+      view.undoLozenge.disabled = locked;
+      view.undoLozenge.setAttribute('aria-label', `Undo last lozenge for ${current.name}`);
       view.copy.querySelector('strong').textContent = `Take ${current.name}`;
       view.copy.querySelector('small').textContent = `${tabletCount(current.quantity)} · ${timing(current)}`;
       view.dose.setAttribute('aria-label', `Mark ${current.name} taken`); view.undo.setAttribute('aria-label', `Undo ${current.name} dose`);
@@ -768,6 +890,7 @@ function createHealth(panel) {
     progress.max = daily.length || 1;
     progress.value = totalTaken;
     document.getElementById('health-empty').hidden = !account?.ready || medications.length > 0 || !newView?.card.hidden;
+    document.getElementById('health-reorder-help').hidden = locked || medications.length < 2;
     document.getElementById('health-sign-in').hidden = signedIn;
     document.getElementById('health-sync-retry').hidden = !signedIn || !account.error;
     sync.textContent = signedIn ? account.error || (!account.ready ? navigator.onLine ? 'Loading account Health…' : 'Connect to load account Health.' : readOnly ? 'Offline copy. Connect to record changes.' : busy ? 'Syncing…' : 'Synced to your account.') : 'Sign in to see your medication and stock.';
@@ -803,13 +926,15 @@ function createHealth(panel) {
       row.dataset.event = entry.type === 'dose' ? entry.taken ? 'taken' : 'undone' : entry.type;
       const quantity = entry.type === 'dose' ? doseQuantity(entry) : 0;
       const units = asNeeded(configured(medication, entries)) ? 'units' : 'tablets';
-      const text = entry.type === 'settings' ? 'Medication setup updated' : entry.type === 'restock' ? `Added ${entry.quantity} ${units}` : entry.taken ? `Taken · ${tabletCount(quantity)}` : 'Dose undone · stock restored';
+      const text = entry.type === 'settings' ? 'Medication setup updated' : entry.type === 'restock' ? `Added ${entry.quantity} ${units}` :
+        entry.type === 'lozenge' ? 'Taken · 1 lozenge' : entry.taken ? `Taken · ${tabletCount(quantity)}` : 'Dose undone · stock restored';
       row.append(node('strong', '', entry.name || medication.name), node('span', '', text), node('small', '', `${stampFormat.format(entry.at)}${entry.type === 'dose' ? ' · Dose for ' + entry.date : ''}`));
-      if (entry.type === 'restock' || entry.type === 'dose' && entry.taken) {
+      if (entry.type === 'restock' || entry.type === 'lozenge' || entry.type === 'dose' && entry.taken) {
         const name = entry.name || medication.name;
         const undo = entry.type === 'restock'
           ? action('Undo', `Undo stock addition for ${name}`, () => undoRestock(medication, entry))
-          : action('Undo', `Undo ${name} dose for ${entry.date}`, () => recordDose(medication, false, entry.date));
+          : entry.type === 'lozenge' ? action('Undo', `Undo ${name} lozenge`, () => undoNicotine(medication, entry))
+            : action('Undo', `Undo ${name} dose for ${entry.date}`, () => recordDose(medication, false, entry.date));
         undo.disabled = locked; row.append(undo);
       }
       history.append(row);
@@ -817,6 +942,7 @@ function createHealth(panel) {
     document.getElementById('health-history-empty').hidden = history.children.length > 0;
     if (focused) status.focus({ preventScroll: true });
     document.getElementById('health-open-care').disabled = !currentRoutineCard();
+    document.dispatchEvent(new Event('hub:healthchange'));
   }
   function currentRoutineCard() {
     const cards = [...document.querySelectorAll('.routine-card')];
@@ -941,5 +1067,6 @@ function createHealth(panel) {
       }, validateLedger);
       account.watch();
     },
-    refresh: render, canNavigate() { if (!hasDraft() && !busy) return true; message = 'Save or cancel medication edits before opening quick access.'; failed = true; render(); return false; } };
+    refresh: render, nicotineState, logNicotine, undoNicotine,
+    canNavigate() { if (!hasDraft() && !busy) return true; message = 'Save or cancel medication edits before opening quick access.'; failed = true; render(); return false; } };
 }

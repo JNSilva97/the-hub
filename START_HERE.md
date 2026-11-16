@@ -10,6 +10,8 @@ Routines shows the full checklist as soon as you open it. Tick things off in whi
 
 Sign in to open **Health** and see today’s doses and stock. Use **Add medication** to get started, **Mark taken** to record a dose, and **Undo** to put the recorded amount back. A **Linked checklist** lets you record that dose from Routines. Account Health syncs after its rules are enabled.
 
+Open **Addiction Helper** to log cigarettes (goal: zero) and coffees (limit: 3 a day). These counts stay on this device. When a craving hits, press the red **Log lozenge taken** button; it records a nicotine lozenge in Health, where the same red button also appears. Health cards can be dragged to reorder: press and drag with a mouse, or press and hold on a touch screen.
+
 Choose **Notes** and start typing. Your first line becomes the title and each edit saves automatically. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Signed-out/local notes stay in this browser; public sample notes and the PC notebook are separate. Signed-in **Account notes** sync privately through Firebase after the current notes rules are published. **Local notes** returns to the original notebook. Existing local text is copied only through **Copy local notes** and its account confirmation.
 
 **Delete note** asks for confirmation inside the app. **Keep note**, Escape or clicking outside cancels. After confirming, **Undo delete** recovers the last deleted note until you reload the page or successfully delete another note. Deleting one note leaves the others untouched.

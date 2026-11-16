@@ -408,14 +408,15 @@ test('Account Health', { timeout: 150000 }, async t => {
     const order = page => page.locator('#health-medications h3').allTextContents();
     try {
       await ready(first.page); await openHealth(first.page);
-      const grip = first.page.getByRole('button', { name: /Reorder Sample A/ });
+      const source = first.page.getByRole('heading', { name: 'Sample A', exact: true });
       const target = first.page.getByRole('heading', { name: 'Sample B', exact: true });
       assert.deepEqual(await order(first.page), ['Sample A', 'Sample B']);
-      const sourceBox = await grip.boundingBox();
+      const sourceBox = await source.boundingBox();
       const targetBox = await target.boundingBox();
-      await first.page.mouse.move(sourceBox.x + 20, sourceBox.y + 20);
+      await first.page.mouse.move(sourceBox.x + 10, sourceBox.y + 10);
       await first.page.mouse.down();
       await first.page.mouse.move(targetBox.x + 10, targetBox.y + 10, { steps: 8 });
+      await first.page.locator('.medication-drag-preview').waitFor({ state: 'visible' });
       await first.page.mouse.up();
       await first.page.locator('#health-status').filter({ hasText: 'Medication order saved.' }).waitFor();
       assert.deepEqual(await order(first.page), ['Sample B', 'Sample A']);
@@ -429,9 +430,10 @@ test('Account Health', { timeout: 150000 }, async t => {
       await second.page.getByRole('button', { name: 'Reorder Sample A, position 1 of 2' }).waitFor();
       assert.deepEqual(await order(second.page), ['Sample A', 'Sample B']);
       const touch = await second.context.newCDPSession(second.page);
-      const start = await secondGrip.boundingBox();
+      const start = await second.page.getByRole('heading', { name: 'Sample A', exact: true }).boundingBox();
       const end = await second.page.getByRole('heading', { name: 'Sample B', exact: true }).boundingBox();
-      await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start.x + 20, y: start.y + 20 }] });
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start.x + 10, y: start.y + 10 }] });
+      await second.page.locator('.medication-drag-preview').waitFor({ state: 'visible' });
       await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: end.x + 10, y: end.y + 10 }] });
       await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       await second.page.getByRole('button', { name: 'Reorder Sample B, position 1 of 2' }).waitFor();
@@ -443,6 +445,47 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await second.page.locator('#app-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
       assert.deepEqual(first.errors.concat(second.errors), []);
     } finally { await first.context.close(); await second?.context.close(); }
+  });
+
+  await t.test('Addiction Helper counts daily habits and shares lozenge records with Health', async () => {
+    const records = seededHealth();
+    const entries = JSON.parse(records[firstId].payload);
+    Object.assign(entries[0], { name: 'Nicotine Lozenges', time: 'as-needed', quantity: null, link: null, adjustment: 2 });
+    records[firstId].payload = JSON.stringify(entries);
+    const { context, page, errors } = await accountFixture(browser, { width: 390, mobile: true, motion: 'reduce' }, records);
+    try {
+      await page.clock.setFixedTime(new Date('2026-07-10T22:59:00Z'));
+      await ready(page);
+      await page.locator('#phone-addiction').tap();
+      const logCoffee = page.getByRole('button', { name: 'Log coffee', exact: true });
+      for (let i = 0; i < 3; i++) await logCoffee.tap();
+      assert.equal(await logCoffee.isDisabled(), true);
+      assert.equal(await page.locator('#addiction-coffees').textContent(), '3 / 3 coffees today');
+      await page.getByRole('button', { name: 'Log cigarette', exact: true }).tap();
+      assert.equal(await page.locator('#addiction-cigarettes').textContent(), '1 cigarette today');
+      await page.getByRole('button', { name: 'Log lozenge taken', exact: true }).tap();
+      await page.getByText('1 today · 1 in stock', { exact: true }).waitFor();
+      assert.equal(await page.locator('#addiction-cigarettes').textContent(), '1 cigarette today');
+      await page.getByRole('button', { name: 'Open Health', exact: true }).tap();
+      await page.getByRole('button', { name: 'Log lozenge taken for Nicotine Lozenges' }).tap();
+      await page.getByText('As needed · 2 logged today', { exact: true }).waitFor();
+      assert.equal(await stock(page, firstId), '0 units left');
+      assert.equal(await page.getByRole('button', { name: 'Log lozenge taken for Nicotine Lozenges' }).isDisabled(), true);
+      await closeHealth(page);
+      await page.locator('#phone-addiction').tap();
+      await page.getByRole('button', { name: 'Undo last nicotine lozenge' }).tap();
+      await page.getByText('1 today · 1 in stock', { exact: true }).waitFor();
+      await page.reload();
+      await ready(page);
+      await page.locator('#phone-addiction').tap();
+      assert.equal(await page.locator('#addiction-coffees').textContent(), '3 / 3 coffees today');
+      await page.clock.setFixedTime(new Date('2026-07-10T23:01:00Z'));
+      await page.getByRole('button', { name: 'Close Addiction Helper' }).tap();
+      await page.locator('#phone-addiction').tap();
+      assert.equal(await page.locator('#addiction-coffees').textContent(), '0 / 3 coffees today');
+      assert.equal(await page.locator('#addiction-cigarettes').textContent(), '0 cigarettes today');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
   });
 
   await t.test('empty stock blocks another dose, while restocking restores availability', async () => {

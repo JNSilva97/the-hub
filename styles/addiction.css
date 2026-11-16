@@ -1,0 +1,44 @@
+#addiction-dialog {
+  width: min(660px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: clamp(14px, 4vw, 26px);
+  text-align: left;
+}
+
+.addiction-header,
+.addiction-date {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.addiction-header h2 { font-size: clamp(20px, 5vw, 25px); }
+.addiction-date { margin: 12px 0; color: #9ebdd5; font-size: 13px; }
+.addiction-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.addiction-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #294d6b;
+  border-radius: 6px;
+  padding: clamp(12px, 3vw, 18px);
+  background: var(--panel-raised);
+  align-content: start;
+}
+
+.addiction-card h3 { margin: 0; color: #e7f5ff; font: 600 21px var(--font-interface); }
+.addiction-count { color: #a2e4ff; font: 600 25px var(--font-interface); }
+#addiction-dialog p { margin: 0; }
+.addiction-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.addiction-actions button:first-child { flex: 1 1 auto; }
+#addiction-coffee-progress { width: 100%; accent-color: #6ac7ef; }
+.addiction-lozenges { margin-top: 12px; }
+/* Shared with the nicotine card in Health. */
+.health-button.addiction-red { background: #712634; border-color: #f0828c; color: #fff3f5; }
+.health-button.addiction-red:hover:not(:disabled) { background: #913347; border-color: #f0828c; }
+#addiction-dialog .addiction-device { margin-top: 12px; font-size: 12px; }
+#addiction-status:not(:empty) { margin-top: 8px; }
+
+@media (max-width: 480px) {
+  .addiction-grid { grid-template-columns: minmax(0, 1fr); }
+}

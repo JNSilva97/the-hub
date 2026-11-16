@@ -5,6 +5,8 @@ const retryButton = document.getElementById('routine-retry');
 const notesDialog = document.getElementById('notes-dialog');
 const instantNotes = typeof createInstantNotes === 'function' ? createInstantNotes(notesDialog) : undefined;
 const health = typeof createHealth === 'function' && typeof createChecklistPicker === 'function' ? createHealth(dialog) : undefined;
+const addictionDialog = document.getElementById('addiction-dialog');
+const addiction = typeof createAddictionHelper === 'function' ? createAddictionHelper(addictionDialog, health) : undefined;
 const scriptUrl = new URL(document.currentScript.src);
 const routinesUrl = new URL('./routines.js', scriptUrl);
 routinesUrl.search = scriptUrl.search;
@@ -91,11 +93,22 @@ for (const icon of ['notes', 'health', 'settings']) {
 }
 
 document.getElementById('health-close').addEventListener('click', () => dialog.close());
+for (const id of ['addiction-launch', 'phone-addiction']) {
+  const launcher = document.getElementById(id);
+  launcher.disabled = !addiction;
+  if (addiction) launcher.addEventListener('click', addiction.open);
+}
+document.getElementById('addiction-open-health').addEventListener('click', () => {
+  addictionDialog.close();
+  const launcher = document.querySelector('.app[data-icon="health"]');
+  launcher.focus();
+  launcher.click();
+});
 
 routinesLauncher.addEventListener('click', () => {
   routineTransition.open();
 });
-for (const panel of [dialog, routinesDialog, notesDialog, document.getElementById('note-delete-dialog'), document.getElementById('notes-import-dialog'), document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
+for (const panel of [dialog, addictionDialog, routinesDialog, notesDialog, document.getElementById('note-delete-dialog'), document.getElementById('notes-import-dialog'), document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
   panel.addEventListener('click', event => {
     if (event.target !== panel) return;
     const bounds = panel.getBoundingClientRect();
@@ -169,6 +182,7 @@ loadRoutines();
     for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
     const launch = target => { target.focus(); target.click(); };
     commands = [{ name: 'Routines', kind: 'Checklists', run: () => launch(routinesLauncher) }];
+    if (addiction) commands.push({ name: 'Addiction Helper', kind: 'Tobacco and coffee', run: addiction.open });
     for (const card of document.querySelectorAll('.routine-card')) commands.push({
       name: card.querySelector('.routine-card-name').textContent,
       kind: 'Checklist', run: () => { launch(routinesLauncher); card.click(); }

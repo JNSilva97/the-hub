@@ -2,12 +2,12 @@ import {
   validateRoutines, parseProgress, groupKey, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=checklist-links-3';
-import { cloudWorkspace } from './cloud.js?v=checklist-links-3';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=checklist-links-3';
-import { createRoutineTools } from './routine-tools.js?v=checklist-links-3';
+} from './routine-model.mjs?v=addiction-helper-1';
+import { cloudWorkspace } from './cloud.js?v=addiction-helper-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=addiction-helper-1';
+import { createRoutineTools } from './routine-tools.js?v=addiction-helper-1';
 
-export { createHealthAccount } from './cloud-health.js?v=checklist-links-3';
+export { createHealthAccount } from './cloud-health.js?v=addiction-helper-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');

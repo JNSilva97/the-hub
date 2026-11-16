@@ -94,25 +94,32 @@
 .medication-card[data-taken="true"] { border-color: #397d76; }
 .medication-card[data-taken="true"]::before { background: #79eac7; }
 .medication-heading { display: flex; align-items: center; gap: 8px; }
-.medication-grip {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  padding: 0;
+.medication-move {
   color: #9dd7fa;
   background: #102840;
-  touch-action: none;
-  user-select: none;
-  cursor: grab;
 }
-.medication-grip-icon { width: 20px; height: 20px; fill: currentColor; pointer-events: none; }
-.medication-grip:active { cursor: grabbing; }
-.medication-grip[aria-pressed="true"], #health-medications[data-reordering] .medication-card[data-drop] {
+.medication-move[aria-pressed="true"], #health-medications[data-reordering] .medication-card[data-drop] {
   border-color: #91dcff;
   background-color: #1a3c59;
   box-shadow: inset 0 0 0 1px #91dcff85;
 }
-#health-medications[data-reordering] .medication-card:has(.medication-grip[aria-pressed="true"]) { border-style: dashed; }
+#health-medications[data-reordering] .medication-card:has(.medication-move[aria-pressed="true"]) { border-style: dashed; }
+.medication-card[data-movable] { cursor: grab; user-select: none; -webkit-touch-callout: none; }
+.medication-card[data-movable] input { user-select: text; }
+.medication-card[data-dragging] { opacity: .35; cursor: grabbing; }
+#app-dialog .medication-drag-preview {
+  position: fixed;
+  inset: 0 auto auto 0;
+  z-index: 20;
+  margin: 0;
+  opacity: .94;
+  pointer-events: none;
+  background: #0c2134;
+  border-color: #91dcff;
+  box-shadow: 0 16px 32px #0008;
+  will-change: transform;
+}
+#health-content #health-reorder-help { margin: 0 0 12px; font-size: 13px; color: var(--health-muted); }
 .medication-details { display: flex; flex: 1; flex-direction: column; }
 .medication-icon {
   flex: none;
