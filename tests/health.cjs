@@ -467,7 +467,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await page.locator('#addiction-cigarettes').textContent(), '1 cigarette today');
       await page.getByRole('button', { name: 'Log lozenge taken', exact: true }).tap();
       await page.locator('#addiction-lozenges').filter({ hasText: /^1 lozenge today$/ }).waitFor();
-      assert.equal(await page.locator('#addiction-lozenge-status').textContent(), '1 in stock');
+      assert.equal(await page.locator('#addiction-lozenge-status').textContent(), '1 in stock · running low');
       assert.equal(await page.locator('#addiction-cigarettes').textContent(), '1 cigarette today');
       await page.getByRole('button', { name: 'Open Health', exact: true }).tap();
       await page.getByRole('button', { name: 'Log lozenge taken for Nicotine Lozenges' }).tap();
@@ -479,16 +479,90 @@ test('Account Health', { timeout: 150000 }, async t => {
       await page.locator('#phone-addiction').tap();
       await page.getByRole('button', { name: 'Undo last nicotine lozenge' }).tap();
       await page.locator('#addiction-lozenges').filter({ hasText: /^1 lozenge today$/ }).waitFor();
-      assert.equal(await page.locator('#addiction-lozenge-status').textContent(), '1 in stock');
-      await page.reload();
-      await ready(page);
-      await page.locator('#phone-addiction').tap();
-      assert.equal(await page.locator('#addiction-coffees').textContent(), '3 / 3 coffees today');
+      assert.equal(await page.locator('#addiction-lozenge-status').textContent(), '1 in stock · running low');
+      assert.deepEqual(await page.evaluate(() => window.__hubFirebase.docs['account-a'].habits['2026-07-10']), { version: 1, coffees: 3, cigarettes: 1 });
+      assert.equal(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith('thehub:addiction-helper:v1:2026'))), false);
       await page.clock.setFixedTime(new Date('2026-07-10T23:01:00Z'));
       await page.getByRole('button', { name: 'Close Addiction Helper' }).tap();
       await page.locator('#phone-addiction').tap();
       assert.equal(await page.locator('#addiction-coffees').textContent(), '0 / 3 coffees today');
       assert.equal(await page.locator('#addiction-cigarettes').textContent(), '0 cigarettes today');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('Addiction Helper syncs habits, keeps streaks, history, savings, cut-off, craving timer and low lozenge alerts', async () => {
+    const records = seededHealth();
+    const entries = JSON.parse(records[firstId].payload);
+    Object.assign(entries[0], { name: 'Nicotine Lozenges', time: 'as-needed', quantity: null, link: null, adjustment: 4 });
+    records[firstId].payload = JSON.stringify(entries);
+    const habits = { '2026-07-06': { version: 1, cigarettes: 2 } };
+    const { context, page, errors } = await fixture(browser, { width: 390, mobile: true, motion: 'reduce', firebase: true,
+      cloudDocuments: { 'account-a': { ...makeAccount(), health: records, habits } } });
+    try {
+      // Lisbon 15:30, past the default coffee cut-off.
+      await page.clock.setFixedTime(new Date('2026-07-10T14:30:00Z'));
+      await ready(page);
+      await page.evaluate(() => localStorage.setItem('thehub:addiction-helper:v1:2026-07-09', JSON.stringify({ cigarettes: 0, coffees: 2 })));
+      await ready(page);
+      await page.waitForFunction(() => window.__hubFirebase.docs['account-a'].habits['2026-07-09']?.coffees === 2);
+      assert.equal(await page.evaluate(() => localStorage.getItem('thehub:addiction-helper:v1:2026-07-09')), null);
+      await page.locator('#phone-addiction').tap();
+      assert.equal(await page.locator('#addiction-streak').textContent(), 'Smoke-free · 4 days · Best 4');
+      assert.equal(await page.locator('#addiction-cutoff').textContent(), 'Past 15:00 · skip coffee for better sleep');
+      assert.equal(await page.locator('#addiction-cutoff').getAttribute('data-warning'), 'true');
+      assert.equal(await page.locator('#addiction-device').textContent(), 'Cigarettes and coffee sync to your account.');
+      const rows = page.locator('#addiction-history tr');
+      assert.equal(await rows.count(), 7);
+      assert.deepEqual(await rows.nth(0).locator('th, td').allTextContents(), ['Today', '0', '0', '0']);
+      assert.deepEqual(await rows.nth(1).locator('th, td').allTextContents(), ['Yesterday', '0', '2', '0']);
+      assert.deepEqual(await rows.nth(4).locator('th, td').allTextContents(), ['Mon 6', '2', '0', '0']);
+      assert.match(await page.locator('#addiction-savings').textContent(), /^Add your tobacco price/);
+
+      assert.equal(await page.locator('#addiction-lozenge-status').textContent(), '4 in stock · running low');
+      assert.equal(await page.locator('#addiction-lozenge-status').getAttribute('data-warning'), 'true');
+      await page.getByRole('button', { name: 'Log lozenge taken', exact: true }).tap();
+      await page.locator('#addiction-lozenges').filter({ hasText: /^1 lozenge today$/ }).waitFor();
+      assert.equal(await page.locator('#addiction-craving').textContent(), 'Stop timer');
+      assert.equal(await page.locator('#addiction-timer').textContent(), '5:00');
+      assert.deepEqual(await rows.nth(0).locator('th, td').allTextContents(), ['Today', '0', '0', '1']);
+      await page.locator('#addiction-craving').tap();
+      assert.equal(await page.locator('#addiction-craving').textContent(), 'Start 5-minute timer');
+
+      await page.locator('#addiction-settings summary').tap();
+      assert.equal(await page.locator('#addiction-cutoff-time').inputValue(), '15:00');
+      await page.locator('#addiction-price').fill('10');
+      await page.locator('#addiction-per-pouch').fill('50');
+      await page.locator('#addiction-baseline').fill('10');
+      await page.getByRole('button', { name: 'Save settings', exact: true }).tap();
+      await page.locator('#addiction-status').filter({ hasText: 'Settings saved to your account.' }).waitFor();
+      // 10 + 10 + 10 + 10 + 8 cigarettes avoided since 6 July at 0.20 each.
+      assert.equal(await page.locator('#addiction-savings').textContent(), '€9.60 saved in the last 7 days');
+      assert.deepEqual(await page.evaluate(() => window.__hubFirebase.docs['account-a'].habits.settings),
+        { version: 1, coffeeCutoff: '15:00', pouchPrice: 10, pouchCigarettes: 50, baseline: 10 });
+
+      await page.getByRole('button', { name: 'Log cigarette', exact: true }).tap();
+      assert.equal(await page.locator('#addiction-streak').textContent(), 'Smoke-free · 0 days · Best 3');
+      assert.equal(await page.locator('#addiction-savings').textContent(), '€9.40 saved in the last 7 days');
+      await page.getByRole('button', { name: 'Open Health', exact: true }).tap();
+      assert.equal(await page.locator(`[data-medication="${firstId}"] .medication-warning`).textContent(), 'Only 3 left · buy more soon');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('Addiction Helper keeps counts on the device until account habit sync is enabled', async () => {
+    const { context, page, errors } = await accountFixture(browser, { width: 1440, motion: 'reduce' });
+    try {
+      await context.addInitScript(() => { window.__hubFirebase.habitsDenied = true; });
+      await ready(page);
+      await page.locator('#addiction-launch').click();
+      await page.locator('#addiction-device').filter({ hasText: 'Account sync for habits is not enabled yet' }).waitFor();
+      await page.getByRole('button', { name: 'Log coffee', exact: true }).click();
+      assert.equal(await page.locator('#addiction-coffees').textContent(), '1 / 3 coffees today');
+      assert.equal(await page.evaluate(() => Object.keys(localStorage).filter(key => key.startsWith('thehub:addiction-helper:v1:2')).length), 1);
+      const grid = await page.locator('.addiction-grid .addiction-actions').evaluateAll(rows => rows.map(row => Math.round(row.getBoundingClientRect().bottom)));
+      assert.equal(new Set(grid.slice(0, 2)).size, 1, 'Tobacco and Coffee buttons line up');
+      assert.equal(new Set(grid.slice(2, 4)).size, 1, 'Lozenge and timer buttons line up');
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });

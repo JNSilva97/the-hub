@@ -17,31 +17,54 @@
 .addiction-date { margin: 12px 0; color: #9ebdd5; font-size: 13px; }
 .addiction-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .addiction-card {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   border: 1px solid #294d6b;
   border-radius: 6px;
   padding: clamp(12px, 3vw, 18px);
   background: var(--panel-raised);
-  align-content: start;
 }
 
-.addiction-grid .addiction-card { grid-template-rows: auto auto 1fr auto; align-content: stretch; align-items: start; }
 .addiction-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.addiction-card-heading .health-button { padding: 6px 12px; font-size: 14px; }
+/* Negative margins keep this row as tall as a plain heading, so card contents line up. */
+.addiction-card-heading .health-button { margin: -10px 0; padding: 6px 12px; font-size: 14px; }
 .addiction-card h3 { margin: 0; color: #e7f5ff; font: 600 21px var(--font-interface); }
-.addiction-count { color: #a2e4ff; font: 600 25px var(--font-interface); }
+.addiction-count { color: #a2e4ff; font: 600 25px var(--font-interface); font-variant-numeric: tabular-nums; }
 #addiction-dialog p { margin: 0; }
-.addiction-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#addiction-dialog p[data-warning="true"] { color: #ffb4bd; }
+/* Buttons sit on the same line in every card, whatever the text above them. */
+.addiction-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
 .addiction-actions button:first-child { flex: 1 1 auto; }
 #addiction-coffee-progress { width: 100%; accent-color: #6ac7ef; }
-.addiction-lozenges { margin-top: 12px; }
 /* Shared with the nicotine card in Health. */
 .health-button.addiction-red { background: #712634; border-color: #f0828c; color: #fff3f5; }
 .health-button.addiction-red:hover:not(:disabled) { background: #913347; border-color: #f0828c; }
+#addiction-craving[aria-pressed="true"] { border-color: #80d5ff; background: #15446e; }
+
+.addiction-history, .addiction-settings { margin-top: 12px; }
+.addiction-settings { display: block; }
+.addiction-history table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.addiction-history th, .addiction-history td { padding: 8px 6px; border-bottom: 1px solid #1d3a52; text-align: right; font-size: 15px; }
+.addiction-history th:first-child { text-align: left; }
+.addiction-history thead th { color: #9ebdd5; font-size: 13px; font-weight: 600; }
+.addiction-history tbody th { color: #d9eeff; font-weight: 600; }
+.addiction-history tbody tr:first-child { background: #0f2a42; }
+.addiction-history td[data-state="smoked"] { color: #ffb4bd; }
+.addiction-history td[data-state="clear"] { color: #8fe3c7; }
+.addiction-history td[data-state="limit"] { color: #ffd88a; }
+#addiction-savings { color: #a2e4ff; font-weight: 600; }
+
+.addiction-settings summary { cursor: pointer; color: #e7f5ff; font: 600 18px var(--font-interface); }
+.addiction-settings form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.addiction-settings label { display: grid; gap: 6px; color: #9ebdd5; font-size: 13px; }
+.addiction-settings input { min-height: 44px; padding: 8px 10px; border: 1px solid #3a668b; border-radius: 5px; color: #e7f5ff; background: #071624; font-size: 16px; }
+.addiction-settings .addiction-hint, .addiction-settings button { grid-column: 1 / -1; }
+.addiction-hint { color: #9ebdd5; font-size: 13px; }
+
 #addiction-dialog .addiction-device { margin-top: 12px; font-size: 12px; }
 #addiction-status:not(:empty) { margin-top: 8px; }
 
 @media (max-width: 480px) {
-  .addiction-grid { grid-template-columns: minmax(0, 1fr); }
+  .addiction-grid, .addiction-settings form { grid-template-columns: minmax(0, 1fr); }
 }

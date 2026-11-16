@@ -71,3 +71,11 @@ Publish the full current `firestore.rules` in **Firebase Console → Firestore D
 Account changes require a connection because each transaction reads the latest ledger before saving. A duplicate dose for the same Lisbon day is a no-op, and Undo restores the original amount. Devices receive updates through a Firestore listener. Previously loaded account data can be viewed offline. Each medication ledger has a 450 KB payload limit.
 
 After publication, sign in on two devices with the same account. Add a medication in one, link it to an account checklist, record a dose from that checklist and confirm the other device shows the same stock. Check Undo on the other device and then switch to a different account to verify the original medication is hidden.
+
+## Addiction Helper activation
+
+Publish the full current `firestore.rules` in **Firebase Console → Firestore Database → Rules**. It keeps every existing permission and adds `users/<UID>/habits/<YYYY-MM-DD>` and `users/<UID>/habits/settings`, readable and writable only by that UID. Day documents accept only `version: 1` plus whole-number `cigarettes` and `coffees` from 0 to 500. Settings accept only `version: 1`, `coffeeCutoff` (`HH:MM` or null), `pouchPrice` (above 0, up to 1000, or null), `pouchCigarettes` (1 to 1000 or null) and `baseline` (0 to 200 or null). Deletion is denied.
+
+Counts use Firestore increments, so changes from several devices, including offline ones, add up instead of overwriting each other. Until the rules are published the Helper says that account sync is not enabled yet and keeps counts on the device; after publication, the next signed-in visit adds those device counts to the account once and clears them locally.
+
+After publication, sign in on two devices, log a coffee on each and confirm both show 2. Then save Helper settings on one and confirm the other shows the same money-saved figure.

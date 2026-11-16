@@ -145,6 +145,8 @@ function createHealth(panel) {
     const name = normalizedName(medication.name);
     return asNeeded(medication) && /\b(?:nicotine|nicotina)\b/.test(name) && /\b(?:lozenges?|pastilhas?)\b/.test(name);
   }
+  // Matches LOW_LOZENGES in habits-model.mjs.
+  const lowLozenges = 5;
   const morningDoseOrder = new Map(['fish', 'brain', 'hair'].map((icon, index) => [icon, index]));
 
   function medicationIcon({ name, time }) {
@@ -510,7 +512,16 @@ function createHealth(panel) {
     const units = stock(medication, entries);
     const available = navigator.onLine && !account.cached && !busy;
     const status = busy ? ' · Saving…' : !available ? ' · Connect to log changes' : '';
-    return { count, canRecord: available && units >= 1, canUndo: available && count > 0, message: `${units} in stock${status}` };
+    return { count, low: units <= lowLozenges, canRecord: available && units >= 1, canUndo: available && count > 0,
+      message: `${units} in stock${units === 0 ? ' · buy more' : units <= lowLozenges ? ' · running low' : ''}${status}` };
+  }
+  function lozengeDays() {
+    const medication = account?.ready ? nicotineMedication(read()) : undefined;
+    const days = new Map();
+    for (const entry of medication ? read() : []) {
+      if (entry.type === 'lozenge' && entry.medication === medication.id) days.set(entry.date, (days.get(entry.date) ?? 0) + 1);
+    }
+    return days;
   }
   async function change(id, write, success) {
     const scope = healthScope();
@@ -865,6 +876,10 @@ function createHealth(panel) {
       view.estimate.textContent = view.estimate.hidden ? '' : `~${Math.floor(count / current.quantity)} days left`;
       view.warning.textContent = count < current.quantity ? 'Not enough stock for the next dose.' : 'Low stock · add more soon';
       view.warning.hidden = stockOnly || count > current.quantity * 7;
+      if (nicotine) {
+        view.warning.textContent = count === 0 ? 'Out of lozenges · buy more' : `Only ${count} left · buy more soon`;
+        view.warning.hidden = count > lowLozenges;
+      }
       const todayDose = entries.find(entry => entry.key === doseKey(day, medication.id));
       const recordedQuantity = checked ? doseQuantity(todayDose) : 0;
       view.doseState.textContent = checked ? `${tabletCount(recordedQuantity)} recorded` : '';
@@ -1069,6 +1084,6 @@ function createHealth(panel) {
       }, validateLedger);
       account.watch();
     },
-    refresh: render, nicotineState, logNicotine, undoNicotine,
+    refresh: render, nicotineState, logNicotine, undoNicotine, lozengeDays,
     canNavigate() { if (!hasDraft() && !busy) return true; message = 'Save or cancel medication edits before opening quick access.'; failed = true; render(); return false; } };
 }

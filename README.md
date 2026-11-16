@@ -12,7 +12,7 @@ Use **Find anything** or **Ctrl/Cmd K** to search apps and checklists. Arrow key
 
 Routines opens the full checklist immediately. Tick items in any order; rows stay in place as you work, and tapping a checked item clears that tick. Optional sections stay available alongside the list. Progress, completion feedback and saved ticks work across reloads and synced devices without prescribing the next task.
 
-**Addiction Helper** opens from the button beside **Find anything**, the phone bar's **Helper** button or quick access. **Tobacco** counts today's cigarettes against a goal of zero. **Coffee** counts up to a limit of 3 a day. Both reset each Lisbon day and are saved on this device only. When you want to smoke, the red **Log lozenge taken** button records a nicotine lozenge in your Health account and deducts one from its stock. Health's nicotine card has the same red button, and both views share one record. This needs exactly one as-needed Health item whose name contains "nicotine" and "lozenge".
+**Addiction Helper** opens from the button beside **Find anything**, the phone bar's **Helper** button or quick access. **Tobacco** counts today's cigarettes against a goal of zero and shows your smoke-free streak and best run. **Coffee** counts up to 3 a day and warns after your cut-off time (15:00 by default). When signed in, cigarette and coffee counts sync to your account and merge across devices, including offline; signed out, they stay on this device and move into the account the next time you sign in. **Nicotine lozenges**: the red **Log lozenge taken** button records a lozenge in Health, deducts one from its stock and starts the **Craving timer**, a 5-minute countdown you can also start on its own. Health's nicotine card has the same red button, and both views share one record. Both warn when 5 or fewer lozenges are left. **Last 7 days** lists cigarettes, coffee and lozenges per day. **Helper settings** stores the coffee cut-off, the price of a pouch of rolling tobacco, cigarettes per pouch and how many you smoked a day before quitting; with all three tobacco values set, the Helper shows money saved in the last 7 days. Lozenges need exactly one as-needed Health item whose name contains "nicotine" and "lozenge". Account sync needs the current `firestore.rules`; see [Addiction Helper activation](FIREBASE_SETUP.md#addiction-helper-activation).
 
 Use **Link checklist** in the editor to attach an item to another checklist. The item shows the destination’s progress and ticks automatically when the destination is complete.
 
@@ -153,7 +153,7 @@ The check covers intro dismissal, pause/resume, reduced motion, all nine launche
 Run the data-model tests with Node.js:
 
 ```sh
-node --test tests/routine-model.test.mjs tests/workspace-model.test.mjs
+node --test tests/routine-model.test.mjs tests/workspace-model.test.mjs tests/habits-model.test.mjs
 ```
 
 For the browser regression suite, make the installed `playwright` package available to Node.js and use a system Chrome installation:

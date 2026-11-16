@@ -1,87 +1,238 @@
 function createAddictionHelper(panel, health) {
-  const coffeeLimit = 3;
   const prefix = 'thehub:addiction-helper:v1:';
+  const settingsKey = prefix + 'settings';
+  const cravingKey = prefix + 'craving-until';
+  const cravingLength = 5 * 60 * 1000;
   const dayFormat = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Lisbon', dateStyle: 'short' });
+  const clockFormat = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   const displayDate = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', dateStyle: 'long' });
+  const rowDate = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric' });
+  const money = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' });
   const element = id => document.getElementById(`addiction-${id}`);
   const counters = [
-    { key: 'cigarettes', label: 'cigarette', add: element('log-cigarette'), undo: element('undo-cigarette') },
-    { key: 'coffees', label: 'coffee', limit: coffeeLimit, add: element('log-coffee'), undo: element('undo-coffee') }
+    { key: 'cigarettes', add: element('log-cigarette'), undo: element('undo-cigarette') },
+    { key: 'coffees', add: element('log-coffee'), undo: element('undo-coffee') }
   ];
-  const lozenge = element('log-lozenge');
-  const undoLozenge = element('undo-lozenge');
-  let shownDay;
+  const fields = { coffeeCutoff: element('cutoff-time'), pouchPrice: element('price'), pouchCigarettes: element('per-pouch'), baseline: element('baseline') };
+  const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+  let model;
+  let account;
   let notice = '';
+  let migrating = false;
+  let cravingUntil = 0;
+  let ticking;
+  try { cravingUntil = Number(localStorage.getItem(cravingKey)) || 0; } catch {}
 
-  function read(day) {
-    const saved = JSON.parse(localStorage.getItem(prefix + day) ?? '{"cigarettes":0,"coffees":0}');
-    if (!counters.every(({ key, limit }) => Number.isSafeInteger(saved?.[key]) && saved[key] >= 0 && saved[key] <= (limit ?? Number.MAX_SAFE_INTEGER))) {
-      throw new Error('Unreadable daily counts');
+  const today = (now = new Date()) => dayFormat.format(now);
+  const synced = () => Boolean(account?.uid && account.ready);
+
+  function localDays() {
+    const days = new Map();
+    for (let index = 0; index < localStorage.length; index++) {
+      const key = localStorage.key(index);
+      const day = key?.startsWith(prefix) ? key.slice(prefix.length) : '';
+      if (model.validDay(day)) days.set(day, model.readDay(JSON.parse(localStorage.getItem(key))));
     }
-    return saved;
+    return days;
+  }
+  function localSettings() {
+    const saved = localStorage.getItem(settingsKey);
+    return saved === null ? null : model.readSettings(JSON.parse(saved));
+  }
+  const currentDays = () => synced() ? account.days : localDays();
+  function currentSettings() {
+    if (synced() && account.settings) return account.settings;
+    try { return localSettings() ?? model.defaultSettings; } catch { return model.defaultSettings; }
+  }
+
+  function renderCraving() {
+    const left = cravingUntil - Date.now();
+    const running = left > 0;
+    const seconds = Math.ceil(Math.max(0, running ? left : cravingLength) / 1000);
+    element('timer').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+    element('craving').textContent = running ? 'Stop timer' : 'Start 5-minute timer';
+    element('craving').setAttribute('aria-pressed', String(running));
+    if (cravingUntil && !running) {
+      cravingUntil = 0;
+      try { localStorage.removeItem(cravingKey); } catch {}
+      element('timer-note').textContent = 'Craving passed. Well done.';
+    } else if (running) element('timer-note').textContent = 'Breathe slowly, drink some water and wait it out.';
+    clearInterval(ticking);
+    if (running && panel.open) ticking = setInterval(renderCraving, 1000);
+  }
+  function setCraving(running) {
+    cravingUntil = running ? Date.now() + cravingLength : 0;
+    try {
+      if (running) localStorage.setItem(cravingKey, String(cravingUntil));
+      else localStorage.removeItem(cravingKey);
+    } catch {}
+    if (!running) element('timer-note').textContent = 'Most cravings fade within a few minutes.';
+    renderCraving();
+  }
+
+  function renderHistory(days, day, settings) {
+    const rows = model.recentDays(days, health?.lozengeDays?.() ?? new Map(), day);
+    element('history').replaceChildren(...rows.map((row, index) => {
+      const line = document.createElement('tr');
+      const label = document.createElement('th');
+      label.scope = 'row';
+      label.textContent = index === 0 ? 'Today' : index === 1 ? 'Yesterday' : rowDate.format(new Date(`${row.day}T12:00:00Z`));
+      line.append(label);
+      for (const key of ['cigarettes', 'coffees', 'lozenges']) {
+        const cell = document.createElement('td');
+        cell.textContent = row[key];
+        if (key === 'cigarettes') cell.dataset.state = row.cigarettes ? 'smoked' : 'clear';
+        if (key === 'coffees' && row.coffees >= model.COFFEE_LIMIT) cell.dataset.state = 'limit';
+        line.append(cell);
+      }
+      return line;
+    }));
+    const saved = model.savings(rows, settings, model.firstDay(days, day));
+    element('savings').textContent = saved === null
+      ? 'Add your tobacco price, cigarettes per pouch and how many you smoked a day in Helper settings to see what you save.'
+      : `${money.format(saved)} saved in the last 7 days`;
   }
 
   function render() {
     const now = new Date();
-    const day = dayFormat.format(now);
-    if (shownDay !== day) notice = '';
-    shownDay = day;
+    const day = today(now);
     element('date').dateTime = day;
     element('date').textContent = displayDate.format(now);
-    let saved;
-    try { saved = read(day); }
-    catch { notice = 'Saved counts could not be read on this device.'; }
-    for (const { key, label, limit, add, undo } of counters) {
-      const count = saved?.[key];
-      element(key).textContent = count === undefined ? 'Count unavailable' :
-        limit ? `${count} / ${limit} coffees today` : `${count} ${label}${count === 1 ? '' : 's'} today`;
-      add.disabled = count === undefined || count >= (limit ?? Number.MAX_SAFE_INTEGER);
-      undo.disabled = !count;
+    renderCraving();
+    if (!model) return;
+    let days;
+    try { days = currentDays(); } catch { days = new Map(); notice = 'Saved counts could not be read on this device.'; }
+    const settings = currentSettings();
+    const counts = days.get(day) ?? { cigarettes: 0, coffees: 0 };
+    element('cigarettes').textContent = `${plural(counts.cigarettes, 'cigarette')} today`;
+    const streak = model.smokeFreeStreak(days, day);
+    element('streak').textContent = `Smoke-free · ${plural(streak.current, 'day')} · Best ${streak.best}`;
+    element('coffees').textContent = `${counts.coffees} / ${model.COFFEE_LIMIT} coffees today`;
+    element('coffee-progress').value = Math.min(counts.coffees, model.COFFEE_LIMIT);
+    const late = model.pastCutoff(settings.coffeeCutoff, clockFormat.format(now));
+    element('cutoff').textContent = !settings.coffeeCutoff ? 'No cut-off time set' : late ? `Past ${settings.coffeeCutoff} · skip coffee for better sleep` : `No coffee after ${settings.coffeeCutoff}`;
+    element('cutoff').dataset.warning = String(late);
+    for (const { key, add, undo } of counters) {
+      add.disabled = key === 'coffees' && counts.coffees >= model.COFFEE_LIMIT;
+      undo.disabled = !counts[key];
     }
-    element('coffee-progress').value = saved?.coffees ?? 0;
-    element('status').textContent = notice;
     const stock = health?.nicotineState();
-    lozenge.disabled = !stock?.canRecord;
-    undoLozenge.disabled = !stock?.canUndo;
-    element('lozenges').textContent = stock?.count === undefined ? 'Not connected' : `${stock.count} lozenge${stock.count === 1 ? '' : 's'} today`;
+    element('lozenges').textContent = stock?.count === undefined ? 'Not connected' : `${plural(stock.count, 'lozenge')} today`;
     element('lozenge-status').textContent = stock?.message ?? 'Open Health to connect your lozenge stock.';
+    element('lozenge-status').dataset.warning = String(Boolean(stock?.low));
+    element('log-lozenge').disabled = !stock?.canRecord;
+    element('undo-lozenge').disabled = !stock?.canUndo;
+    renderHistory(days, day, settings);
+    element('device').textContent = synced() ? 'Cigarettes and coffee sync to your account.'
+      : account?.uid ? account.error || 'Connecting to your account… Counts are saved on this device until then.'
+        : 'Signed out: cigarette and coffee counts are saved on this device.';
+    element('status').textContent = notice;
   }
 
-  function countChange(counter, delta) {
-    const day = dayFormat.format(new Date());
+  function fillSettings() {
+    if (!model) return;
+    const settings = currentSettings();
+    for (const [key, input] of Object.entries(fields)) input.value = settings[key] ?? '';
+  }
+
+  // Counts made while signed out or before sync was enabled move into the account once.
+  async function migrate() {
+    if (migrating || !model || !synced() || !navigator.onLine) return;
+    let days;
+    let settings;
+    try { days = localDays(); settings = localSettings(); } catch { return; }
+    const pending = [...days].filter(([, counts]) => counts.cigarettes || counts.coffees);
+    if (!days.size && !settings) return;
+    migrating = true;
     try {
-      const saved = read(day);
-      const next = saved[counter.key] + delta;
-      if (next >= 0 && next <= (counter.limit ?? Number.MAX_SAFE_INTEGER)) {
-        saved[counter.key] = next;
-        localStorage.setItem(prefix + day, JSON.stringify(saved));
-        notice = next === coffeeLimit && counter.key === 'coffees' && delta > 0 ? 'Daily coffee limit reached.' : '';
-      }
-    } catch { notice = 'The count could not be saved on this device.'; }
+      await Promise.all(pending.map(([day, counts]) => account.add(day, counts)));
+      if (settings && !account.settings) await account.saveSettings(settings);
+      // shortcut: closing the tab between server confirmation and this cleanup uploads these counts again; add a migration marker if that ever matters.
+      for (const day of days.keys()) localStorage.removeItem(prefix + day);
+      localStorage.removeItem(settingsKey);
+      if (pending.length) notice = 'Counts from this device were added to your account.';
+    } catch {
+      notice = 'Counts on this device could not be added to your account yet.';
+    } finally {
+      migrating = false;
+      render();
+    }
+  }
+
+  function change(key, delta) {
+    if (!model) return;
+    const day = today();
+    let current;
+    try { current = currentDays().get(day) ?? { cigarettes: 0, coffees: 0 }; } catch { notice = 'Saved counts could not be read on this device.'; render(); return; }
+    const next = current[key] + delta;
+    if (next < 0 || delta > 0 && key === 'coffees' && current.coffees >= model.COFFEE_LIMIT) return;
+    notice = key === 'coffees' && delta > 0 && next === model.COFFEE_LIMIT ? 'Daily coffee limit reached.' : '';
+    if (synced()) {
+      account.add(day, { [key]: delta }).catch(() => { notice = 'That change was not saved to your account. Try again.'; render(); });
+    } else {
+      try { localStorage.setItem(prefix + day, JSON.stringify({ ...current, [key]: next })); }
+      catch { notice = 'The count could not be saved on this device.'; }
+    }
+    render();
+  }
+
+  function saveSettings(event) {
+    event.preventDefault();
+    if (!model) return;
+    const number = input => input.value === '' ? null : Number(input.value);
+    const values = { coffeeCutoff: fields.coffeeCutoff.value || null, pouchPrice: number(fields.pouchPrice), pouchCigarettes: number(fields.pouchCigarettes), baseline: number(fields.baseline) };
+    try { model.readSettings(values); }
+    catch { notice = 'Check the settings: price up to €1000, whole numbers for cigarettes.'; render(); return; }
+    if (synced()) {
+      notice = 'Saving settings…';
+      account.saveSettings(values).then(() => { notice = 'Settings saved to your account.'; render(); })
+        .catch(() => { notice = 'Settings could not be saved to your account. Try again.'; render(); });
+    } else {
+      try { localStorage.setItem(settingsKey, JSON.stringify(values)); notice = 'Settings saved on this device.'; }
+      catch { notice = 'Settings could not be saved on this device.'; }
+    }
     render();
   }
 
   for (const counter of counters) {
-    counter.add.addEventListener('click', () => countChange(counter, 1));
-    counter.undo.addEventListener('click', () => countChange(counter, -1));
+    counter.add.addEventListener('click', () => change(counter.key, 1));
+    counter.undo.addEventListener('click', () => change(counter.key, -1));
   }
-  async function updateLozenge(save) {
+  async function updateLozenge(save, startTimer) {
     notice = '';
     if (!await save()) notice = 'The lozenge record could not be updated. Check Health and try again.';
+    else if (startTimer && cravingUntil <= Date.now()) setCraving(true);
     render();
   }
-  lozenge.addEventListener('click', () => updateLozenge(health.logNicotine));
-  undoLozenge.addEventListener('click', () => updateLozenge(health.undoNicotine));
+  element('log-lozenge').addEventListener('click', () => updateLozenge(health.logNicotine, true));
+  element('undo-lozenge').addEventListener('click', () => updateLozenge(health.undoNicotine, false));
+  element('craving').addEventListener('click', () => setCraving(cravingUntil <= Date.now()));
+  element('settings-form').addEventListener('submit', saveSettings);
+  panel.addEventListener('close', () => clearInterval(ticking));
   document.addEventListener('hub:healthchange', () => { if (panel.open) render(); });
-  window.addEventListener('storage', event => {
-    if (panel.open && (event.key === null || event.key === prefix + shownDay)) render();
-  });
+  window.addEventListener('storage', event => { if (panel.open && (event.key === null || event.key?.startsWith(prefix))) render(); });
   document.addEventListener('visibilitychange', () => { if (panel.open && !document.hidden) render(); });
-  setInterval(() => { if (panel.open && dayFormat.format(new Date()) !== shownDay) render(); }, 15000);
+  setInterval(() => { if (panel.open) render(); }, 30000);
+
+  import('./habits-model.mjs?v=1').then(module => {
+    model = module;
+    render();
+    return import('./cloud-habits.js?v=1');
+  }).then(module => {
+    account = module.createHabitsAccount(() => {
+      migrate();
+      // Never overwrite fields while the settings form is open.
+      if (!element('settings').open) fillSettings();
+      if (panel.open) render();
+    });
+  }).catch(() => { if (!model) notice = 'Addiction Helper could not load. Reload the page to try again.'; render(); });
+
   return {
     open() {
       render();
+      fillSettings();
       panel.showModal();
+      renderCraving();
     }
   };
 }

@@ -39,6 +39,11 @@ export function onSnapshot(reference, options, next, failed) {
     queueMicrotask(() => { if (service.healthListeners.has(listener)) service.publish(); });
     return () => service.healthListeners.delete(listener);
   }
+  if (reference.path[2] === 'habits') {
+    service.habitListeners.add(listener);
+    queueMicrotask(() => { if (service.habitListeners.has(listener)) service.publish(); });
+    return () => service.habitListeners.delete(listener);
+  }
   if (reference.path[2] === 'notes') {
     service.noteListeners.add(listener);
     queueMicrotask(() => { if (service.noteListeners.has(listener)) service.publish(); });
@@ -72,7 +77,18 @@ export function writeBatch() {
     }
   };
 }
-export async function setDoc(reference, patch) {
+export const increment = amount => ({ __increment: amount });
+export async function setDoc(reference, patch, options) {
+  if (reference.path[2] === 'habits') {
+    service.habitWrites.push({ path: reference.path, patch: structuredClone(patch) });
+    if (service.habitsDenied) throw Object.assign(new Error('Denied.'), { code: 'permission-denied' });
+    const habits = (service.docs[reference.path[1]] ??= {}).habits ??= {};
+    const next = options?.merge ? { ...habits[reference.path[3]] } : {};
+    for (const [key, value] of Object.entries(patch)) next[key] = value?.__increment === undefined ? value : (next[key] ?? 0) + value.__increment;
+    habits[reference.path[3]] = next;
+    service.publish();
+    return;
+  }
   service.writes.push({ path: reference.path, patch: structuredClone(patch) });
   if (service.rejectWrites) throw new Error('Denied.');
   const commit = () => {

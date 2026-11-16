@@ -1,8 +1,8 @@
 // Bump this version whenever a public app file changes; install the complete release atomically.
 const prefix = `the-hub:${new URL(self.registration.scope).pathname}:`;
-const cacheName = `${prefix}addiction-helper-2`;
+const cacheName = `${prefix}habits-sync-1`;
 const files = [
-  './', 'index.html', 'manifest.webmanifest', 'health.js', 'styles/health.css', 'addiction.js', 'styles/addiction.css', 'checklist-picker.js',
+  './', 'index.html', 'manifest.webmanifest', 'health.js', 'styles/health.css', 'addiction.js', 'styles/addiction.css', 'habits-model.mjs', 'cloud-habits.js', 'checklist-picker.js',
   'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css',
   'styles/panels.css', 'styles/routines.css', 'styles/routine-tools.css', 'styles/notes.css', 'styles/motion.css',
   'core-progress.js', 'core-transition.js', 'notes.js', 'interface.js', 'interface-sound.js',
