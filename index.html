@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="styles/routine-tools.css?v=addiction-helper-1">
   <link rel="stylesheet" href="styles/notes.css?v=dark-glass-1">
   <link rel="stylesheet" href="styles/health.css?v=addiction-helper-2">
-  <link rel="stylesheet" href="styles/addiction.css?v=3">
+  <link rel="stylesheet" href="styles/addiction.css?v=4">
   <link rel="stylesheet" href="styles/motion.css?v=free-9">
 </head>
 <body>
@@ -229,8 +229,23 @@
       <form method="dialog"><button class="routine-exit" aria-label="Close Addiction Helper">×</button></form>
     </header>
     <div class="addiction-date"><time id="addiction-date"></time><span>Lisbon time</span></div>
+    <section class="addiction-card addiction-quit" id="addiction-quit" aria-labelledby="addiction-quit-title">
+      <div class="addiction-quit-content">
+        <h3 id="addiction-quit-title">Time without smoking</h3>
+        <div id="addiction-elapsed" class="addiction-elapsed" role="timer" aria-live="off" tabindex="-1">—</div>
+        <p id="addiction-quit-note">Start when you’re ready to track your time without smoking.</p>
+      </div>
+      <div class="addiction-quit-controls" id="addiction-quit-controls">
+        <button class="health-button" type="button" id="addiction-start-quit">Start now</button>
+        <details id="addiction-quit-date">
+          <summary>Set an earlier start</summary>
+          <label>Date and time on this device<input id="addiction-quit-input" type="datetime-local"></label>
+          <button class="health-button" type="button" id="addiction-save-quit">Set start time</button>
+        </details>
+      </div>
+    </section>
     <div class="addiction-grid">
-      <section class="addiction-card" aria-labelledby="addiction-tobacco-title">
+      <section class="addiction-card addiction-tobacco" aria-labelledby="addiction-tobacco-title">
         <h3 id="addiction-tobacco-title">Tobacco</h3>
         <div class="addiction-count" id="addiction-cigarettes" aria-live="polite" aria-atomic="true">0 cigarettes today</div>
         <p id="addiction-streak">Goal · 0 cigarettes</p>
@@ -239,7 +254,7 @@
           <button class="health-button" type="button" id="addiction-undo-cigarette" aria-label="Undo last cigarette">Undo</button>
         </div>
       </section>
-      <section class="addiction-card" aria-labelledby="addiction-coffee-title">
+      <section class="addiction-card addiction-coffee" id="addiction-coffee" aria-labelledby="addiction-coffee-title">
         <h3 id="addiction-coffee-title">Coffee</h3>
         <div class="addiction-count" id="addiction-coffees" aria-live="polite" aria-atomic="true">0 / 3 coffees today</div>
         <progress id="addiction-coffee-progress" aria-label="Daily coffee limit" value="0" max="3"></progress>
@@ -249,7 +264,7 @@
           <button class="health-button" type="button" id="addiction-undo-coffee" aria-label="Undo last coffee">Undo</button>
         </div>
       </section>
-      <section class="addiction-card" aria-labelledby="addiction-lozenge-title">
+      <section class="addiction-card addiction-lozenge" aria-labelledby="addiction-lozenge-title">
         <div class="addiction-card-heading">
           <h3 id="addiction-lozenge-title">Nicotine lozenges</h3>
           <button class="health-button" type="button" id="addiction-open-health">Open Health</button>
@@ -261,7 +276,7 @@
           <button class="health-button" type="button" id="addiction-undo-lozenge" aria-label="Undo last nicotine lozenge">Undo</button>
         </div>
       </section>
-      <section class="addiction-card" aria-labelledby="addiction-craving-title">
+      <section class="addiction-card addiction-craving" id="addiction-craving-card" aria-labelledby="addiction-craving-title">
         <h3 id="addiction-craving-title">Craving timer</h3>
         <div class="addiction-count" id="addiction-timer" role="timer" aria-live="off">5:00</div>
         <p id="addiction-timer-note">Most cravings fade within a few minutes.</p>
@@ -281,7 +296,6 @@
     <details class="addiction-card addiction-settings" id="addiction-settings">
       <summary>Helper settings</summary>
       <form id="addiction-settings-form" novalidate>
-        <label>Coffee cut-off time<input id="addiction-cutoff-time" type="time"></label>
         <label>Tobacco price per pouch (€)<input id="addiction-price" type="number" min="0.01" max="1000" step="0.01" inputmode="decimal" placeholder="Not set"></label>
         <label>Cigarettes per pouch<input id="addiction-per-pouch" type="number" min="1" max="1000" step="1" inputmode="numeric" placeholder="Not set"></label>
         <label>Cigarettes a day before quitting<input id="addiction-baseline" type="number" min="0" max="200" step="1" inputmode="numeric" placeholder="Not set"></label>
@@ -350,7 +364,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.17.1</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.17.2</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -511,7 +525,7 @@
   <script defer src="notes.js?v=addiction-helper-1"></script>
   <script defer src="checklist-picker.js?v=review-1"></script>
   <script defer src="health.js?v=drag-focus-1"></script>
-  <script defer src="addiction.js?v=4"></script>
+  <script defer src="addiction.js?v=5"></script>
   <script defer src="interface.js?v=addiction-helper-1"></script>
   <script defer src="interface-sound.js?v=intro-autoplay-2"></script>
   <script defer src="pointer-effects.js?v=perf-2"></script>

@@ -500,7 +500,7 @@ test('Account Health', { timeout: 150000 }, async t => {
     const { context, page, errors } = await fixture(browser, { width: 390, mobile: true, motion: 'reduce', firebase: true,
       cloudDocuments: { 'account-a': { ...makeAccount(), health: records, habits } } });
     try {
-      // Lisbon 15:30, past the default coffee cut-off.
+      // Friday in Lisbon, so no time cut-off.
       await page.clock.setFixedTime(new Date('2026-07-10T14:30:00Z'));
       await ready(page);
       await page.evaluate(() => localStorage.setItem('thehub:addiction-helper:v1:2026-07-09', JSON.stringify({ cigarettes: 0, coffees: 2 })));
@@ -512,8 +512,8 @@ test('Account Health', { timeout: 150000 }, async t => {
       await page.waitForFunction(() => localStorage.getItem('thehub:addiction-helper:v1:2026-07-09') === null);
       assert.equal(await page.evaluate(() => window.__hubFirebase.docs['account-a'].habits['2026-07-09'].coffees), 2);
       assert.equal(await page.locator('#addiction-streak').textContent(), 'Smoke-free · 4 days · Best 4');
-      assert.equal(await page.locator('#addiction-cutoff').textContent(), 'Past 15:00 · skip coffee for better sleep');
-      assert.equal(await page.locator('#addiction-cutoff').getAttribute('data-warning'), 'true');
+      assert.equal(await page.locator('#addiction-cutoff').textContent(), 'No time cut-off today · Friday or Saturday');
+      assert.equal(await page.locator('#addiction-cutoff').getAttribute('data-warning'), 'false');
       assert.equal(await page.locator('#addiction-device').textContent(), 'Cigarettes and coffee sync to your account.');
       const rows = page.locator('#addiction-history tr');
       assert.equal(await rows.count(), 7);
@@ -533,7 +533,6 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await page.locator('#addiction-craving').textContent(), 'Start 5-minute timer');
 
       await page.locator('#addiction-settings summary').tap();
-      assert.equal(await page.locator('#addiction-cutoff-time').inputValue(), '15:00');
       await page.locator('#addiction-price').fill('10');
       await page.locator('#addiction-per-pouch').fill('50');
       await page.locator('#addiction-baseline').fill('10');
@@ -542,13 +541,41 @@ test('Account Health', { timeout: 150000 }, async t => {
       // 10 + 10 + 10 + 10 + 8 cigarettes avoided since 6 July at 0.20 each.
       assert.equal(await page.locator('#addiction-savings').textContent(), '€9.60 saved in the last 7 days');
       assert.deepEqual(await page.evaluate(() => window.__hubFirebase.docs['account-a'].habits.settings),
-        { version: 1, coffeeCutoff: '15:00', pouchPrice: 10, pouchCigarettes: 50, baseline: 10 });
+        { version: 1, coffeeCutoff: '17:00', pouchPrice: 10, pouchCigarettes: 50, baseline: 10 });
 
       await page.getByRole('button', { name: 'Log cigarette', exact: true }).tap();
       assert.equal(await page.locator('#addiction-streak').textContent(), 'Smoke-free · 0 days · Best 3');
       assert.equal(await page.locator('#addiction-savings').textContent(), '€9.40 saved in the last 7 days');
       await page.getByRole('button', { name: 'Open Health', exact: true }).tap();
       assert.equal(await page.locator(`[data-medication="${firstId}"] .medication-warning`).textContent(), 'Only 3 left · buy more soon');
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('Addiction Helper blocks coffee from 17:00 and resets and restores the smoke-free timer', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 390, mobile: true, motion: 'reduce' });
+    try {
+      await page.clock.setFixedTime(new Date('2026-11-16T16:59:00Z'));
+      await ready(page);
+      await page.locator('#phone-addiction').tap();
+      const coffee = page.getByRole('button', { name: 'Log coffee', exact: true });
+      await coffee.tap();
+      const elapsed = page.locator('#addiction-elapsed');
+      await page.getByRole('button', { name: 'Start now' }).tap();
+      assert.equal(await elapsed.textContent(), '0d  00:00:00');
+      await page.clock.setFixedTime(new Date('2026-11-16T17:00:10Z'));
+      await page.waitForFunction(() => document.getElementById('addiction-log-coffee').disabled);
+      assert.equal(await elapsed.textContent(), '0d  00:01:10');
+      await page.getByRole('button', { name: 'Log cigarette', exact: true }).tap();
+      assert.equal(await elapsed.textContent(), '0d  00:00:00');
+      await page.getByRole('button', { name: 'Undo last cigarette' }).tap();
+      assert.equal(await elapsed.textContent(), '0d  00:01:10');
+      await ready(page);
+      await page.locator('#phone-addiction').tap();
+      assert.equal(await elapsed.textContent(), '0d  00:01:10');
+      assert.equal(await coffee.isDisabled(), true);
+      await page.getByRole('button', { name: 'Undo last coffee' }).tap();
+      assert.equal(await page.locator('#addiction-coffees').textContent(), '0 / 3 coffees today');
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });

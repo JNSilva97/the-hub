@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDays, validDay, readDay, readSettings, firstDay, smokeFreeStreak, recentDays, savings, pastCutoff, defaultSettings } from '../habits-model.mjs';
+import { addDays, validDay, readDay, readSettings, firstDay, smokeFreeStreak, recentDays, savings, coffeeWindow, defaultSettings } from '../habits-model.mjs';
 
 const days = entries => new Map(entries.map(([day, cigarettes, coffees = 0]) => [day, { cigarettes, coffees }]));
 
@@ -50,8 +50,14 @@ test('savings need complete settings and only count tracked days below the basel
   assert.equal(savings(rows, settings, '2026-11-14').toFixed(2), '3.40');
 });
 
-test('coffee cut-off compares Lisbon clock times', () => {
-  assert.equal(pastCutoff('15:00', '14:59'), false);
-  assert.equal(pastCutoff('15:00', '15:00'), true);
-  assert.equal(pastCutoff(null, '23:00'), false);
+test('coffee closes at 17:00 except on Friday, Saturday and Portuguese public holiday eves', () => {
+  assert.equal(coffeeWindow('2026-11-16', '16:59'), 'open');
+  assert.equal(coffeeWindow('2026-11-16', '17:00'), 'closed');
+  assert.equal(coffeeWindow('2026-11-20', '23:00'), 'weekend');
+  assert.equal(coffeeWindow('2026-11-21', '23:00'), 'weekend');
+  assert.equal(coffeeWindow('2026-11-30', '23:00'), 'holiday-eve');
+  assert.equal(coffeeWindow('2026-12-01', '23:00'), 'closed');
+  assert.equal(coffeeWindow('2026-12-31', '23:00'), 'holiday-eve');
+  assert.equal(coffeeWindow('2027-03-25', '23:00'), 'holiday-eve'); // Good Friday eve
+  assert.equal(coffeeWindow('2027-05-26', '23:00'), 'holiday-eve'); // Corpus Christi eve
 });

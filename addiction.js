@@ -13,7 +13,7 @@ function createAddictionHelper(panel, health) {
     { key: 'cigarettes', add: element('log-cigarette'), undo: element('undo-cigarette') },
     { key: 'coffees', add: element('log-coffee'), undo: element('undo-coffee') }
   ];
-  const fields = { coffeeCutoff: element('cutoff-time'), pouchPrice: element('price'), pouchCigarettes: element('per-pouch'), baseline: element('baseline') };
+  const fields = { pouchPrice: element('price'), pouchCigarettes: element('per-pouch'), baseline: element('baseline') };
   const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
   let model;
   let account;
@@ -21,10 +21,71 @@ function createAddictionHelper(panel, health) {
   let migrating = false;
   let cravingUntil = 0;
   let ticking;
+  let lastMinute;
   try { cravingUntil = Number(localStorage.getItem(cravingKey)) || 0; } catch {}
 
   const today = (now = new Date()) => dayFormat.format(now);
   const synced = () => Boolean(account?.uid && account.ready);
+  const quitKey = () => prefix + 'quit:' + (account?.uid ?? 'guest');
+  const pad = value => String(value).padStart(2, '0');
+
+  function readQuit(saved) {
+    const data = JSON.parse(saved);
+    return data && Array.isArray(data.logs) ? data : { base: null, logs: [] };
+  }
+
+  function renderQuit() {
+    let since;
+    try {
+      const { base, logs } = readQuit(localStorage.getItem(quitKey()));
+      since = logs.at(-1)?.at ?? base;
+    } catch {}
+    const started = Number.isSafeInteger(since);
+    const seconds = started ? Math.max(0, Math.floor((Date.now() - since) / 1000)) : 0;
+    const days = Math.floor(seconds / 86400);
+    const hours = pad(Math.floor(seconds / 3600) % 24);
+    const minutes = pad(Math.floor(seconds / 60) % 60);
+    element('elapsed').textContent = started ? `${days}d  ${hours}:${minutes}:${pad(seconds % 60)}` : '—';
+    element('quit-controls').hidden = started;
+    element('quit-note').textContent = started
+      ? 'Resets when you log a cigarette on this device.'
+      : 'Start now or log a cigarette to begin.';
+  }
+
+  function startQuit(at) {
+    notice = '';
+    try {
+      const key = quitKey();
+      const { base, logs } = readQuit(localStorage.getItem(key));
+      if (base === null && !logs.length) localStorage.setItem(key, JSON.stringify({ base: at, logs: [] }));
+      element('quit-date').open = false;
+      element('elapsed').focus();
+    } catch { notice = 'The timer could not be saved on this device.'; }
+    render();
+  }
+
+  function changeQuit(day, delta, at) {
+    const storageKey = quitKey();
+    try {
+      const previous = localStorage.getItem(storageKey);
+      const { base, logs } = readQuit(previous);
+      const todayLogs = logs.filter(log => log.day === day);
+      const anchor = logs.findLast(log => log.day < day)?.at ?? base;
+      if (delta > 0) todayLogs.push({ day, at });
+      else todayLogs.pop();
+      const updated = JSON.stringify({ base: anchor, logs: todayLogs });
+      localStorage.setItem(storageKey, updated);
+      return () => {
+        try {
+          if (localStorage.getItem(storageKey) !== updated) return;
+          if (previous === null) localStorage.removeItem(storageKey);
+          else localStorage.setItem(storageKey, previous);
+        } catch {}
+      };
+    } catch {
+      notice = 'The cigarette was recorded, but the timer could not be saved on this device.';
+    }
+  }
 
   function localDays() {
     const days = new Map();
@@ -52,16 +113,15 @@ function createAddictionHelper(panel, health) {
     const left = cravingUntil - Date.now();
     const running = left > 0;
     const seconds = Math.ceil(Math.max(0, running ? left : cravingLength) / 1000);
-    element('timer').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+    element('timer').textContent = `${Math.floor(seconds / 60)}:${pad(seconds % 60)}`;
     element('craving').textContent = running ? 'Stop timer' : 'Start 5-minute timer';
     element('craving').setAttribute('aria-pressed', String(running));
+    element('craving-card').style.setProperty('--timer-progress', String(seconds / (cravingLength / 1000)));
     if (cravingUntil && !running) {
       cravingUntil = 0;
       try { localStorage.removeItem(cravingKey); } catch {}
-      element('timer-note').textContent = 'Craving passed. Well done.';
+      element('timer-note').textContent = 'Five minutes complete.';
     } else if (running) element('timer-note').textContent = 'Breathe slowly, drink some water and wait it out.';
-    clearTimeout(ticking);
-    if (running && panel.open) ticking = setTimeout(renderCraving, 1000);
   }
   function setCraving(running) {
     cravingUntil = running ? Date.now() + cravingLength : 0;
@@ -99,9 +159,11 @@ function createAddictionHelper(panel, health) {
   function render() {
     const now = new Date();
     const day = today(now);
+    lastMinute = Math.floor(now.getTime() / 60000);
     element('date').dateTime = day;
     element('date').textContent = displayDate.format(now);
     renderCraving();
+    renderQuit();
     if (!model) return;
     let days;
     try { days = currentDays(); } catch { days = new Map(); notice = 'Saved counts could not be read on this device.'; }
@@ -112,11 +174,18 @@ function createAddictionHelper(panel, health) {
     element('streak').textContent = `Smoke-free · ${plural(streak.current, 'day')} · Best ${streak.best}`;
     element('coffees').textContent = `${counts.coffees} / ${model.COFFEE_LIMIT} coffees today`;
     element('coffee-progress').value = Math.min(counts.coffees, model.COFFEE_LIMIT);
-    const late = model.pastCutoff(settings.coffeeCutoff, clockFormat.format(now));
-    element('cutoff').textContent = !settings.coffeeCutoff ? 'No cut-off time set' : late ? `Past ${settings.coffeeCutoff} · skip coffee for better sleep` : `No coffee after ${settings.coffeeCutoff}`;
+    const coffeeWindow = model.coffeeWindow(day, clockFormat.format(now));
+    const late = coffeeWindow === 'closed';
+    element('coffee').dataset.window = coffeeWindow;
+    element('cutoff').textContent = {
+      'closed': 'Coffee closed for today · 17:00 cut-off',
+      'open': 'Coffee until 17:00',
+      'weekend': 'No time cut-off today · Friday or Saturday',
+      'holiday-eve': 'No time cut-off today · holiday eve'
+    }[coffeeWindow];
     element('cutoff').dataset.warning = String(late);
     for (const { key, add, undo } of counters) {
-      add.disabled = key === 'coffees' && counts.coffees >= model.COFFEE_LIMIT;
+      add.disabled = key === 'coffees' && (late || counts.coffees >= model.COFFEE_LIMIT);
       undo.disabled = !counts[key];
     }
     const stock = health?.nicotineState();
@@ -188,21 +257,31 @@ function createAddictionHelper(panel, health) {
 
   function change(key, delta) {
     if (!model) return;
-    const day = today();
+    const now = new Date();
+    const day = today(now);
     let current;
     try { current = currentDays().get(day) ?? { cigarettes: 0, coffees: 0 }; } catch { notice = 'Saved counts could not be read on this device.'; render(); return; }
     const next = current[key] + delta;
-    if (next < 0 || delta > 0 && key === 'coffees' && current.coffees >= model.COFFEE_LIMIT) return;
+    if (next < 0 || delta > 0 && key === 'coffees' &&
+      (current.coffees >= model.COFFEE_LIMIT || model.coffeeWindow(day, clockFormat.format(now)) === 'closed')) { render(); return; }
     notice = key === 'coffees' && delta > 0 && next === model.COFFEE_LIMIT ? 'Daily coffee limit reached.' : '';
     if (synced()) {
-      account.add(day, { [key]: delta }).catch(() => { notice = 'That change was not saved to your account. Try again.'; render(); });
+      const rollback = key === 'cigarettes' ? changeQuit(day, delta, now.getTime()) : undefined;
+      account.add(day, { [key]: delta }).catch(() => {
+        rollback?.();
+        notice = 'That change was not saved to your account. Try again.';
+        render();
+      });
     } else {
       try {
         const storageKey = prefix + day;
         const record = JSON.parse(localStorage.getItem(storageKey));
         if (record?.owner && record.owner !== account?.uid) {
           notice = 'Sign back into the original account to finish transferring today’s device counts.';
-        } else localStorage.setItem(storageKey, JSON.stringify({ ...record, ...current, [key]: next }));
+        } else {
+          localStorage.setItem(storageKey, JSON.stringify({ ...record, ...current, [key]: next }));
+          if (key === 'cigarettes') changeQuit(day, delta, now.getTime());
+        }
       }
       catch { notice = 'The count could not be saved on this device.'; }
     }
@@ -213,7 +292,7 @@ function createAddictionHelper(panel, health) {
     event.preventDefault();
     if (!model) return;
     const number = input => input.value === '' ? null : Number(input.value);
-    const values = { coffeeCutoff: fields.coffeeCutoff.value || null, pouchPrice: number(fields.pouchPrice), pouchCigarettes: number(fields.pouchCigarettes), baseline: number(fields.baseline) };
+    const values = { coffeeCutoff: model.defaultSettings.coffeeCutoff, pouchPrice: number(fields.pouchPrice), pouchCigarettes: number(fields.pouchCigarettes), baseline: number(fields.baseline) };
     try { model.readSettings(values); }
     catch { notice = 'Check the settings: price up to €1000, whole numbers for cigarettes.'; render(); return; }
     if (synced()) {
@@ -240,8 +319,16 @@ function createAddictionHelper(panel, health) {
   element('log-lozenge').addEventListener('click', () => updateLozenge(health.logNicotine, true));
   element('undo-lozenge').addEventListener('click', () => updateLozenge(health.undoNicotine, false));
   element('craving').addEventListener('click', () => setCraving(cravingUntil <= Date.now()));
+  element('start-quit').addEventListener('click', () => startQuit(Date.now()));
+  element('save-quit').addEventListener('click', () => {
+    const input = element('quit-input');
+    const at = new Date(input.value).getTime();
+    input.setCustomValidity(Number.isFinite(at) && at <= Date.now() ? '' : 'Enter a date and time in the past.');
+    if (input.reportValidity()) startQuit(at);
+  });
+  element('quit-input').addEventListener('input', event => event.target.setCustomValidity(''));
   element('settings-form').addEventListener('submit', saveSettings);
-  panel.addEventListener('close', () => clearTimeout(ticking));
+  panel.addEventListener('close', () => { if (!panel.open) clearInterval(ticking); });
   document.addEventListener('hub:healthchange', () => { if (panel.open) render(); });
   window.addEventListener('storage', event => {
     if (event.key !== null && !event.key?.startsWith(prefix)) return;
@@ -251,12 +338,10 @@ function createAddictionHelper(panel, health) {
   window.addEventListener('online', () => { migrate(); if (panel.open) render(); });
   window.addEventListener('offline', () => { if (panel.open) render(); });
   document.addEventListener('visibilitychange', () => { if (panel.open && !document.hidden) render(); });
-  setInterval(() => { if (panel.open) render(); }, 30000);
-
-  import('./habits-model.mjs?v=2').then(module => {
+  import('./habits-model.mjs?v=3').then(module => {
     model = module;
     render();
-    return import('./cloud-habits.js?v=2');
+    return import('./cloud-habits.js?v=3');
   }).then(module => {
     account = module.createHabitsAccount(() => {
       migrate();
@@ -272,7 +357,11 @@ function createAddictionHelper(panel, health) {
       render();
       fillSettings();
       panel.showModal();
-      renderCraving();
+      clearInterval(ticking);
+      ticking = setInterval(() => {
+        if (lastMinute !== Math.floor(Date.now() / 60000)) render();
+        else { renderQuit(); renderCraving(); }
+      }, 1000);
     }
   };
 }

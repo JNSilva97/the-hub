@@ -1,5 +1,5 @@
 #addiction-dialog {
-  width: min(660px, calc(100% - 24px));
+  width: min(760px, calc(100% - 24px));
   max-height: calc(100dvh - 24px);
   padding: clamp(14px, 4vw, 26px);
   text-align: left;
@@ -26,6 +26,95 @@
   background: var(--panel-raised);
 }
 
+.addiction-quit {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: clamp(16px, 4vw, 24px);
+  border-color: #347c77;
+  background: radial-gradient(ellipse at 92% 20%, #153b42, transparent 63%), #071a24;
+}
+.addiction-quit-content { position: relative; z-index: 1; }
+.addiction-quit::before {
+  content: '';
+  position: absolute;
+  inset: -80% -12% -100% 40%;
+  z-index: -1;
+  pointer-events: none;
+  background: repeating-radial-gradient(circle at 78% 46%, #76e7cb2e 0 1px, transparent 2px 22px);
+  mask-image: linear-gradient(90deg, transparent, black);
+}
+.addiction-elapsed {
+  margin: 5px 0 8px;
+  color: #b2ffea;
+  font: 600 clamp(27px, 6.8vw, 58px)/1.1 var(--font-interface);
+  font-variant-numeric: tabular-nums;
+  white-space: pre-wrap;
+}
+.addiction-quit p { color: #abd4d1; }
+.addiction-quit .health-button { border-color: #429b91; background: #143c40; }
+.addiction-quit-controls { display: grid; align-items: start; gap: 8px; }
+.addiction-quit-controls[hidden] { display: none; }
+.addiction-quit-controls summary { color: #acd8d5; cursor: pointer; font-size: 14px; }
+.addiction-quit-controls details[open] { display: grid; }
+.addiction-quit-controls label { display: grid; gap: 4px; margin: 8px 0; color: #abd4d1; font-size: 13px; }
+.addiction-quit-controls input { min-height: 44px; max-width: 100%; padding: 5px; color: #e9f9f5; background: #071a24; border: 1px solid #429b91; font-size: 16px; }
+.addiction-grid > .addiction-card { position: relative; isolation: isolate; overflow: hidden; }
+.addiction-grid > .addiction-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.addiction-tobacco { border-color: #62424e; background: linear-gradient(150deg, #261c2b, #111626 74%); }
+.addiction-tobacco::before { background: linear-gradient(112deg, transparent 65%, #e38f9a18); }
+.addiction-tobacco .addiction-count { color: #ffd0d3; }
+.addiction-coffee { border-color: #645034; background: radial-gradient(ellipse at top right, #3a2c1a, #171a22 74%); }
+.addiction-coffee::before { background: repeating-linear-gradient(135deg, transparent 0 16px, #efb56d12 17px 18px); mask-image: linear-gradient(110deg, transparent 48%, black); }
+.addiction-coffee .addiction-count { color: #ffd99e; }
+.addiction-coffee[data-window="closed"] { border-color: #594638; background: #1d1b20; }
+.addiction-lozenge { border-color: #3c677f; background: radial-gradient(ellipse at 100% 0%, #19384b, #0d1b29 72%); }
+.addiction-lozenge::before {
+  background: radial-gradient(circle, #9ddaff36 1px, transparent 1.5px) right top / 14px 14px;
+  mask-image: radial-gradient(ellipse at top right, black, transparent 58%);
+}
+.addiction-craving { border-color: #544b83; background: linear-gradient(145deg, #242144, #101727 78%); }
+.addiction-craving::before { background: radial-gradient(circle at 89% 37%, transparent 0 17px, #aeadff46 18px 19px, transparent 20px 29px, #aeadff24 30px 31px, transparent 32px); }
+.addiction-craving .addiction-count { color: #d3caff; }
+.addiction-craving::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  content: '';
+  background: #a8a0fc;
+  transform: scaleX(var(--timer-progress, 1));
+  transform-origin: left;
+  transition: transform .75s linear;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #addiction-dialog[open] .addiction-quit::before { animation: addiction-orbit .7s ease-out both; }
+  #addiction-dialog[open] .addiction-tobacco { animation: addiction-tobacco-in .35s ease-out both; }
+  #addiction-dialog[open] .addiction-coffee::before { animation: addiction-coffee-in .65s ease-out both; }
+  #addiction-dialog[open] .addiction-lozenge::before { animation: addiction-stock-in .6s ease-out both; }
+  .addiction-craving:has([aria-pressed="true"])::before { animation: addiction-breathe 5s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .addiction-craving::after { transition: none; }
+}
+@keyframes addiction-orbit { from { transform: scale(.75); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes addiction-tobacco-in { from { transform: translateX(-6px); opacity: .55; } }
+@keyframes addiction-coffee-in { from { transform: translateY(9px); opacity: 0; } }
+@keyframes addiction-stock-in { from { opacity: 0; } 55% { opacity: .45; } }
+@keyframes addiction-breathe { 50% { transform: scale(1.035); opacity: .45; } }
+
 .addiction-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 /* Negative margins keep this row as tall as a plain heading, so card contents line up. */
 .addiction-card-heading .health-button { margin: -10px 0; padding: 6px 12px; font-size: 14px; }
@@ -36,7 +125,7 @@
 /* Buttons sit on the same line in every card, whatever the text above them. */
 .addiction-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
 .addiction-actions button:first-child { flex: 1 1 auto; }
-#addiction-coffee-progress { width: 100%; accent-color: #6ac7ef; }
+#addiction-coffee-progress { width: 100%; accent-color: #eebb76; }
 /* Shared with the nicotine card in Health. */
 .health-button.addiction-red { background: #712634; border-color: #f0828c; color: #fff3f5; }
 .health-button.addiction-red:hover:not(:disabled) { background: #913347; border-color: #f0828c; }
@@ -49,7 +138,7 @@
 .addiction-history th:first-child { text-align: left; }
 .addiction-history thead th { color: #9ebdd5; font-size: 13px; font-weight: 600; }
 .addiction-history tbody th { color: #d9eeff; font-weight: 600; }
-.addiction-history tbody tr:first-child { background: #0f2a42; }
+.addiction-history tbody tr:first-child { background: linear-gradient(90deg, #17364b, #0f2232); }
 .addiction-history td[data-state="smoked"] { color: #ffb4bd; }
 .addiction-history td[data-state="clear"] { color: #8fe3c7; }
 .addiction-history td[data-state="limit"] { color: #ffd88a; }
@@ -67,4 +156,7 @@
 
 @media (max-width: 480px) {
   .addiction-grid, .addiction-settings form { grid-template-columns: minmax(0, 1fr); }
+  .addiction-history table { table-layout: fixed; }
+  .addiction-history th, .addiction-history td { padding-inline: 2px; overflow-wrap: anywhere; }
+  .addiction-history thead th { font-size: 12px; }
 }

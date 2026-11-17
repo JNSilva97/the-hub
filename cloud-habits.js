@@ -1,5 +1,5 @@
 import { cloudWorkspace } from './cloud.js?v=addiction-helper-1';
-import { readDay, readSettings, validDay } from './habits-model.mjs?v=2';
+import { readDay, readSettings, validDay } from './habits-model.mjs?v=3';
 
 // One document per Lisbon day. Increments merge across devices and queue offline.
 export function createHabitsAccount(onChange) {
