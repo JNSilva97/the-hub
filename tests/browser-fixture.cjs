@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 const origin = 'https://the-hub.test';
 const storageKey = 'thehub:routines:demo:v1';
 const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
-const publicFiles = ['index.html', 'styles/routine-tools.css', 'routine-tools.js', 'workspace-model.mjs', 'install.js', 'manifest.webmanifest', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png', 'assets/icons/hub-180.png', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'core-transition.js', 'interface-sound.js', 'experience.js', 'pointer-effects.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
+const publicFiles = ['index.html', 'styles/routine-tools.css', 'routine-tools.js', 'workspace-model.mjs', 'install.js', 'manifest.webmanifest', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png', 'assets/icons/hub-180.png', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'interface-sound.js', 'experience.js', 'pointer-effects.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 publicFiles.push('cloud-notes.js', 'cloud-health.js', 'notes-model.mjs', 'health.js', 'styles/health.css', 'checklist-picker.js', 'assets/audio/interface-glide.mp3', 'assets/audio/interface-tap.mp3');
 publicFiles.push('addiction.js', 'styles/addiction.css', 'habits-model.mjs', 'cloud-habits.js');
 
@@ -58,7 +58,6 @@ async function fixture(browser, options = {}) {
     }
     // Never connect regression tests to the real account, even after production activation.
     if (filename === 'firebase-config.mjs') return route.fulfill({ contentType: 'text/javascript', body: options.firebase ? 'export const firebaseConfig = {projectId:"fixture",apiKey:"fixture",authDomain:"fixture.firebaseapp.com",appId:"fixture"};' : 'export const firebaseConfig = null;' });
-    if (filename === 'core-transition.js' && options.noTransition) return route.abort();
     if (filename === 'notes.js' && options.noNotes) return route.abort();
     if (filename === 'routines.demo.json' && options.dataDelay) await new Promise(resolve => setTimeout(resolve, options.dataDelay));
     if (filename === 'routines.demo.json' && failures.data) return route.fulfill({ status: 503, body: 'Unavailable' });

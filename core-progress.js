@@ -80,20 +80,16 @@
     const previous = new Map(latest.map(signal => [signal.id, signal]));
     latest = event.detail;
     if (!latest.length) { stopPulses(); render(); return; }
-    let newlyComplete = false;
     for (const signal of latest) {
       if (!complete(signal)) pendingCompletions.delete(signal.id);
       else if (previous.has(signal.id) && !complete(previous.get(signal.id))) {
         pendingCompletions.add(signal.id);
-        newlyComplete = true;
       }
     }
-    if (panel.open || document.body.hasAttribute('data-core-phase')) {
-      if (newlyComplete) pulse(panel.querySelector('.core-energy'));
-    } else render();
+    if (!panel.open) render();
   });
 
-  // Keep the departing ring values until the returning artwork reaches home.
+  // Update the home readout when it becomes visible again.
   panel.addEventListener('close', () => { if (!panel.open && latest.length) render(); });
   function stopPulses() {
     pulses.forEach(animation => animation.cancel());

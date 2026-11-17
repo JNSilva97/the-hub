@@ -12,16 +12,16 @@
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles/base.css?v=control-2">
-  <link rel="stylesheet" href="styles/shell.css?v=home-account-1">
-  <link rel="stylesheet" href="styles/core.css?v=intro-quick-1">
+  <link rel="stylesheet" href="styles/shell.css?v=goals-1">
+  <link rel="stylesheet" href="styles/core.css?v=goals-1">
   <link rel="stylesheet" href="styles/access.css?v=full-print-1">
   <link rel="stylesheet" href="styles/panels.css?v=addiction-helper-1">
-  <link rel="stylesheet" href="styles/routines.css?v=backup-header-1">
+  <link rel="stylesheet" href="styles/routines.css?v=goals-1">
   <link rel="stylesheet" href="styles/routine-tools.css?v=addiction-helper-1">
   <link rel="stylesheet" href="styles/notes.css?v=dark-glass-1">
   <link rel="stylesheet" href="styles/health.css?v=addiction-helper-2">
   <link rel="stylesheet" href="styles/addiction.css?v=5">
-  <link rel="stylesheet" href="styles/motion.css?v=free-9">
+  <link rel="stylesheet" href="styles/motion.css?v=goals-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -40,7 +40,6 @@
   </div>
   </template>
   <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <symbol id="projects" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z"/><path d="M3 11h18"/></symbol>
     <symbol id="goals" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m12 12 8-8m-4 0h4v4"/></symbol>
     <symbol id="health" viewBox="0 0 24 24"><path d="M20 5c-2-2-5-1-8 2-3-3-6-4-8-2-4 4 0 9 8 15 8-6 12-11 8-15Z"/><path d="M4 12h4l2-4 3 8 2-4h5"/></symbol>
     <symbol id="med-icon-brain" viewBox="0 0 24 24"><path d="M12 18V6a3 3 0 0 0-5.8-1.1A3.5 3.5 0 0 0 4 10.5a3.7 3.7 0 0 0 1.3 6.4 3.5 3.5 0 0 0 6.7 1.1Zm0 0V6a3 3 0 0 1 5.8-1.1 3.5 3.5 0 0 1 2.2 5.6 3.7 3.7 0 0 1-1.3 6.4A3.5 3.5 0 0 1 12 18ZM7 8c.2 1.4 1 2 2 2m8-2c-.2 1.4-1 2-2 2m-9 4c1.7-.2 2.8.4 3.1 1.8m8.9-1.8c-1.7-.2-2.8.4-3.1 1.8"/></symbol>
@@ -67,17 +66,17 @@
       <div class="home-actions">
         <button id="addiction-launch" class="command-launch" type="button" aria-haspopup="dialog">Addiction Helper</button>
         <button id="command-launch" class="command-launch" type="button" aria-haspopup="dialog">Find anything <kbd>Ctrl K</kbd></button>
-        <button id="account-launch" class="command-launch" type="button" aria-haspopup="dialog" aria-controls="account-dialog">Private access</button>
+        <button id="account-launch" class="account-launch" type="button" title="Account &amp; sync" aria-haspopup="dialog" aria-controls="account-dialog">Private access</button>
       </div>
     </div>
     <div class="workspace">
       <svg class="connections" viewBox="0 0 1200 570" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M270 120h42l96 90h48M270 230h65l65 25h35M270 340h65l65-25h35M270 450h42l96-90h48M930 120h-42l-96 90h-48M930 230h-65l-65 25h-35M930 340h-65l-65-25h-35M930 450h-42l-96-90h-48"/>
-        <path class="signal" d="M270 120h42l96 90h48M270 230h65l65 25h35M270 340h65l65-25h35M270 450h42l96-90h48M930 120h-42l-96 90h-48M930 230h-65l-65 25h-35M930 340h-65l-65-25h-35M930 450h-42l-96-90h-48"/>
-        <g fill="#91dcf5" stroke="none"><circle cx="456" cy="210" r="2"/><circle cx="435" cy="255" r="2"/><circle cx="435" cy="315" r="2"/><circle cx="456" cy="360" r="2"/><circle cx="744" cy="210" r="2"/><circle cx="765" cy="255" r="2"/><circle cx="765" cy="315" r="2"/><circle cx="744" cy="360" r="2"/></g>
+        <path d="M270 175h54l84 35h48M270 285h160M270 395h54l84-35h48M930 175h-54l-84 35h-48M930 285h-160M930 395h-54l-84-35h-48"/>
+        <path class="signal" d="M270 175h54l84 35h48M270 285h160M270 395h54l84-35h48M930 175h-54l-84 35h-48M930 285h-160M930 395h-54l-84-35h-48"/>
+        <g fill="#91dcf5" stroke="none"><circle cx="456" cy="210" r="2"/><circle cx="430" cy="285" r="2"/><circle cx="456" cy="360" r="2"/><circle cx="744" cy="210" r="2"/><circle cx="770" cy="285" r="2"/><circle cx="744" cy="360" r="2"/></g>
       </svg>
       <div class="core">
-        <div class="core-reticle" aria-hidden="true"><span>01 / NIGHTFALL</span><span>PERSONAL SYSTEM</span></div>
+        <div class="core-reticle" aria-hidden="true"><span>MODULE / 01</span><span>PERSONAL SYSTEM</span></div>
         <div class="gyro" aria-hidden="true"></div><div class="gyro gyro-secondary" aria-hidden="true"></div>
         <svg class="core-art" viewBox="0 0 600 600" fill="none" aria-hidden="true">
           <defs>
@@ -198,21 +197,19 @@
         </svg>
         <div class="core-label">FIELD INTERFACE / THE HUB</div>
         <h1>THE HUB</h1>
-        <button id="routines-launch" class="core-launch" type="button" aria-haspopup="dialog" aria-describedby="core-summary">ROUTINES <span aria-hidden="true">↗</span></button>
+        <button id="routines-launch" class="core-launch" type="button" aria-haspopup="dialog" aria-controls="routines-dialog" aria-describedby="core-summary">GOALS <span aria-hidden="true">↗</span></button>
         <div id="core-summary" class="core-summary">YOUR PERSONAL OPERATIONS</div>
       </div>
       <nav class="apps" aria-label="Apps">
-      <button class="app" type="button" data-icon="projects" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#projects"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">01</span></span><span class="app-name">Projects</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="goals" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#goals"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">02</span></span><span class="app-name">Goals</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="health" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#health"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">03</span></span><span class="app-name">Health</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="finance" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#finance"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">04</span></span><span class="app-name">Finance</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="calendar" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#calendar"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">05</span></span><span class="app-name">Calendar</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="people" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#people"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">06</span></span><span class="app-name">Relationships</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="notes" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#notes"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">07</span></span><span class="app-name">Notes</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="settings" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#settings"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">08</span></span><span class="app-name">Settings</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="health" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#health"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">02</span></span><span class="app-name">Health</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="notes" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#notes"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">03</span></span><span class="app-name">Notes</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="settings" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#settings"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">04</span></span><span class="app-name">Settings</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="finance" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#finance"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">05</span></span><span class="app-name">Finance</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="calendar" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#calendar"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">06</span></span><span class="app-name">Calendar</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="people" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#people"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">07</span></span><span class="app-name">Relationships</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       </nav>
       <details id="future-spaces" class="future-spaces" hidden>
-        <summary>More spaces <span>5 coming soon</span></summary>
+        <summary>More spaces <span>3 coming soon</span></summary>
         <div class="future-grid"></div>
       </details>
     </div>
@@ -222,9 +219,9 @@
       <ol id="core-signal-list"></ol>
     </section>
   </main>
-  <footer><span><span class="footer-mark">◇</span> &nbsp; PERSONAL TERMINAL</span><button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>09 MODULES &nbsp; / &nbsp; THE HUB</span></footer>
+  <footer><span><span class="footer-mark">◇</span> &nbsp; PERSONAL TERMINAL</span><button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>07 MODULES &nbsp; / &nbsp; THE HUB</span></footer>
   <nav class="phone-actions" aria-label="Quick actions">
-    <button id="phone-routines" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/></svg><span>Routines</span></button>
+    <button id="phone-routines" type="button" aria-haspopup="dialog" aria-controls="routines-dialog"><svg aria-hidden="true"><use href="#goals"/></svg><span>Goals</span></button>
     <button id="phone-notes" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#notes"/></svg><span>Notes</span></button>
     <button id="phone-health" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#health"/></svg><span>Health</span></button>
     <button id="phone-addiction" type="button" aria-label="Addiction Helper" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 13h2l2-4 2 6 2-2h1"/></svg><span>Helper</span></button>
@@ -324,7 +321,7 @@
     <section id="health-content" hidden aria-label="Medication tracking">
       <div class="health-toolbar">
         <div><span id="health-data-badge" class="health-account-badge" hidden>PRIVATE / YOUR ACCOUNT</span><p id="health-sync-status" role="status"></p></div>
-        <div id="health-toolbar-actions" class="health-toolbar-actions" hidden><button id="health-add-medication" class="health-button" type="button" disabled>+ Add medication</button><button id="health-open-care" class="health-button" type="button" disabled>Open Routines</button></div>
+        <div id="health-toolbar-actions" class="health-toolbar-actions" hidden><button id="health-add-medication" class="health-button" type="button" disabled>+ Add medication</button><button id="health-open-care" class="health-button" type="button" disabled>Open Goals</button></div>
       </div>
       <div class="health-mode-actions">
         <button id="health-sign-in" class="health-button" type="button">Sign in</button>
@@ -371,7 +368,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.17.5</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.17.6</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -448,12 +445,12 @@
   <dialog id="routines-dialog" class="routines-dialog" aria-labelledby="routines-title">
     <div class="routines-header">
       <div class="routines-identity">
-        <div class="routine-optic" aria-hidden="true"></div>
-        <div><div class="panel-eyebrow">THE HUB / PERSONAL OPERATIONS</div><h2 id="routines-title">ROUTINES</h2></div>
+        <svg class="goals-mark" aria-hidden="true"><use href="#goals"/></svg>
+        <div><div class="panel-eyebrow">THE HUB / MODULE 01</div><h2 id="routines-title">GOALS</h2></div>
       </div>
       <div class="routines-header-actions">
         <button id="backup-launch" type="button" aria-haspopup="dialog" aria-controls="backup-dialog">Backup</button>
-        <form method="dialog"><button class="routine-exit" type="submit" aria-label="Close routines" autofocus>×</button></form>
+        <form method="dialog"><button class="routine-exit" type="submit" aria-label="Close Goals" autofocus>×</button></form>
       </div>
     </div>
     <div class="routines-meta"><span id="routine-source" class="routine-source">LOADING</span><p id="routine-data-note">Loading your checklists…</p></div>
@@ -513,7 +510,7 @@
     <p class="account-note">Checklists and account notes sync privately. Existing local notes are copied only when you choose it. This device keeps your login and offline copies. Use a personal device. Sign-out hides account data; offline copies remain in browser storage. Clearing site data removes those copies and unsynced changes. Editing checklist definitions and restoring backups require a connection.</p>
   </dialog>
   <dialog id="restart-dialog" class="restart-dialog" role="alertdialog" aria-labelledby="restart-title" aria-describedby="restart-description">
-    <div class="panel-eyebrow">ROUTINES / RESET CHECKLIST</div>
+    <div class="panel-eyebrow">GOALS / RESET CHECKLIST</div>
     <div class="restart-mark" aria-hidden="true">↻</div>
     <h2 id="restart-title">Start again?</h2>
     <p id="restart-description"></p>
@@ -527,18 +524,17 @@
     <label for="command-search">Find an app or checklist</label>
     <input id="command-search" type="search" placeholder="Where do you want to go?" autocomplete="off" autofocus>
     <div id="command-results" class="command-results"></div>
-    <p id="command-empty" hidden>No matches. Try “Routines” or “Workday”.</p>
+    <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=control-2"></script>
-  <script defer src="core-transition.js?v=dock-alignment-1"></script>
+  <script defer src="core-progress.js?v=goals-1"></script>
   <script defer src="notes.js?v=addiction-helper-1"></script>
   <script defer src="checklist-picker.js?v=review-1"></script>
   <script defer src="health.js?v=drag-focus-1"></script>
   <script defer src="addiction.js?v=7"></script>
-  <script defer src="interface.js?v=addiction-helper-1"></script>
+  <script defer src="interface.js?v=goals-1"></script>
   <script defer src="interface-sound.js?v=intro-autoplay-2"></script>
-  <script defer src="pointer-effects.js?v=perf-2"></script>
+  <script defer src="pointer-effects.js?v=goals-1"></script>
   <script defer src="experience.js?v=startup-scan-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
   <script defer src="install.js?v=flow-5"></script>
 </body>

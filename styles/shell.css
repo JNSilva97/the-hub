@@ -153,7 +153,7 @@ main {
   position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0px, 1fr));
-  grid-template-rows: repeat(4, 88px);
+  grid-template-rows: repeat(3, 88px);
   grid-auto-flow: column;
   gap: 20px clamp(350px, 37vw, 500px);
   pointer-events: none;
@@ -205,14 +205,6 @@ main {
 
 .app:nth-child(6) {
   animation-delay: 625ms;
-}
-
-.app:nth-child(7) {
-  animation-delay: 670ms;
-}
-
-.app:nth-child(8) {
-  animation-delay: 715ms;
 }
 
 .app:hover::before {
@@ -390,6 +382,36 @@ main {
 .command-launch:hover {
   border-color: var(--neon-ice);
   background: #0a1d34;
+}
+
+.account-launch {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #386991;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 28%, #163950, #081525 72%);
+  color: #a4e0ff;
+  font-size: 0;
+  box-shadow: inset 0 0 0 3px #020811, 0 0 12px #38a5ff20;
+}
+
+.account-launch::before {
+  content: '';
+  width: 23px;
+  height: 23px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.65' stroke-linecap='round'%3E%3Cpath d='M3 8.5a14 14 0 0 1 18 0M6 12a9 9 0 0 1 12 0m-9 3.5a4.5 4.5 0 0 1 6 0'/%3E%3Ccircle cx='12' cy='19' r='1.25' stroke='none' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.account-launch:hover, .account-launch:focus-visible {
+  border-color: #81d3ff;
+  color: #d6f6ff;
+  box-shadow: inset 0 0 0 3px #051423, 0 0 16px #4abaff48;
 }
 
 kbd {

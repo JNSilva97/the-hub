@@ -14,18 +14,9 @@
   display: none;
 }
 
-/* This panel's controller replaces the generic dialog entry animation. */
-.routines-dialog[open] {
+/* Goals opens immediately from the home core and the phone bar. */
+.routines-dialog[open], .routines-dialog[open]::backdrop {
   animation: none;
-}
-
-.routines-dialog[data-transition="closing"]::backdrop {
-  animation: core-backdrop-out var(--core-return-duration, 520ms) cubic-bezier(.22, 1, .36, 1) both;
-}
-
-.routines-dialog[data-transition] {
-  overflow: hidden;
-  will-change: transform, opacity;
 }
 
 .routines-identity {
@@ -35,18 +26,20 @@
   min-width: 0;
 }
 
-.routine-optic {
+.goals-mark {
   flex: 0 0 58px;
   width: 58px;
   height: 58px;
-  color: #78caff;
-
-}
-
-.routine-optic svg {
-  display: block;
-  width: 100%;
-  height: 100%;
+  padding: 11px;
+  border: 1px solid #3d8fbd;
+  border-radius: 50%;
+  fill: none;
+  stroke: #a2deff;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  background: radial-gradient(circle, #147daf44, #071525);
+  box-shadow: inset 0 0 0 3px #071422;
 }
 
 .routines-header {
@@ -498,10 +491,11 @@
     gap: 10px;
   }
 
-  .routine-optic {
+  .goals-mark {
     flex-basis: 36px;
     width: 36px;
     height: 36px;
+    padding: 6px;
   }
 
   .routines-header h2 {

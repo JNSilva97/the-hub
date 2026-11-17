@@ -1,11 +1,11 @@
 // Bump this version whenever a public app file changes; install the complete release atomically.
 const prefix = `the-hub:${new URL(self.registration.scope).pathname}:`;
-const cacheName = `${prefix}home-account-1`;
+const cacheName = `${prefix}goals-1`;
 const files = [
   './', 'index.html', 'manifest.webmanifest', 'health.js', 'styles/health.css', 'addiction.js', 'styles/addiction.css', 'habits-model.mjs', 'cloud-habits.js', 'checklist-picker.js',
   'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css',
   'styles/panels.css', 'styles/routines.css', 'styles/routine-tools.css', 'styles/notes.css', 'styles/motion.css',
-  'core-progress.js', 'core-transition.js', 'notes.js', 'interface.js', 'interface-sound.js',
+  'core-progress.js', 'notes.js', 'interface.js', 'interface-sound.js',
   'pointer-effects.js', 'experience.js', 'install.js', 'routines.js', 'routine-model.mjs',
   'routine-tools.js', 'workspace-model.mjs', 'cloud.js', 'cloud-health.js', 'cloud-notes.js', 'notes-model.mjs', 'firebase-config.mjs', 'routines.demo.json',
   'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2',

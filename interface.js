@@ -13,9 +13,6 @@ routinesUrl.search = scriptUrl.search;
 let routinesModule;
 let healthConnected = false;
 let routinesLoadVersion = 0;
-const routineTransition = typeof createCoreTransition === 'function' ? createCoreTransition(routinesDialog) : {
-  open: () => routinesDialog.showModal(), close: () => routinesDialog.close()
-};
 
 function dismissAccess() {
   document.querySelector('.access-sequence')?.remove();
@@ -57,11 +54,11 @@ function openApp(button) {
   dialog.dataset.app = icon;
   document.getElementById('health-content').hidden = !healthOpen;
   document.getElementById('health-close').hidden = !healthOpen;
-  dialog.querySelector('form .close').textContent = healthOpen && routinesDialog.open ? 'Back to Routines' : 'Back to the Hub';
+  dialog.querySelector('form .close').textContent = healthOpen && routinesDialog.open ? 'Back to Goals' : 'Back to the Hub';
   document.getElementById('app-title').textContent = button.querySelector('.app-name').textContent;
   document.getElementById('app-icon').replaceChildren(button.querySelector('.tile').cloneNode(true));
   document.getElementById('interface-settings').hidden = !settings;
-  document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : healthOpen ? 'Track today’s doses and see what is left.' : icon === 'health' ? 'Health couldn’t load. Reload the page to try again.' : icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Routines.';
+  document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : healthOpen ? 'Track today’s doses and see what is left.' : icon === 'health' ? 'Health couldn’t load. Reload the page to try again.' : icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Goals.';
   if (healthOpen) health.refresh();
   dialog.showModal();
 }
@@ -87,7 +84,6 @@ function arrangePhoneApps() {
 }
 phoneLayout.addEventListener('change', arrangePhoneApps);
 arrangePhoneApps();
-document.getElementById('phone-routines').addEventListener('click', () => routinesLauncher.click());
 for (const icon of ['notes', 'health', 'settings']) {
   document.getElementById(`phone-${icon}`).addEventListener('click', () => document.querySelector(`.app[data-icon="${icon}"]`).click());
 }
@@ -105,16 +101,19 @@ document.getElementById('addiction-open-health').addEventListener('click', () =>
   launcher.click();
 });
 
-routinesLauncher.addEventListener('click', () => {
-  routineTransition.open();
-});
+for (const launcher of [routinesLauncher, document.getElementById('phone-routines')]) {
+  launcher.addEventListener('click', () => {
+    if (routinesDialog.open) return;
+    routinesDialog.showModal();
+    routinesDialog.scrollTop = 0;
+  });
+}
 for (const panel of [dialog, addictionDialog, routinesDialog, notesDialog, document.getElementById('note-delete-dialog'), document.getElementById('notes-import-dialog'), document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
   panel.addEventListener('click', event => {
     if (event.target !== panel) return;
     const bounds = panel.getBoundingClientRect();
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
-      if (panel === routinesDialog) routineTransition.close();
-      else if (panel === notesDialog && instantNotes) instantNotes.close();
+      if (panel === notesDialog && instantNotes) instantNotes.close();
       else panel.close();
     }
   });
@@ -181,7 +180,7 @@ loadRoutines();
     if (palette.open) { palette.close(); return; }
     for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
     const launch = target => { target.focus(); target.click(); };
-    commands = [{ name: 'Routines', kind: 'Checklists', run: () => launch(routinesLauncher) }];
+    commands = [{ name: 'Goals', kind: 'Routines and checklists', run: () => launch(routinesLauncher) }];
     if (addiction) commands.push({ name: 'Addiction Helper', kind: 'Tobacco and coffee', run: addiction.open });
     for (const card of document.querySelectorAll('.routine-card')) commands.push({
       name: card.querySelector('.routine-card-name').textContent,

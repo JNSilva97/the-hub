@@ -8,7 +8,7 @@ const { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRout
 
 async function openAccount(page) {
   if (await page.locator('#routines-dialog').evaluate(dialog => dialog.open)) {
-    await page.getByRole('button', { name: 'Close routines', exact: true }).click();
+    await page.getByRole('button', { name: 'Close Goals', exact: true }).click();
   }
   await page.locator('#account-launch').click();
 }
@@ -184,7 +184,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.getByLabel('Checklist name', { exact: true }).fill('Unsaved draft');
       await page.keyboard.press('Control+k');
       assert.equal(await page.locator('#command-dialog').evaluate(el => el.open), false, 'Search must not discard an editor draft.');
-      for (const exit of [() => page.keyboard.press('Escape'), () => page.getByRole('button', {name:'Close routines',exact:true}).click(), () => page.mouse.click(1,1)]) {
+      for (const exit of [() => page.keyboard.press('Escape'), () => page.getByRole('button', {name:'Close Goals',exact:true}).click(), () => page.mouse.click(1,1)]) {
         await exit(); await page.waitForSelector('#control-confirm[open]');
         assert.equal(await page.locator('#routines-dialog').evaluate(el => el.open), true);
         await page.locator('#control-confirm .restart-keep').click();
@@ -274,7 +274,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.17.5');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.17.6');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -286,7 +286,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('holographic eye tracks pointer and module focus, stays identical in Routines and respects motion preferences', async () => {
+  await t.test('holographic eye tracks pointer and module focus and respects motion preferences', async () => {
     const { context, page, errors } = await fixture(browser);
     try {
       await ready(page);
@@ -296,21 +296,18 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.mouse.move(200, 400); await page.waitForTimeout(50);
       assert.notEqual(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), pointerX);
       await showFutureSpaces(page);
-      await page.locator('[data-icon="projects"]').focus();
+      await page.locator('[data-icon="finance"]').focus();
       assert.notEqual(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), '');
       await page.locator('.motion-toggle').click();
       assert.equal(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), '');
       assert.equal(await page.locator('.core-art .eye-focus').evaluate(el => el.getAnimations().length), 0);
       await openRoutines(page);
-      assert.equal(await page.locator('.routine-optic .eye-art').count(), 1);
-      assert.equal(await page.locator('.routine-optic .iris-fibres path').count(), await page.locator('.core-art .iris-fibres path').count());
-      assert.equal(await page.locator('.routine-optic .eye-art').getAttribute('viewBox'), await page.locator('.core-art .eye-art').getAttribute('viewBox'));
       await page.emulateMedia({ reducedMotion: 'reduce' });
       assert.equal(await page.locator('.core-art .eye-pupil').evaluate(el => el.getAnimations().length), 0); assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });
 
-  await t.test('eye and rings share one center; home, header and traveling eye follow the pointer', async () => {
+  await t.test('home eye, scanner and rings share one center', async () => {
     const { context, page, errors } = await fixture(browser);
     try {
       await ready(page);
@@ -331,19 +328,6 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       });
       assert.ok(centers.x < .5 && centers.y < .5, 'Eye must sit at the center of the outer rings.');
       assert.ok(centers.offsets.every(error => error < .5), 'Scanning ring must rotate about the eye center.');
-      await openRoutines(page);
-      await page.mouse.move(20, 300); await page.waitForTimeout(50);
-      const travelingGaze = await page.locator('.core-flight .eye-gaze').evaluate(el => el.style.transform);
-      assert.notEqual(travelingGaze, '');
-      assert.equal(await page.locator('.routine-optic .eye-gaze').evaluate(el => el.style.transform), travelingGaze, 'Traveling and header eye must share one gaze during handoff.');
-      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
-      await page.mouse.move(20, 300); await page.waitForTimeout(350);
-      const left = await page.locator('.routine-optic .eye-gaze').evaluate(el => getComputedStyle(el).transform);
-      await page.mouse.move(1000, 300); await page.waitForTimeout(350);
-      const right = await page.locator('.routine-optic .eye-gaze').evaluate(el => getComputedStyle(el).transform);
-      assert.notEqual(left, right, 'Header eye must keep tracking the mouse.');
-      await page.keyboard.press('Escape');
-      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });
@@ -488,7 +472,6 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     const { context, page, errors } = await fixture(browser, { width: 390 });
     try {
       await ready(page); await openRoutines(page);
-      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
       assert.equal(await page.locator('.orbit-slow').evaluate(el => getComputedStyle(el).animationPlayState), 'paused');
       assert.equal(await page.locator('.connections').evaluate(el => getComputedStyle(el.querySelector('path')).animationPlayState), 'paused');
       assert.equal(await page.locator('#routines-dialog').evaluate(el => getComputedStyle(el, '::backdrop').backdropFilter), 'none');
@@ -503,7 +486,12 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     const { context, page, requests, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
     try {
       await ready(page);
-      assert.equal(await page.locator('main #account-launch').textContent(), 'Private access');
+      const account = page.getByRole('button', { name: 'Private access', exact: true });
+      assert.equal(await account.evaluate(button => {
+        const size = button.getBoundingClientRect();
+        return size.width === 44 && size.height === 44 && getComputedStyle(button).borderRadius === '50%'
+          && getComputedStyle(button, '::before').maskImage !== 'none';
+      }), true);
       await openAccount(page);
       assert.equal(await page.locator('#account-dialog').evaluate(element => element.open), true);
       assert.match(await page.locator('#account-status').textContent(), /not configured/);
@@ -761,7 +749,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
         assert.equal(await page.locator('#routines-launch').evaluate(element => document.activeElement === element), true);
         await page.keyboard.press('Enter');
-        await page.getByRole('button', { name: 'Close routines' }).click();
+        await page.getByRole('button', { name: 'Close Goals' }).click();
         await showFutureSpaces(page);
         for (const app of await page.locator('.app').all()) {
           await app.click();
@@ -1062,20 +1050,15 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
   });
 
   for (const motion of ['no-preference', 'reduce']) {
-    await t.test(`core keeps its departure rings, then updates and pulses on return with ${motion} motion`, async () => {
+    await t.test(`home rings update and pulse after closing Goals with ${motion} motion`, async () => {
       const { context, page, errors } = await fixture(browser, { motion, width: 390 });
       try {
         await ready(page);
         await openRoutines(page);
-        await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
         const ring = page.locator('.core-art .core-progress-fill[data-checklist="personal-care"]');
         for (let i = 0; i < 3; i++) await page.locator('.check-items:not([hidden]) .check-row input:not(:checked)').first().check();
         assert.equal(await ring.evaluate(el => Number(el.style.strokeDashoffset)), 100);
-        assert.equal(await page.locator('.routine-optic .core-energy').evaluate(el => el.getAnimations().length > 0), motion !== 'reduce');
         await page.keyboard.press('Escape');
-        if (motion !== 'reduce') {
-          assert.equal(await page.locator('.core-flight .core-progress-fill[data-checklist="personal-care"]').evaluate(el => parseFloat(el.style.strokeDashoffset)), 100);
-        }
         await page.waitForFunction(() => !document.getElementById('routines-dialog').open && document.getElementById('core-summary').textContent.startsWith('1 /'));
         assert.equal(await ring.evaluate(el => Number(el.style.strokeDashoffset)), 0);
         const fill = await ring.evaluate(el => {
@@ -1085,7 +1068,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         });
         if (motion === 'reduce') assert.equal(fill.animations, 0);
         else {
-          assert.ok(fill.offset > 0 && fill.offset < 100, 'The home ring fills gradually after the handoff.');
+          assert.ok(fill.offset > 0 && fill.offset < 100, 'The home ring fills gradually after closing Goals.');
           assert.ok(fill.animations > 0);
         }
         assert.equal(await page.locator('.core-art > .core-energy').evaluate(el => el.getAnimations().length > 0), motion !== 'reduce');
@@ -1149,154 +1132,22 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('core journey opens and returns with focus, clean artwork and no duplicate IDs', async () => {
-    for (const width of [390, 1440]) {
-    const { context, page, errors } = await fixture(browser, { width });
+  await t.test('Goals opens and closes immediately and the eye stays at home', async () => {
+    const { context, page, errors } = await fixture(browser);
     try {
       await ready(page);
-      await openRoutines(page);
-      assert.equal(await page.locator('#routines-dialog').getAttribute('data-transition'), 'opening');
-      assert.equal(await page.locator('.core-flight:popover-open').count(), 1);
-      assert.equal(await page.evaluate(() => {
-        const ids = [...document.querySelectorAll('[id]')].map(el => el.id);
-        return new Set(ids).size === ids.length;
-      }), true);
-      const dockError = await page.evaluate(() => {
-        for (const animation of document.getAnimations()) {
-          if (animation.effect.target.closest?.('#routines-dialog, .core-flight')) { animation.pause(); animation.currentTime = 800; }
-        }
-        const brightness = Number(getComputedStyle(document.querySelector('.core-flight > svg')).opacity) + Number(getComputedStyle(document.querySelector('.routine-optic')).opacity);
-        for (const animation of document.getAnimations()) {
-          if (animation.effect.target.closest?.('#routines-dialog, .core-flight')) animation.currentTime = 879;
-        }
-        const arriving = document.querySelector('.core-flight .eye-ring').getBoundingClientRect();
-        const docked = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect();
-        const flightRing = document.querySelector('.core-flight .eye-ring');
-        const dockRing = document.querySelector('.routine-optic .eye-ring');
-        const flightBounds = flightRing.getBoundingClientRect();
-        const dockBounds = dockRing.getBoundingClientRect();
-        const ringPosition = Math.abs(flightBounds.left - dockBounds.left) + Math.abs(flightBounds.top - dockBounds.top) + Math.abs(flightBounds.width - dockBounds.width);
-        return { position: Math.abs(arriving.left - docked.left) + Math.abs(arriving.top - docked.top) + Math.abs(arriving.width - docked.width), brightness, ringPosition, ringOpacity: Number(getComputedStyle(dockRing).strokeOpacity), ringStroke: Number.parseFloat(getComputedStyle(dockRing).strokeWidth) * dockRing.getScreenCTM().a };
-
-      });
-      assert.ok(dockError.position < 1, 'The shared eye must arrive at exactly the header size and position.');
-      assert.ok(dockError.ringPosition < 1 && dockError.ringOpacity > .5, 'The eye ring must remain visible and aligned through the header handoff.');
-      assert.ok(dockError.ringStroke > .4, 'The ring must keep a readable stroke when docked.');
-      assert.ok(Math.abs(dockError.brightness - 1) < .01, 'Eye brightness must stay continuous through the final handoff.');
-      await page.evaluate(() => document.getAnimations().forEach(animation => animation.play()));
-      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
-      assert.equal(await page.locator('.core-flight').count(), 0);
-      assert.equal(await page.locator('#routines-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
-      await page.getByRole('button', { name: 'Close routines' }).click();
-      assert.equal(await page.locator('#routines-dialog').getAttribute('data-transition'), 'closing');
-      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
-      assert.equal(await page.locator('.core-flight').count(), 0);
-      assert.equal(await page.evaluate(() => document.body.hasAttribute('data-core-phase')), false);
-      assert.equal(await page.locator('#routines-launch').evaluate(el => el === document.activeElement), true);
+      const launcher = page.locator('#routines-launch');
+      await launcher.click();
+      assert.equal(await page.getByRole('dialog', { name: /^Goals$/i }).isVisible(), true);
+      assert.equal(await page.locator('#routines-dialog .eye-art').count(), 0);
+      assert.equal(await page.locator('.eye-art').count(), 1);
+      assert.equal(await page.locator('#routines-dialog').evaluate(el => el.getAnimations().length), 0);
+      assert.equal(await page.locator('.core-art').evaluate(el => getComputedStyle(el).visibility), 'visible');
+      await page.getByRole('button', { name: 'Close Goals' }).click();
+      assert.equal(await page.getByRole('dialog', { name: /^Goals$/i }).isVisible(), false);
+      assert.equal(await launcher.evaluate(el => el === document.activeElement), true);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
-    }
-  });
-
-  await t.test('the circle disappears at the centre before the visible eye travels to the header', async () => {
-    for (const width of [390, 1440]) {
-      const { context, page, errors } = await fixture(browser, { width });
-      try {
-        await ready(page); await openRoutines(page);
-        const result = await page.evaluate(() => {
-          const artwork = document.querySelector('.core-flight > svg');
-          const rings = artwork.querySelector('.flight-rings');
-          const movement = artwork.getAnimations().find(animation => animation.effect.getKeyframes().some(frame => frame.transform));
-          const timing = movement.effect.getTiming();
-          const shrinkEnd = movement.effect.getKeyframes()[1].offset * timing.duration;
-          const ringFade = rings.getAnimations().find(animation => animation.effect.getKeyframes().some(frame => frame.opacity !== undefined));
-          const fadeEnd = ringFade.effect.getComputedTiming().endTime;
-          const animations = document.getAnimations().filter(animation => animation.effect.target.closest?.('#routines-dialog, .core-flight'));
-          const times = [shrinkEnd / 2, shrinkEnd, shrinkEnd + 1, (shrinkEnd + timing.duration) / 2, timing.duration - 1];
-          const frames = times.map(time => {
-            for (const animation of animations) { animation.pause(); animation.currentTime = time; }
-            const eye = artwork.querySelector('.eye-ring').getBoundingClientRect();
-            const dock = document.querySelector('.routine-optic .eye-ring').getBoundingClientRect();
-            return { x: eye.left + eye.width / 2, y: eye.top + eye.height / 2, width: eye.width,
-              transform: getComputedStyle(artwork).transform, eyeOpacity: Number(getComputedStyle(artwork).opacity),
-              frameOpacity: Number(getComputedStyle(rings).opacity),
-              dockOpacity: Number(getComputedStyle(document.querySelector('.routine-optic')).opacity),
-              error: Math.abs(eye.left - dock.left) + Math.abs(eye.top - dock.top) + Math.abs(eye.width - dock.width),
-              dockWidth: dock.width };
-          });
-          for (const animation of animations) animation.play();
-          return { fadeEnd, shrinkEnd, frames };
-        });
-        assert.ok(result.fadeEnd <= result.shrinkEnd, 'The outer circle must vanish before the sideways trip.');
-        assert.ok(Math.abs(result.frames[0].x - result.frames[1].x) < 1 && Math.abs(result.frames[0].y - result.frames[1].y) < 1, 'Shrinking must happen in place.');
-        assert.ok(result.frames[0].width > result.frames[1].width, 'The eye must shrink before moving.');
-        assert.ok(Math.abs(result.frames[1].width - result.frames[1].dockWidth) < 1);
-        assert.equal(result.frames[0].frameOpacity, 1);
-        for (const frame of result.frames.slice(2)) {
-          assert.equal(frame.frameOpacity, 0, 'The circle must stay gone during travel.');
-          assert.equal(frame.eyeOpacity, 1, 'The eye must never disappear in the middle of the trip.');
-          assert.equal(frame.dockOpacity, 0, 'Only one eye may be visible before landing.');
-        }
-        assert.notEqual(result.frames[2].transform, result.frames[3].transform);
-        assert.notEqual(result.frames[3].transform, result.frames[4].transform);
-        assert.ok(result.frames[4].error < 1, 'The visible eye must land precisely on the header icon.');
-        await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
-        assert.equal(await page.locator('.core-flight').count(), 0);
-        assert.equal(await page.locator('.routine-optic').evaluate(el => Number(getComputedStyle(el).opacity)), 1);
-        assert.deepEqual(errors, []);
-      } finally { await context.close(); }
-    }
-  });
-
-  await t.test('return handoff blends behind the title before landing while the backdrop clears', async () => {
-    for (const width of [390, 1440]) {
-    const { context, page } = await fixture(browser, { width });
-    try {
-      await ready(page);
-      await openRoutines(page);
-      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
-      await page.keyboard.press('Escape');
-      const lateFrame = await page.evaluate(() => {
-        const panel = document.getElementById('routines-dialog');
-        const artwork = document.querySelector('.core-flight > svg');
-        let blendError, blendOpacity;
-        for (const sample of [430, 500]) {
-          for (const animation of document.getAnimations()) {
-            if (animation.effect.target.closest?.('#routines-dialog, .core-flight') || animation.effect.target.matches?.('.core-art, .gyro, .core-reticle') && animation.effect.getTiming().duration === 520) {
-              animation.pause();
-              animation.currentTime = sample;
-            }
-          }
-          if (sample === 430) {
-            const front = artwork.getBoundingClientRect();
-            const home = document.querySelector('.core-art').getBoundingClientRect();
-            blendError = Math.abs(front.left - home.left) + Math.abs(front.top - home.top) + Math.abs(front.width - home.width);
-            blendOpacity = Number(getComputedStyle(artwork).opacity) + Number(getComputedStyle(document.querySelector('.core-art')).opacity);
-          }
-        }
-        const returning = artwork.getBoundingClientRect();
-        const home = document.querySelector('.core-art').getBoundingClientRect();
-        return {
-          blendError, blendOpacity,
-          optic: Number(getComputedStyle(artwork).opacity),
-          homeOptic: Number(getComputedStyle(document.querySelector('.core-art')).opacity),
-          homeVisibility: getComputedStyle(document.querySelector('.core-art')).visibility,
-          backdrop: Number(getComputedStyle(panel, '::backdrop').opacity),
-          positionError: Math.abs(returning.left - home.left) + Math.abs(returning.top - home.top) + Math.abs(returning.width - home.width)
-        };
-      });
-      assert.ok(lateFrame.blendError < 1, 'Both layers must stay aligned during blending, without a double image.');
-      assert.ok(Math.abs(lateFrame.blendOpacity - 1) < .01, 'The handoff must keep the optic lit throughout.');
-      assert.equal(lateFrame.optic, 0, 'Front layer must disappear before the end of the return.');
-      assert.equal(lateFrame.homeOptic, 1, 'Home layer must already be visible behind the title.');
-      assert.equal(lateFrame.homeVisibility, 'visible');
-      assert.ok(lateFrame.backdrop < .02, 'Backdrop must clear gradually before the native dialog closes.');
-      assert.ok(lateFrame.positionError < 2, 'Returning artwork must meet the home core without a position jump.');
-      await page.evaluate(() => document.getAnimations().forEach(animation => animation.play()));
-      await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
-      assert.equal(await page.locator('.core-art').evaluate(el => getComputedStyle(el).visibility), 'visible');
-    } finally { await context.close(); }
-    }
   });
 
   await t.test('styled restart prompt cancels safely with Escape and backdrop, then confirms by keyboard', async () => {
@@ -1328,7 +1179,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('interrupted journeys recover after repeated Escape, resize and programmatic navigation', async () => {
+  await t.test('Goals works with repeated Escape, resize and quick access', async () => {
     const { context, page, errors } = await fixture(browser);
     try {
       await ready(page);
@@ -1338,13 +1189,11 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       await openRoutines(page);
       await page.setViewportSize({ width: 768, height: 800 });
-      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
       assert.equal(await page.locator('.core-flight').count(), 0);
       await page.keyboard.press('Control+k');
       assert.equal(await page.locator('#command-dialog').evaluate(el => el.open), true);
       await page.locator('#command-search').fill('Workday');
       await page.keyboard.press('Enter');
-      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
       assert.equal(await page.locator('#routine-name').textContent(), 'Workday');
       await page.emulateMedia({ reducedMotion: 'reduce' });
       assert.equal(await page.locator('.core-flight').count(), 0);
@@ -1355,39 +1204,19 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('checklists arriving during unfolding settle into a usable panel', async () => {
+  await t.test('checklists arriving after Goals opens remain usable', async () => {
     const { context, page, errors } = await fixture(browser, { dataDelay: 700 });
     try {
       await page.goto(origin);
       await openRoutines(page);
       assert.equal(await page.locator('#routines-dialog').getAttribute('data-ready'), 'false');
       await page.waitForSelector('#routines-dialog[data-ready="true"]', { state: 'attached' });
-      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
       assert.equal(await page.locator('.core-flight').count(), 0);
       await page.locator('.check-row input').first().check();
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
-  });
-
-  await t.test('reduced motion, paused motion and missing popovers keep Routines usable', async () => {
-    for (const mode of ['reduce', 'paused', 'no-popover', 'no-script', 'no-animate']) {
-      const { context, page, errors } = await fixture(browser, { motion: mode === 'reduce' ? 'reduce' : 'no-preference', noTransition: mode === 'no-script' });
-      try {
-        if (mode === 'no-popover') await context.addInitScript(() => { delete HTMLElement.prototype.showPopover; });
-        if (mode === 'no-animate') await context.addInitScript(() => { Element.prototype.animate = () => { throw new Error('Animation unavailable'); }; });
-        await ready(page);
-        if (mode === 'paused') await page.locator('.motion-toggle').click();
-        await openRoutines(page);
-        if (mode !== 'no-popover') assert.equal(await page.locator('#routines-dialog').getAttribute('data-transition'), null);
-        assert.equal(await page.locator('.core-flight').count(), 0);
-        await page.keyboard.press('Escape');
-        await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
-        assert.equal(await page.evaluate(() => document.body.hasAttribute('data-core-phase')), false);
-        assert.deepEqual(errors, []);
-      } finally { await context.close(); }
-    }
   });
 
   await t.test('quick access filters checklists, supports keyboard and handles no matches', async () => {
@@ -1463,7 +1292,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
       await showFutureSpaces(page);
-      await page.locator('[data-icon="projects"]').click();
+      await page.locator('[data-icon="finance"]').click();
       assert.equal(await page.locator('#interface-settings').isVisible(), false);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
@@ -1512,7 +1341,6 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await play(() => page.keyboard.press('Escape'), [1.25, [0, .065, .565]]);
       await play(() => page.locator('#replay-intro').click(), [1.1, [0, .09, .93]]);
       await play(() => openRoutines(page), [.85, [0, .09, .62]]);
-      await page.waitForFunction(() => document.body.dataset.corePhase === 'open');
       await play(() => page.keyboard.press('Escape'), [1.25, [0, .065, .565]]);
       assert.deepEqual([...requests].sort((a, b) => a - b), [901, 914, 3114]);
       assert.deepEqual(errors, []);

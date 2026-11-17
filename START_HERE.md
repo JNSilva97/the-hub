@@ -4,11 +4,11 @@ The app has three parts: HTML puts things on the screen, CSS makes them look and
 
 ## 1. Start using it
 
-Open the homepage and choose **Routines** beneath the optical core. Pick a checklist and tick its items. **Find anything** opens a search box that can take you straight to a checklist. **Settings** controls animation and optional sound.
+Open the homepage and choose **Goals** beneath the optical core. Pick a checklist and tick its items. **Find anything** opens a search box that can take you straight to a checklist. **Settings** controls animation and optional sound.
 
-Routines shows the full checklist as soon as you open it. Tick things off in whichever order suits you. Checked rows stay where they are, and tapping one again clears its tick. Optional section switches are right in the list. Progress saves automatically.
+Goals shows the full checklist as soon as you open it. Tick things off in whichever order suits you. Checked rows stay where they are, and tapping one again clears its tick. Optional section switches are right in the list. Progress saves automatically.
 
-Sign in to open **Health** and see today’s doses and stock. Use **Add medication** to get started, **Mark taken** to record a dose, and **Undo** to put the recorded amount back. A **Linked checklist** lets you record that dose from Routines. Account Health syncs after its rules are enabled.
+Sign in to open **Health** and see today’s doses and stock. Use **Add medication** to get started, **Mark taken** to record a dose, and **Undo** to put the recorded amount back. A **Linked checklist** lets you record that dose from Goals. Account Health syncs after its rules are enabled.
 
 Open **Addiction Helper** to log cigarettes (goal: zero) and coffees (goal: 3 a day). You can keep logging coffee after the goal or the 17:00 Lisbon cut-off. The card warns in both cases and skips the time warning on Fridays, Saturdays and the eves of Portuguese national holidays. Signed in, these counts sync between your devices. **Time without smoking** counts up from the time you choose and resets when you log a cigarette. Sign in on both devices to see the same timer. The streak counts smoke-free days, and **Last 7 days** shows each day at a glance. When a craving hits, press the red **Log lozenge taken** button: it records a nicotine lozenge in Health and starts a 5-minute craving timer. Health shows the same red button and warns when lozenges run low. Open **Helper settings** to set your tobacco price and cigarettes per pouch to see money saved. Health cards can be dragged to reorder: press and drag with a mouse, or press and hold on a touch screen.
 
@@ -18,7 +18,7 @@ Choose **Notes** and start typing. Your first line becomes the title and each ed
 
 While signed out, the online version uses example checklists. Your real lists load from the PC version at `http://127.0.0.1:8765/` while the local server is running. Those local ticks stay in that browser; account sync is a separate workspace.
 
-**Private access** on the home screen is the entry point for checklist sync. Sign in on the PC and explicitly choose **Sync PC checklists**, then sign into the same account on your phone. See [Firebase setup and verification](FIREBASE_SETUP.md). Local notes remain local unless explicitly copied. On each personal device, open online once, wait for **Settings → Offline app ready**, and open your account lists. You can then reopen and tick offline. **Saved on this device** means ticks are stored locally and will sync when connected; **Progress synced to your account** confirms delivery. Login stays saved until sign-out. Pending writes block sign-out; rejected saves or unavailable storage still require keeping the tab open.
+The circular Wi-Fi button on the home screen is the entry point for checklist sync. Sign in on the PC and explicitly choose **Sync PC checklists**, then sign into the same account on your phone. See [Firebase setup and verification](FIREBASE_SETUP.md). Local notes remain local unless explicitly copied. On each personal device, open online once, wait for **Settings → Offline app ready**, and open your account lists. You can then reopen and tick offline. **Saved on this device** means ticks are stored locally and will sync when connected; **Progress synced to your account** confirms delivery. Login stays saved until sign-out. Pending writes block sign-out; rejected saves or unavailable storage still require keeping the tab open.
 
 Choose **Edit checklist** beside the selected checklist title to edit directly in the checklist panel. Use the separate **Backup** button at the top for portable copies. Save applies edits; removals and backup replacement ask for confirmation. Press Enter in an item field to move to the next item or add one. Existing ticks follow renamed or reordered items. If a save fails, keep the draft open and retry. Notes are separate. **Settings → Install** adds The Hub to your home screen when supported; sync still needs a connection.
 
@@ -34,7 +34,6 @@ Choose **Edit checklist** beside the selected checklist title to edit directly i
 | Dialogs, search and Settings appearance | `styles/panels.css` |
 | Keyframes, pausing and reduced motion | `styles/motion.css` |
 | App routing, phone navigation, search, clock and loading recovery | `interface.js` |
-| Core-to-Routines transformation and return | `core-transition.js` |
 | Checklist rings, home progress readout and completion pulses | `core-progress.js` |
 | Intro replay, sound triggers and atmosphere | `experience.js` |
 | Eye tracking and pointer light | `pointer-effects.js` |
@@ -62,11 +61,11 @@ Each component has one stylesheet. Its main rules come first and screen-size adj
 
 The intro lasts just over a second. Its doors open, the optical system appears and the status text moves through three stages. Click or press a key to skip it. **Replay intro** starts it again.
 
-Opening Routines fades and slides the panel into place while its optical artwork travels into the header. Closing it sends the eye home while the panel fades out. The two timings are named `open` and `close` near the top of `core-transition.js`; edit them there. The controller tracks opening, open and closing states, so Escape, resizing and navigation can interrupt the animation safely. With motion disabled, the dialog opens immediately.
+Goals opens directly. The optical core stays on the home screen.
 
-The outer core rings show checklist progress. The readout beneath the launcher identifies them from outside to inside. They use the same saved ticks and optional sections as the checklist. `core-progress.js` waits for the return journey to finish before filling the home rings, and pulses only for a new completion. It adds no separate storage or account.
+The outer core rings show checklist progress. They fill when you return home, and a newly completed checklist can send a blue pulse through the core.
 
-The holographic eye is the `.eye-art` SVG in `index.html`. `core-transition.js` copies that same eye into the Routines header, preserving its pose and keeping SVG IDs unique. `styles/core.css` styles it, `styles/motion.css` defines its gentle drift and glow, and `pointer-effects.js` aims every visible eye toward the pointer, including the Routines header and traveling copy, or a keyboard-focused module. Pointer updates use a single scheduled frame, with no continuous JavaScript animation loop.
+The holographic eye is the .eye-art SVG in index.html. Its gaze follows the pointer or the focused module on the home screen. Pointer updates use a single scheduled frame.
 
 Inside `core-progress.js`, `buildRings` creates the rings and their labels; `render` updates their saved counts. Their appearance lives in `styles/core.css`. The ready counter sits below the rings, and only the decorative frame is clipped, so its text labels stay readable.
 
@@ -98,4 +97,4 @@ Account notes store each submitted version under a new ID and retire its predece
 4. Update affected asset version strings and bump the release cache version in `sw.js` whenever public app files change.
 5. Commit and push the public files; GitHub Pages publishes them.
 
-Routines, Notes, Health and Settings work now. Projects, Goals, Finance, Calendar and Relationships are marked as coming later.
+Goals, Notes, Health and Settings work now. Finance, Calendar and Relationships are marked as coming later.

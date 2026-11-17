@@ -33,7 +33,7 @@ async function testHub() {
       if (paused() !== wasPaused) motionToggle.click();
     }
   }
-  assert(apps.length === 8, 'The home screen must show eight apps.');
+  assert(apps.length === 6, 'The home screen must show six tiles alongside Goals.');
   assert(/^\d{2}:\d{2}$/.test(document.getElementById('clock').textContent), 'Clock is missing.');
   assert(document.documentElement.scrollWidth <= innerWidth, 'Horizontal overflow.');
   for (const app of apps) {
@@ -56,7 +56,7 @@ async function testHub() {
   }
   const routines = document.getElementById('routines-dialog');
   for (let attempt = 0; routines.dataset.ready !== 'true' && attempt < 40; attempt++) await new Promise(resolve => setTimeout(resolve, 100));
-  assert(routines.dataset.ready === 'true', 'Routines did not load.');
+  assert(routines.dataset.ready === 'true', 'Goals did not load.');
   const checklists = routines.querySelectorAll('.routine-card').length;
   assert(checklists > 0, 'At least one checklist should be available.');
   assert(routines.querySelector('#routine-picker').options.length === checklists, 'The sidebar and checklist picker disagree.');
@@ -64,14 +64,14 @@ async function testHub() {
   routinesLauncher.scrollIntoView({ block: 'center' });
   const launcherBounds = routinesLauncher.getBoundingClientRect();
   const hit = document.elementFromPoint(launcherBounds.left + launcherBounds.width / 2, launcherBounds.top + launcherBounds.height / 2);
-  assert(hit && routinesLauncher.contains(hit), 'Another layer blocks the Routines button.');
+  assert(hit && routinesLauncher.contains(hit), 'Another layer blocks the Goals button.');
   routinesLauncher.focus();
   routinesLauncher.click();
-  assert(routines.open, 'Routines did not open.');
+  assert(routines.open, 'Goals did not open.');
   routines.querySelector('.routine-exit').click();
   for (let attempt = 0; routines.open && attempt < 30; attempt++) await new Promise(resolve => setTimeout(resolve, 50));
-  assert(!routines.open, 'Routines did not close.');
-  assert(document.activeElement === routinesLauncher, 'Focus did not return to Routines.');
+  assert(!routines.open, 'Goals did not close.');
+  assert(document.activeElement === routinesLauncher, 'Focus did not return to Goals.');
   if (future) future.open = futureWasOpen;
   return { passed: true, apps: apps.length + 1, checklists, source: routines.dataset.source, viewport: `${innerWidth}x${innerHeight}` };
 }

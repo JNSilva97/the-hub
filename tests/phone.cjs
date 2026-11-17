@@ -15,8 +15,10 @@ test('Phone workflows', { timeout: 90000 }, async t => {
         await ready(page);
         assert.equal(await page.locator('.apps > .app').count(), 3);
         assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), false);
-        assert.equal(await page.locator('.future-grid .app').count(), 5);
+        assert.equal(await page.locator('.future-grid .app').count(), 3);
+        assert.equal(await page.locator('[data-icon="projects"]').count(), 0);
         assert.equal(await page.locator('.phone-actions').isVisible(), true);
+        assert.equal(await page.locator('.phone-actions button').first().textContent(), 'Goals');
         for (const button of await page.locator('.phone-actions button').all()) {
           assert.ok(await button.evaluate(el => { const r = el.getBoundingClientRect(); return r.height >= 44 && r.width >= 44 && r.bottom <= innerHeight; }));
         }
@@ -25,15 +27,15 @@ test('Phone workflows', { timeout: 90000 }, async t => {
         assert.equal(await page.locator('.phone-actions').isVisible(), false);
         await chooseRoutine(page, 'workday'); await page.locator('.check-row input').nth(2).check();
         const checked = await page.locator('.check-row input:checked').getAttribute('data-check');
-        await page.getByRole('button', { name: 'Close routines', exact: true }).click();
+        await page.getByRole('button', { name: 'Close Goals', exact: true }).click();
         await ready(page); await page.locator('#phone-routines').click();
         assert.equal(await page.locator('#routine-name').textContent(), 'Workday');
         assert.equal(await page.locator('.check-row input:checked').getAttribute('data-check'), checked);
-        await page.getByRole('button', { name: 'Close routines', exact: true }).click();
+        await page.getByRole('button', { name: 'Close Goals', exact: true }).click();
         await page.locator('#future-spaces > summary').click();
         assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), true);
         assert.equal(await page.locator('.future-grid .app-meta').first().textContent(), 'COMING SOON');
-        await page.locator('[data-icon="projects"]').click();
+        await page.locator('[data-icon="finance"]').click();
         assert.match(await page.locator('#app-description').textContent(), /coming later/);
         await page.locator('#app-dialog .close').click();
         await page.locator('#phone-health').click();
@@ -60,9 +62,11 @@ test('Phone workflows', { timeout: 90000 }, async t => {
       await page.keyboard.press('Control+k');
       await page.locator('#command-search').fill('Workday'); await page.keyboard.press('Enter');
       assert.equal(await page.locator('#routine-name').textContent(), 'Workday');
-      await page.getByRole('button', { name: 'Close routines', exact: true }).click();
+      await page.getByRole('button', { name: 'Close Goals', exact: true }).click();
       await page.keyboard.press('Control+k');
-      await page.locator('#command-search').fill('Projects'); await page.keyboard.press('Enter');
+      await page.locator('#command-search').fill('Projects');
+      assert.equal(await page.locator('#command-results button').count(), 0);
+      await page.locator('#command-search').fill('Finance'); await page.keyboard.press('Enter');
       assert.match(await page.locator('#app-description').textContent(), /coming later/);
       assert.equal(await page.locator('#interface-settings').isVisible(), false);
       assert.deepEqual(errors, []);
@@ -86,7 +90,7 @@ test('Phone workflows', { timeout: 90000 }, async t => {
       assert.equal(await page.locator('#note-text').inputValue(), 'Quick capture\nKeep this note.');
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.waitForFunction(() => document.getElementById('note-new').parentElement.className === 'notes-actions');
-      assert.equal(await page.locator('.apps > .app').count(), 8);
+      assert.equal(await page.locator('.apps > .app').count(), 6);
       assert.equal(await page.locator('#future-spaces').isVisible(), false);
       assert.equal(await page.locator('#note-new').evaluate(el => el.parentElement.className), 'notes-actions');
       assert.equal(await page.locator('#notes-library').evaluate(el => el.open), true);
