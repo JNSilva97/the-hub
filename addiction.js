@@ -34,22 +34,34 @@ function createAddictionHelper(panel, health) {
     return data && Array.isArray(data.logs) ? data : { base: null, logs: [] };
   }
 
+  function pendingQuit() {
+    const keys = account?.uid ? [quitKey(), prefix + 'quit:guest'] : [quitKey()];
+    for (const key of keys) {
+      const saved = localStorage.getItem(key);
+      const record = readQuit(saved);
+      if (record.base || record.logs.length) return { key, saved, ...record };
+    }
+    return null;
+  }
+
   function renderQuit() {
-    let since;
+    let localSince;
     try {
-      const { base, logs } = readQuit(localStorage.getItem(quitKey()));
-      since = logs.at(-1)?.at ?? base;
+      const record = pendingQuit();
+      localSince = record?.logs.at(-1)?.at ?? record?.base;
     } catch {}
-    const started = Number.isSafeInteger(since);
+    const since = Math.max(synced() ? account.quitSince ?? 0 : 0, localSince ?? 0);
+    const started = model?.validSmokeTime(since);
     const seconds = started ? Math.max(0, Math.floor((Date.now() - since) / 1000)) : 0;
     const days = Math.floor(seconds / 86400);
     const hours = pad(Math.floor(seconds / 3600) % 24);
     const minutes = pad(Math.floor(seconds / 60) % 60);
     element('elapsed').textContent = started ? `${days}d  ${hours}:${minutes}:${pad(seconds % 60)}` : '—';
     element('quit-controls').hidden = started;
-    element('quit-note').textContent = started
-      ? 'Resets when you log a cigarette on this device.'
-      : 'Start now or log a cigarette to begin.';
+    element('quit-note').textContent = !started ? 'Start now or log a cigarette to begin.'
+      : synced() && account.quitSince === since && !account.pending ? 'Synced to your account · resets when you log a cigarette.'
+      : account?.uid ? 'Saved on this device · waiting to sync.'
+      : 'Saved on this device until you sign in.';
   }
 
   function startQuit(at) {
@@ -60,6 +72,7 @@ function createAddictionHelper(panel, health) {
       if (base === null && !logs.length) localStorage.setItem(key, JSON.stringify({ base: at, logs: [] }));
       element('quit-date').open = false;
       element('elapsed').focus();
+      migrate();
     } catch { notice = 'The timer could not be saved on this device.'; }
     render();
   }
@@ -67,21 +80,12 @@ function createAddictionHelper(panel, health) {
   function changeQuit(day, delta, at) {
     const storageKey = quitKey();
     try {
-      const previous = localStorage.getItem(storageKey);
-      const { base, logs } = readQuit(previous);
+      const { base, logs } = readQuit(localStorage.getItem(storageKey));
       const todayLogs = logs.filter(log => log.day === day);
       const anchor = logs.findLast(log => log.day < day)?.at ?? base;
       if (delta > 0) todayLogs.push({ day, at });
       else todayLogs.pop();
-      const updated = JSON.stringify({ base: anchor, logs: todayLogs });
-      localStorage.setItem(storageKey, updated);
-      return () => {
-        try {
-          if (localStorage.getItem(storageKey) !== updated) return;
-          if (previous === null) localStorage.removeItem(storageKey);
-          else localStorage.setItem(storageKey, previous);
-        } catch {}
-      };
+      localStorage.setItem(storageKey, JSON.stringify({ base: anchor, logs: todayLogs }));
     } catch {
       notice = 'The cigarette was recorded, but the timer could not be saved on this device.';
     }
@@ -215,8 +219,9 @@ function createAddictionHelper(panel, health) {
     if (migrating || !model || !synced() || !navigator.onLine) return;
     let days;
     let savedSettings;
-    try { days = localDays(); savedSettings = localStorage.getItem(settingsKey); } catch { return; }
-    if (!days.size && savedSettings === null) return;
+    let quit;
+    try { days = localDays(); savedSettings = localStorage.getItem(settingsKey); quit = pendingQuit(); } catch { return; }
+    if (!days.size && savedSettings === null && !quit) return;
     const owner = account.uid;
     migrating = true;
     try {
@@ -245,6 +250,19 @@ function createAddictionHelper(panel, health) {
           if (localStorage.getItem(settingsKey) === savedSettings) localStorage.removeItem(settingsKey);
         }
         if (days.size) notice = 'Counts from this device were added to your account.';
+        if (quit && !account.pending && localStorage.getItem(quit.key) === quit.saved) {
+          const base = model.validSmokeTime(quit.base) ? quit.base : null;
+          const logs = quit.logs.map((log, index) => ({ ...log, index })).filter(log => model.validDay(log.day) && model.validSmokeTime(log.at));
+          try {
+            const id = quit.importId ?? crypto.randomUUID();
+            const saved = quit.importId ? quit.saved : JSON.stringify({ base: quit.base, logs: quit.logs, importId: id });
+            if (!quit.importId) localStorage.setItem(quit.key, saved);
+            await account.importQuit(base, logs, id, logs[0]?.day ?? today());
+            if (localStorage.getItem(quit.key) === saved) localStorage.removeItem(quit.key);
+          } catch {
+            notice = 'Time without smoking is saved here. Account timer sync could not finish.';
+          }
+        }
       };
       // Serialize imports from open tabs that share browser storage.
       if (navigator.locks) await navigator.locks.request(prefix + 'import', transfer);
@@ -267,9 +285,19 @@ function createAddictionHelper(panel, health) {
     if (next < 0 || next > model.MAX_DAILY_COUNT) return;
     notice = '';
     if (synced()) {
-      const rollback = key === 'cigarettes' ? changeQuit(day, delta, now.getTime()) : undefined;
-      account.add(day, { [key]: delta }).catch(() => {
-        rollback?.();
+      const owner = account.uid;
+      const canUseLocalTimer = account.quitSince === null;
+      const save = key === 'cigarettes' ? account.recordSmoke(day, delta, now.getTime()).catch(async error => {
+        if (error.code !== 'permission-denied' || !canUseLocalTimer || account.uid !== owner || delta < 0) throw error;
+        await account.add(day, { cigarettes: delta });
+        if (account.uid === owner) changeQuit(day, delta, now.getTime());
+      }) : account.add(day, { [key]: delta });
+      save.then(() => {
+        if (account.uid !== owner) return;
+        if (key === 'cigarettes' && delta < 0 && canUseLocalTimer) changeQuit(day, delta, now.getTime());
+        render();
+      }).catch(() => {
+        if (account.uid !== owner) return;
         notice = 'That change was not saved to your account. Try again.';
         render();
       });
@@ -339,10 +367,10 @@ function createAddictionHelper(panel, health) {
   window.addEventListener('online', () => { migrate(); if (panel.open) render(); });
   window.addEventListener('offline', () => { if (panel.open) render(); });
   document.addEventListener('visibilitychange', () => { if (panel.open && !document.hidden) render(); });
-  import('./habits-model.mjs?v=4').then(module => {
+  import('./habits-model.mjs?v=5').then(module => {
     model = module;
     render();
-    return import('./cloud-habits.js?v=4');
+    return import('./cloud-habits.js?v=5');
   }).then(module => {
     account = module.createHabitsAccount(() => {
       migrate();

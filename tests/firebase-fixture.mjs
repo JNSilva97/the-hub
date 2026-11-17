@@ -78,13 +78,20 @@ export function writeBatch() {
   };
 }
 export const increment = amount => ({ __increment: amount });
+export const arrayUnion = value => ({ __union: value });
+export const arrayRemove = value => ({ __remove: value });
 export async function setDoc(reference, patch, options) {
   if (reference.path[2] === 'habits') {
     service.habitWrites.push({ path: reference.path, patch: structuredClone(patch) });
     if (service.habitsDenied) throw Object.assign(new Error('Denied.'), { code: 'permission-denied' });
     const habits = (service.docs[reference.path[1]] ??= {}).habits ??= {};
     const next = options?.merge ? { ...habits[reference.path[3]] } : {};
-    for (const [key, value] of Object.entries(patch)) next[key] = value?.__increment === undefined ? value : (next[key] ?? 0) + value.__increment;
+    for (const [key, value] of Object.entries(patch)) {
+      if (value?.__increment !== undefined) next[key] = (next[key] ?? 0) + value.__increment;
+      else if (value?.__union !== undefined) next[key] = [...new Set([...(next[key] ?? []), value.__union])];
+      else if (value?.__remove !== undefined) next[key] = (next[key] ?? []).filter(entry => entry !== value.__remove);
+      else next[key] = value;
+    }
     habits[reference.path[3]] = next;
     service.publish();
     return;
@@ -113,7 +120,7 @@ export async function runTransaction(database, update) {
       const data = collection === 'hub' ? account?.[id] : account?.[collection]?.[id];
       return { exists: () => data !== undefined, data: () => structuredClone(data) };
     },
-    set(reference, data) { writes.push({ path: reference.path, data: structuredClone(data) }); }
+    set(reference, data, options) { writes.push({ path: reference.path, data: structuredClone(data), merge: options?.merge }); }
   };
   const result = await update(transaction);
   for (const write of writes) {
@@ -123,7 +130,10 @@ export async function runTransaction(database, update) {
       (account.health ??= {})[id] = write.data;
       service.healthWrites.push(write);
     } else if (collection === 'hub') account[id] = write.data;
-    else (account[collection] ??= {})[id] = write.data;
+    else {
+      const documents = account[collection] ??= {};
+      documents[id] = write.merge ? { ...documents[id], ...write.data } : write.data;
+    }
   }
   if (writes.some(write => write.path[2] === 'hub')) service.imports++;
   service.publish();

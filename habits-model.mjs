@@ -1,6 +1,18 @@
 // Daily tobacco and coffee counts, keyed by Lisbon calendar day (YYYY-MM-DD).
 export const COFFEE_GOAL = 3;
 export const MAX_DAILY_COUNT = 500;
+export const validSmokeTime = value => Number.isSafeInteger(value) && value > 0 && value <= 8640000000000000;
+
+export function smokeEntry(at, id) {
+  return `${String(at).padStart(16, '0')}:${id}`;
+}
+
+export function readSmokes(data) {
+  const entries = data?.smokes ?? [];
+  if (!Array.isArray(entries)) return [];
+  return entries.filter(entry => typeof entry === 'string' && /^\d{16}:[a-f0-9-]{36}$/.test(entry)
+    && validSmokeTime(Number(entry.slice(0, 16)))).sort();
+}
 export const defaultSettings = Object.freeze({ coffeeCutoff: '17:00', pouchPrice: null, pouchCigarettes: null, baseline: null });
 
 export function addDays(day, amount) {

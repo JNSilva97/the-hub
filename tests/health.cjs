@@ -484,7 +484,10 @@ test('Account Health', { timeout: 150000 }, async t => {
       await page.getByRole('button', { name: 'Undo last nicotine lozenge' }).tap();
       await page.locator('#addiction-lozenges').filter({ hasText: /^1 lozenge today$/ }).waitFor();
       assert.equal(await page.locator('#addiction-lozenge-status').textContent(), '1 in stock · running low');
-      assert.deepEqual(await page.evaluate(() => window.__hubFirebase.docs['account-a'].habits['2026-07-10']), { version: 1, coffees: 4, cigarettes: 1 });
+      const savedHabits = await page.evaluate(() => window.__hubFirebase.docs['account-a'].habits['2026-07-10']);
+      assert.equal(savedHabits.coffees, 4);
+      assert.equal(savedHabits.cigarettes, 1);
+      assert.equal(savedHabits.smokes.length, 1);
       assert.equal(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith('thehub:addiction-helper:v1:2026'))), false);
       await page.clock.setFixedTime(new Date('2026-07-10T23:01:00Z'));
       await page.getByRole('button', { name: 'Close Addiction Helper' }).tap();
@@ -590,6 +593,49 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await warning.textContent(), 'Warning · Past the 17:00 cut-off');
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
+  });
+
+  await t.test('the smoke-free timer migrates and updates on two signed-in devices after log and undo', async () => {
+    const first = await fixture(browser, { width: 390, mobile: true, motion: 'reduce', firebase: true,
+      cloudDocuments: { 'account-a': { ...makeAccount(), habits: { '2026-11-16': { version: 1, cigarettes: 1 } } } } });
+    const second = await accountFixture(browser, { width: 390, mobile: true, motion: 'reduce' });
+    const oldStart = Date.parse('2026-11-16T10:30:00Z');
+    const manualStart = Date.parse('2026-11-15T10:30:00Z');
+    const now = new Date('2026-11-17T10:30:00Z');
+    const quitKey = 'thehub:addiction-helper:v1:quit:account-a';
+    async function copyAccount(from, to) {
+      const docs = await from.evaluate(() => structuredClone(window.__hubFirebase.docs));
+      await to.evaluate(docs => {
+        window.__hubFirebase.docs = docs;
+        window.__hubFirebase.publish();
+      }, docs);
+    }
+    try {
+      await first.context.addInitScript(({ key, base, lastSmoke }) => {
+        const day = '2026-11-16';
+        localStorage.setItem(key, JSON.stringify({ base, logs: [{ day, at: lastSmoke }] }));
+      }, { key: quitKey, base: manualStart, lastSmoke: oldStart });
+      for (const { page } of [first, second]) {
+        await page.clock.setFixedTime(now);
+        await ready(page);
+        await page.locator('#phone-addiction').tap();
+      }
+      await first.page.waitForFunction(start => {
+        const habits = window.__hubFirebase.docs['account-a'].habits;
+        return habits?.quit?.startedAt === start && habits['2026-11-16']?.smokes?.length === 1;
+      }, manualStart);
+      await copyAccount(first.page, second.page);
+      const timer = page => page.locator('#addiction-elapsed');
+      assert.equal(await timer(second.page).textContent(), '1d  00:00:00');
+      await second.page.getByRole('button', { name: 'Log cigarette', exact: true }).tap();
+      await copyAccount(second.page, first.page);
+      assert.equal(await timer(first.page).textContent(), '0d  00:00:00');
+      await first.page.getByRole('button', { name: 'Undo last cigarette' }).tap();
+      await copyAccount(first.page, second.page);
+      assert.equal(await timer(second.page).textContent(), '1d  00:00:00');
+      assert.equal(await second.page.locator('#addiction-cigarettes').textContent(), '0 cigarettes today');
+      assert.deepEqual(first.errors.concat(second.errors), []);
+    } finally { await first.context.close(); await second.context.close(); }
   });
 
   await t.test('Addiction Helper keeps counts on the device until account habit sync is enabled', async () => {

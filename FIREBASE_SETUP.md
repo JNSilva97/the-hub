@@ -74,8 +74,10 @@ After publication, sign in on two devices with the same account. Add a medicatio
 
 ## Addiction Helper activation
 
-Publish the full current `firestore.rules` in **Firebase Console → Firestore Database → Rules**. It keeps every existing permission and adds `users/<UID>/habits/<YYYY-MM-DD>` and `users/<UID>/habits/settings`, readable and writable only by that UID. Day documents accept only `version: 1` plus whole-number `cigarettes` and `coffees` from 0 to 500. Settings accept only `version: 1`, `coffeeCutoff` (`HH:MM` or null), `pouchPrice` (above 0, up to 1000, or null), `pouchCigarettes` (1 to 1000 or null) and `baseline` (0 to 200 or null). Deletion is denied.
+Publish the full current `firestore.rules` in **Firebase Console → Firestore Database → Rules**. Habit documents under `users/<UID>/habits` are accessible only by that UID. Day documents store the counts and optional cigarette timestamps. An immutable `quit` document stores the timer's start when one was set manually. Deletion is denied.
 
 Counts use Firestore increments, so changes from several devices, including offline ones, add up instead of overwriting each other. Until the rules are published the Helper keeps counts on the device. A signed-in import saves the count and a private receipt in one transaction at `users/<UID>/habitImports/<UUID>`. This prevents an interrupted import from counting the same entries twice. The device copy is cleared after confirmation. Publish the current rules to enable import receipts.
 
 After publication, sign in on two devices, log a coffee on each and confirm both show 2. Then save Helper settings on one and confirm the other shows the same money-saved figure.
+
+For **Time without smoking**, the first signed-in session imports the eligible start time saved on that device. Log or undo a real cigarette and check that the timer matches on the other device. The existing **Craving timer** stays local.
