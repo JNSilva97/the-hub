@@ -6,6 +6,13 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 const { root, origin, storageKey, demo, fixture, ready, openRoutines, chooseRoutine, browseNotes, showFutureSpaces } = require('./browser-fixture.cjs');
 
+async function openAccount(page) {
+  if (await page.locator('#routines-dialog').evaluate(dialog => dialog.open)) {
+    await page.getByRole('button', { name: 'Close routines', exact: true }).click();
+  }
+  await page.locator('#account-launch').click();
+}
+
 test('The Hub browser regressions', { timeout: 240000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   t.after(() => browser.close());
@@ -267,7 +274,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.17.4');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.17.5');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -382,12 +389,18 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         const layout = await page.evaluate(() => {
           const panel = document.getElementById('routines-dialog');
           const bounds = id => document.getElementById(id).getBoundingClientRect();
-          const backup = bounds('backup-launch'), account = bounds('account-launch'), edit = bounds('control-launch'), picker = document.querySelector('#routine-picker-menu .checklist-picker-toggle').getBoundingClientRect();
-          return { width: panel.getBoundingClientRect().width, overflow: panel.scrollWidth > panel.clientWidth, toolbar: Math.abs(backup.y - account.y) + Math.abs(backup.width - account.width), left: Math.abs(backup.left - picker.left), right: Math.abs(account.right - edit.right), touch: [backup, account, edit, picker].every(rect => rect.height >= 44) };
+          const backup = bounds('backup-launch'), edit = bounds('control-launch');
+          const close = panel.querySelector('.routine-exit').getBoundingClientRect();
+          const picker = document.querySelector('#routine-picker-menu .checklist-picker-toggle').getBoundingClientRect();
+          return { width: panel.getBoundingClientRect().width, overflow: panel.scrollWidth > panel.clientWidth,
+            toolbar: Math.abs(backup.y - close.y), gap: close.left - backup.right, right: Math.abs(close.right - edit.right),
+            hasAccountButton: panel.contains(document.getElementById('account-launch')),
+            touch: [backup, close, edit, picker].every(rect => rect.height >= 44) };
         });
         assert.equal(layout.overflow, false);
         assert.ok(width - layout.width <= 26, 'Mobile dialog must use the available width without the browser default inset.');
-        assert.ok(layout.toolbar < 1 && layout.left < 1 && layout.right < 1, 'Mobile controls must share equal columns and gutters.');
+        assert.ok(layout.toolbar < 1 && layout.gap === 8 && layout.right < 1, 'Backup and Close sit together on the header edge.');
+        assert.equal(layout.hasAccountButton, false);
         assert.equal(layout.touch, true);
         await chooseRoutine(page, JSON.parse(demo).routines[2].id);
         assert.equal(await page.locator('#routine-name').textContent(), JSON.parse(demo).routines[2].name);
@@ -490,8 +503,8 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     const { context, page, requests, errors } = await fixture(browser, { width: 320, motion: 'reduce' });
     try {
       await ready(page);
-      await openRoutines(page);
-      await page.locator('#account-launch').click();
+      assert.equal(await page.locator('main #account-launch').textContent(), 'Private access');
+      await openAccount(page);
       assert.equal(await page.locator('#account-dialog').evaluate(element => element.open), true);
       assert.match(await page.locator('#account-status').textContent(), /not configured/);
       assert.equal(await page.locator('#account-login').isDisabled(), true);
@@ -525,7 +538,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         test.publish();
       }, keys);
       assert.match(await page.locator('#routine-progress-label').textContent(), /2 of 3/);
-      await page.locator('#account-launch').click();
+      await openAccount(page);
       assert.equal(await page.locator('#account-logout').isDisabled(), true);
       await page.evaluate(() => { window.__hubFirebase.held.splice(0).forEach(finish => finish()); });
       await page.waitForFunction(() => !document.getElementById('account-logout').disabled);
@@ -560,7 +573,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         test.publish();
       }, keys);
       assert.match(await page.locator('#routine-progress-label').textContent(), /2 of 3/);
-      await page.locator('#account-launch').click();
+      await openAccount(page);
       assert.equal(await page.locator('#account-logout').isDisabled(), true);
       await page.evaluate(() => { window.__hubFirebase.rejectWrites = false; });
       await page.locator('#account-retry').click();
@@ -629,8 +642,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await ready(page, 'http://127.0.0.1:8765/');
       await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'private' && !document.getElementById('account-import').hidden);
       assert.equal(await page.evaluate(() => window.__hubFirebase.imports), 0);
-      await openRoutines(page);
-      await page.locator('#account-launch').click();
+      await openAccount(page);
       await page.locator('#account-import').click();
       await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
       assert.equal(await page.locator('#account-import').isVisible(), false);
@@ -651,11 +663,11 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(await page.locator('#account-import').isVisible(), false);
       await page.evaluate(() => { window.__hubFirebase.fromCache = false; window.__hubFirebase.publish(); });
       await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'demo');
-      await openRoutines(page);
-      await page.locator('#account-launch').click();
+      await openAccount(page);
       assert.equal(await page.locator('#account-import').isVisible(), false);
       assert.match(await page.locator('#account-status').textContent(), /Open the PC version/);
       await page.keyboard.press('Escape');
+      await openRoutines(page);
       await page.locator('#backup-launch').click();
       assert.match(await page.locator('#backup-destination').textContent(), /this browser/);
       const pendingBackup = page.waitForEvent('download');
@@ -688,8 +700,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     } });
     try {
       await ready(page);
-      await openRoutines(page);
-      await page.locator('#account-launch').click();
+      await openAccount(page);
       await page.locator('#account-login').click();
       await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
       assert.match(await page.locator('#account-identity').textContent(), /test@example.invalid/);
@@ -711,15 +722,14 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await openRoutines(page);
       await page.locator('.check-items:not([hidden]) .check-row input:not(:checked)').first().check();
       const saved = await page.evaluate(key => localStorage.getItem(key), storageKey);
-      await page.locator('#account-launch').click();
+      await openAccount(page);
       await page.waitForFunction(() => document.getElementById('account-status').textContent.includes('Firebase could not start'));
       assert.equal(await page.locator('#account-login').isDisabled(), true);
       failures.sdk = false;
       await Promise.all([page.waitForEvent('load'), page.locator('#account-retry').click()]);
       await page.waitForSelector('#routines-dialog[data-ready="true"]', { state: 'attached' });
       assert.equal(await page.evaluate(key => localStorage.getItem(key), storageKey), saved);
-      await openRoutines(page);
-      await page.locator('#account-launch').click();
+      await openAccount(page);
       await page.waitForFunction(() => !document.getElementById('account-login').disabled);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
@@ -730,8 +740,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     try {
       await ready(page, 'http://127.0.0.1:8765/');
       await page.waitForFunction(() => !document.getElementById('account-import').hidden);
-      await openRoutines(page);
-      await page.locator('#account-launch').click();
+      await openAccount(page);
       const existing = { routines: JSON.parse(demo), progress: { checks: { 'other-device/item': true }, optional: {} } };
       await page.evaluate(existing => { window.__hubFirebase.docs['account-a'] = existing; }, existing);
       await page.locator('#account-import').click();

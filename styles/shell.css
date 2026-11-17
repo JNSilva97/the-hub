@@ -365,8 +365,15 @@ main {
   transform: translateX(-120%);
 }
 
-.command-launch {
+.home-actions {
   order: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.command-launch {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -768,7 +775,6 @@ footer {
   }
 
   .command-launch {
-    margin-left: auto;
     font-size: 12px;
     padding: 8px 10px;
   }

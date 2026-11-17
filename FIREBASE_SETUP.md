@@ -30,7 +30,7 @@ Before activation, use the Rules Playground (or existing approved test tooling) 
 
 Replace `null` in `firebase-config.mjs` with the web configuration object, then change that file's query version in `cloud.js` and bump `cloud.js`'s import version in `routines.js` plus the `interface.js` asset version in `index.html` before publishing. The imported module URLs must stay consistent. Leave the public config at `null` until the rules are deployed and verified.
 
-Open the existing PC version at `http://127.0.0.1:8765/`. Choose **Routines → Private access → Continue with Google**, verify the email, then choose **Sync PC checklists**. This button explicitly uploads the ignored personal checklist file and that origin's existing personal ticks. It never imports demo progress or notes.
+Open the existing PC version at `http://127.0.0.1:8765/`. Choose **Private access → Continue with Google**, verify the email, then choose **Sync PC checklists**. This button explicitly uploads the ignored personal checklist file and that origin's existing personal ticks. It never imports demo progress or notes.
 
 Import creates the definitions and progress together in a transaction. If either document already exists, it refuses to replace the account's data. It preserves the local file and browser storage. A blocked or unreadable local progress store aborts the import.
 

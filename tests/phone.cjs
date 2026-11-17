@@ -117,7 +117,7 @@ test('Phone workflows', { timeout: 90000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('editing hides account navigation, skips unchanged saves and focuses newly added fields', async () => {
+  await t.test('editing pauses backup, skips unchanged saves and focuses newly added fields', async () => {
     for (const width of [320, 390]) {
       const { context, page, errors } = await fixture(browser, { width, height: 600, motion: 'reduce', firebase: true,
         cloudDocuments: { 'account-a': { routines: JSON.parse(demo), progress: { checks: { 'personal-care/care/item-1': true }, optional: {} } } } });
@@ -125,7 +125,7 @@ test('Phone workflows', { timeout: 90000 }, async t => {
         await ready(page);
         await page.waitForFunction(() => document.getElementById('routines-dialog').dataset.source === 'account');
         await openRoutines(page); await page.locator('#control-launch').click();
-        assert.equal(await page.locator('#account-launch').isVisible(), false);
+        assert.equal(await page.locator('#backup-launch').isDisabled(), true);
         assert.equal(await page.locator('.routine-heading').isVisible(), false);
         assert.equal(await page.locator('#editor-save').isDisabled(), true);
         const unchanged = await page.evaluate(() => JSON.stringify(window.__hubFirebase.docs));
@@ -152,7 +152,7 @@ test('Phone workflows', { timeout: 90000 }, async t => {
         assert.equal(await page.evaluate(() => window.__hubFirebase.docs['account-a'].progress.checks['personal-care/care/item-1']), true);
         assert.equal(await page.evaluate(() => window.__hubFirebase.docs['account-a'].routines.routines.at(-1).name), 'Phone list');
         await page.locator('#control-close').click();
-        assert.equal(await page.locator('#account-launch').isVisible(), true);
+        assert.equal(await page.locator('#backup-launch').isEnabled(), true);
         assert.equal(await page.locator('#routine-reader').isVisible(), true);
         assert.deepEqual(errors, []);
       } finally { await context.close(); }

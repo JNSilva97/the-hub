@@ -12,11 +12,11 @@
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles/base.css?v=control-2">
-  <link rel="stylesheet" href="styles/shell.css?v=addiction-helper-1">
+  <link rel="stylesheet" href="styles/shell.css?v=home-account-1">
   <link rel="stylesheet" href="styles/core.css?v=intro-quick-1">
   <link rel="stylesheet" href="styles/access.css?v=full-print-1">
   <link rel="stylesheet" href="styles/panels.css?v=addiction-helper-1">
-  <link rel="stylesheet" href="styles/routines.css?v=addiction-helper-1">
+  <link rel="stylesheet" href="styles/routines.css?v=backup-header-1">
   <link rel="stylesheet" href="styles/routine-tools.css?v=addiction-helper-1">
   <link rel="stylesheet" href="styles/notes.css?v=dark-glass-1">
   <link rel="stylesheet" href="styles/health.css?v=addiction-helper-2">
@@ -62,7 +62,14 @@
     <div class="time-block"><p class="date" id="date"></p><div><time class="clock" id="clock" aria-label="Current time"></time><span class="timezone">LISBON / LOCAL TIME</span></div></div>
   </header>
   <main>
-    <div class="intro">NIGHTFALL / PERSONAL TERMINAL <button id="addiction-launch" class="command-launch" type="button" aria-haspopup="dialog">Addiction Helper</button><button id="command-launch" class="command-launch" type="button" aria-haspopup="dialog">Find anything <kbd>Ctrl K</kbd></button></div>
+    <div class="intro">
+      <span>NIGHTFALL / PERSONAL TERMINAL</span>
+      <div class="home-actions">
+        <button id="addiction-launch" class="command-launch" type="button" aria-haspopup="dialog">Addiction Helper</button>
+        <button id="command-launch" class="command-launch" type="button" aria-haspopup="dialog">Find anything <kbd>Ctrl K</kbd></button>
+        <button id="account-launch" class="command-launch" type="button" aria-haspopup="dialog" aria-controls="account-dialog">Private access</button>
+      </div>
+    </div>
     <div class="workspace">
       <svg class="connections" viewBox="0 0 1200 570" preserveAspectRatio="none" aria-hidden="true">
         <path d="M270 120h42l96 90h48M270 230h65l65 25h35M270 340h65l65-25h35M270 450h42l96-90h48M930 120h-42l-96 90h-48M930 230h-65l-65 25h-35M930 340h-65l-65-25h-35M930 450h-42l-96-90h-48"/>
@@ -364,7 +371,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.17.4</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.17.5</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -444,9 +451,12 @@
         <div class="routine-optic" aria-hidden="true"></div>
         <div><div class="panel-eyebrow">THE HUB / PERSONAL OPERATIONS</div><h2 id="routines-title">ROUTINES</h2></div>
       </div>
-      <form method="dialog"><button class="routine-exit" type="submit" aria-label="Close routines">×</button></form>
+      <div class="routines-header-actions">
+        <button id="backup-launch" type="button" aria-haspopup="dialog" aria-controls="backup-dialog">Backup</button>
+        <form method="dialog"><button class="routine-exit" type="submit" aria-label="Close routines" autofocus>×</button></form>
+      </div>
     </div>
-    <div class="routines-meta"><span id="routine-source" class="routine-source">LOADING</span><p id="routine-data-note">Loading your checklists…</p><button id="backup-launch" type="button">Backup</button><button id="account-launch" type="button">Private access</button></div>
+    <div class="routines-meta"><span id="routine-source" class="routine-source">LOADING</span><p id="routine-data-note">Loading your checklists…</p></div>
     <div class="routine-layout">
       <nav id="routine-list" class="routine-list" aria-label="Checklists"></nav>
       <section class="routine-detail" aria-labelledby="routine-name">
