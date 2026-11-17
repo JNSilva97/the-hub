@@ -1,5 +1,5 @@
 import { cloudWorkspace } from './cloud.js?v=addiction-helper-1';
-import { readDay, readSettings, validDay } from './habits-model.mjs?v=1';
+import { readDay, readSettings, validDay } from './habits-model.mjs?v=2';
 
 // One document per Lisbon day. Increments merge across devices and queue offline.
 export function createHabitsAccount(onChange) {
@@ -23,8 +23,9 @@ export function createHabitsAccount(onChange) {
     onChange();
     if (!uid) return;
     const { sdk, database } = cloudWorkspace.connection;
-    unsubscribe = sdk.onSnapshot(sdk.collection(database, 'users', uid, 'habits'), {}, snapshot => {
+    unsubscribe = sdk.onSnapshot(sdk.collection(database, 'users', uid, 'habits'), { includeMetadataChanges: true }, snapshot => {
       if (current !== generation) return;
+      if (!ready && snapshot.empty && snapshot.metadata.fromCache) return;
       try {
         const nextDays = new Map();
         let nextSettings = null;
@@ -72,6 +73,33 @@ export function createHabitsAccount(onChange) {
     },
     saveSettings(values) {
       return cloudWorkspace.connection.sdk.setDoc(reference('settings'), { version: 1, ...readSettings(values) });
+    },
+    importDay(day, id, counts) {
+      const { sdk, database } = cloudWorkspace.connection;
+      const dayRef = reference(day);
+      const receipt = sdk.doc(database, 'users', uid, 'habitImports', id);
+      return sdk.runTransaction(database, async transaction => {
+        const previous = await transaction.get(receipt);
+        const imported = previous.exists() ? readDay(previous.data()) : { cigarettes: 0, coffees: 0 };
+        if (previous.exists() && previous.data().day !== day) throw new Error('Import receipt belongs to another day.');
+        const saved = await transaction.get(dayRef);
+        const totals = saved.exists() ? readDay(saved.data()) : { cigarettes: 0, coffees: 0 };
+        const next = readDay({
+          cigarettes: totals.cigarettes + counts.cigarettes - imported.cigarettes,
+          coffees: totals.coffees + counts.coffees - imported.coffees
+        });
+        if (!previous.exists() || counts.cigarettes !== imported.cigarettes || counts.coffees !== imported.coffees) {
+          transaction.set(dayRef, { version: 1, ...next });
+          transaction.set(receipt, { day, ...counts });
+        }
+      });
+    },
+    importSettings(values) {
+      const { sdk, database } = cloudWorkspace.connection;
+      const ref = reference('settings');
+      return sdk.runTransaction(database, async transaction => {
+        if (!(await transaction.get(ref)).exists()) transaction.set(ref, { version: 1, ...readSettings(values) });
+      });
     }
   };
 }

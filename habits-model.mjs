@@ -1,6 +1,5 @@
 // Daily tobacco and coffee counts, keyed by Lisbon calendar day (YYYY-MM-DD).
 export const COFFEE_LIMIT = 3;
-export const LOW_LOZENGES = 5;
 export const defaultSettings = Object.freeze({ coffeeCutoff: '15:00', pouchPrice: null, pouchCigarettes: null, baseline: null });
 
 export function addDays(day, amount) {
@@ -28,18 +27,22 @@ export function readSettings(data) {
 
 // Tracking starts on the earliest recorded day; days without a record had no cigarettes logged.
 export function firstDay(days, today) {
-  const earliest = [...days.keys()].filter(day => day <= today).sort()[0];
-  return earliest && earliest < today ? earliest : today;
+  let earliest = today;
+  for (const day of days.keys()) if (day < earliest) earliest = day;
+  return earliest;
 }
 
 export function smokeFreeStreak(days, today) {
-  let current = 0;
+  const elapsedDays = (from, to) => (Date.parse(to) - Date.parse(from)) / 86400000;
+  const smokingDays = [...days.keys()].filter(day => day <= today && days.get(day).cigarettes > 0).sort();
+  let start = firstDay(days, today);
   let best = 0;
-  for (let day = firstDay(days, today); day <= today; day = addDays(day, 1)) {
-    current = (days.get(day)?.cigarettes ?? 0) === 0 ? current + 1 : 0;
-    best = Math.max(best, current);
+  for (const day of smokingDays) {
+    best = Math.max(best, elapsedDays(start, day));
+    start = addDays(day, 1);
   }
-  return { current, best };
+  const current = elapsedDays(start, today) + 1;
+  return { current, best: Math.max(best, current) };
 }
 
 // Newest first, so today is the first row.

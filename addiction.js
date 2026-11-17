@@ -31,7 +31,10 @@ function createAddictionHelper(panel, health) {
     for (let index = 0; index < localStorage.length; index++) {
       const key = localStorage.key(index);
       const day = key?.startsWith(prefix) ? key.slice(prefix.length) : '';
-      if (model.validDay(day)) days.set(day, model.readDay(JSON.parse(localStorage.getItem(key))));
+      if (!model.validDay(day)) continue;
+      const record = JSON.parse(localStorage.getItem(key));
+      if (record?.owner && record.owner !== account?.uid) continue;
+      days.set(day, model.readDay(record));
     }
     return days;
   }
@@ -57,8 +60,8 @@ function createAddictionHelper(panel, health) {
       try { localStorage.removeItem(cravingKey); } catch {}
       element('timer-note').textContent = 'Craving passed. Well done.';
     } else if (running) element('timer-note').textContent = 'Breathe slowly, drink some water and wait it out.';
-    clearInterval(ticking);
-    if (running && panel.open) ticking = setInterval(renderCraving, 1000);
+    clearTimeout(ticking);
+    if (running && panel.open) ticking = setTimeout(renderCraving, 1000);
   }
   function setCraving(running) {
     cravingUntil = running ? Date.now() + cravingLength : 0;
@@ -123,7 +126,8 @@ function createAddictionHelper(panel, health) {
     element('log-lozenge').disabled = !stock?.canRecord;
     element('undo-lozenge').disabled = !stock?.canUndo;
     renderHistory(days, day, settings);
-    element('device').textContent = synced() ? 'Cigarettes and coffee sync to your account.'
+    element('device').textContent = synced() ? navigator.onLine ? 'Cigarettes and coffee sync to your account.'
+      : 'Offline. Account changes will sync when you reconnect.'
       : account?.uid ? account.error || 'Connecting to your account… Counts are saved on this device until then.'
         : 'Signed out: cigarette and coffee counts are saved on this device.';
     element('status').textContent = notice;
@@ -139,18 +143,41 @@ function createAddictionHelper(panel, health) {
   async function migrate() {
     if (migrating || !model || !synced() || !navigator.onLine) return;
     let days;
-    let settings;
-    try { days = localDays(); settings = localSettings(); } catch { return; }
-    const pending = [...days].filter(([, counts]) => counts.cigarettes || counts.coffees);
-    if (!days.size && !settings) return;
+    let savedSettings;
+    try { days = localDays(); savedSettings = localStorage.getItem(settingsKey); } catch { return; }
+    if (!days.size && savedSettings === null) return;
+    const owner = account.uid;
     migrating = true;
     try {
-      await Promise.all(pending.map(([day, counts]) => account.add(day, counts)));
-      if (settings && !account.settings) await account.saveSettings(settings);
-      // shortcut: closing the tab between server confirmation and this cleanup uploads these counts again; add a migration marker if that ever matters.
-      for (const day of days.keys()) localStorage.removeItem(prefix + day);
-      localStorage.removeItem(settingsKey);
-      if (pending.length) notice = 'Counts from this device were added to your account.';
+      const transfer = async () => {
+        for (const day of days.keys()) {
+          if (!synced() || account.uid !== owner) return;
+          const key = prefix + day;
+          let saved = localStorage.getItem(key);
+          if (saved === null) continue;
+          const record = JSON.parse(saved);
+          if (record.owner && record.owner !== owner) continue;
+          const counts = model.readDay(record);
+          if (record.importId || counts.cigarettes || counts.coffees) {
+            const id = record.importId ?? crypto.randomUUID();
+            if (!record.importId) {
+              saved = JSON.stringify({ ...counts, owner, importId: id });
+              localStorage.setItem(key, saved);
+            }
+            await account.importDay(day, id, counts);
+          }
+          if (localStorage.getItem(key) === saved) localStorage.removeItem(key);
+        }
+        if (!synced() || account.uid !== owner) return;
+        if (savedSettings !== null && localStorage.getItem(settingsKey) === savedSettings) {
+          if (!account.settings) await account.importSettings(model.readSettings(JSON.parse(savedSettings)));
+          if (localStorage.getItem(settingsKey) === savedSettings) localStorage.removeItem(settingsKey);
+        }
+        if (days.size) notice = 'Counts from this device were added to your account.';
+      };
+      // Serialize imports from open tabs that share browser storage.
+      if (navigator.locks) await navigator.locks.request(prefix + 'import', transfer);
+      else await transfer();
     } catch {
       notice = 'Counts on this device could not be added to your account yet.';
     } finally {
@@ -170,7 +197,13 @@ function createAddictionHelper(panel, health) {
     if (synced()) {
       account.add(day, { [key]: delta }).catch(() => { notice = 'That change was not saved to your account. Try again.'; render(); });
     } else {
-      try { localStorage.setItem(prefix + day, JSON.stringify({ ...current, [key]: next })); }
+      try {
+        const storageKey = prefix + day;
+        const record = JSON.parse(localStorage.getItem(storageKey));
+        if (record?.owner && record.owner !== account?.uid) {
+          notice = 'Sign back into the original account to finish transferring today’s device counts.';
+        } else localStorage.setItem(storageKey, JSON.stringify({ ...record, ...current, [key]: next }));
+      }
       catch { notice = 'The count could not be saved on this device.'; }
     }
     render();
@@ -208,16 +241,22 @@ function createAddictionHelper(panel, health) {
   element('undo-lozenge').addEventListener('click', () => updateLozenge(health.undoNicotine, false));
   element('craving').addEventListener('click', () => setCraving(cravingUntil <= Date.now()));
   element('settings-form').addEventListener('submit', saveSettings);
-  panel.addEventListener('close', () => clearInterval(ticking));
+  panel.addEventListener('close', () => clearTimeout(ticking));
   document.addEventListener('hub:healthchange', () => { if (panel.open) render(); });
-  window.addEventListener('storage', event => { if (panel.open && (event.key === null || event.key?.startsWith(prefix))) render(); });
+  window.addEventListener('storage', event => {
+    if (event.key !== null && !event.key?.startsWith(prefix)) return;
+    if (event.key === cravingKey || event.key === null) cravingUntil = Number(event.newValue) || 0;
+    if (panel.open) render();
+  });
+  window.addEventListener('online', () => { migrate(); if (panel.open) render(); });
+  window.addEventListener('offline', () => { if (panel.open) render(); });
   document.addEventListener('visibilitychange', () => { if (panel.open && !document.hidden) render(); });
   setInterval(() => { if (panel.open) render(); }, 30000);
 
-  import('./habits-model.mjs?v=1').then(module => {
+  import('./habits-model.mjs?v=2').then(module => {
     model = module;
     render();
-    return import('./cloud-habits.js?v=1');
+    return import('./cloud-habits.js?v=2');
   }).then(module => {
     account = module.createHabitsAccount(() => {
       migrate();
@@ -229,6 +268,7 @@ function createAddictionHelper(panel, health) {
 
   return {
     open() {
+      migrate();
       render();
       fillSettings();
       panel.showModal();

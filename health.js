@@ -145,7 +145,6 @@ function createHealth(panel) {
     const name = normalizedName(medication.name);
     return asNeeded(medication) && /\b(?:nicotine|nicotina)\b/.test(name) && /\b(?:lozenges?|pastilhas?)\b/.test(name);
   }
-  // Matches LOW_LOZENGES in habits-model.mjs.
   const lowLozenges = 5;
   const morningDoseOrder = new Map(['fish', 'brain', 'hair'].map((icon, index) => [icon, index]));
 
@@ -292,7 +291,7 @@ function createHealth(panel) {
     medicationList.dataset.reordering = id;
   }
 
-  async function moveMedication(from, to) {
+  async function moveMedication(from, to, restoreKeyboardFocus = false) {
     const scope = healthScope();
     const settings = orderedSettings(read());
     const order = settings.map(entry => entry.medication);
@@ -318,7 +317,7 @@ function createHealth(panel) {
       busy = false;
       document.dispatchEvent(new CustomEvent('hub:healthsync', { detail: false }));
       render();
-      if (scope === healthScope() && panel.open && todayTab.getAttribute('aria-selected') === 'true') {
+      if (restoreKeyboardFocus && scope === healthScope() && panel.open && todayTab.getAttribute('aria-selected') === 'true') {
         cards.get(from)?.handle.focus();
       }
     }
@@ -345,7 +344,7 @@ function createHealth(panel) {
   function createReorderHandle(id) {
     const activate = () => {
       if (pickedUp === id) { clearReorder(); render(); return; }
-      if (pickedUp) { moveMedication(pickedUp, id); return; }
+      if (pickedUp) { moveMedication(pickedUp, id, true); return; }
       showReorder(id);
       render();
     };
@@ -363,7 +362,7 @@ function createHealth(panel) {
       const order = [...medicationList.children].map(card => card.dataset.medication);
       const direction = ['ArrowUp', 'ArrowLeft'].includes(event.key) ? -1 : 1;
       const target = order[order.indexOf(id) + direction];
-      if (target) moveMedication(id, target);
+      if (target) moveMedication(id, target, true);
     });
     return handle;
   }
@@ -435,9 +434,10 @@ function createHealth(panel) {
     card.addEventListener('touchmove', event => {
       const touch = [...event.changedTouches].find(entry => owns('touch', entry.identifier));
       if (!touch) return;
-      const moved = move(touch.clientX, touch.clientY);
-      if (drag.active && event.cancelable) event.preventDefault();
-      else if (moved) cancel();
+      if (drag.active) {
+        move(touch.clientX, touch.clientY);
+        if (event.cancelable) event.preventDefault();
+      } else if (move(touch.clientX, touch.clientY)) cancel();
     }, { passive: false });
     card.addEventListener('touchend', event => {
       const touch = [...event.changedTouches].find(entry => owns('touch', entry.identifier));

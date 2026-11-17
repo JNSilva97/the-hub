@@ -504,10 +504,13 @@ test('Account Health', { timeout: 150000 }, async t => {
       await page.clock.setFixedTime(new Date('2026-07-10T14:30:00Z'));
       await ready(page);
       await page.evaluate(() => localStorage.setItem('thehub:addiction-helper:v1:2026-07-09', JSON.stringify({ cigarettes: 0, coffees: 2 })));
+      await context.addInitScript(() => { window.__hubFirebase.loseHabitImportAck = true; });
       await ready(page);
       await page.waitForFunction(() => window.__hubFirebase.docs['account-a'].habits['2026-07-09']?.coffees === 2);
-      assert.equal(await page.evaluate(() => localStorage.getItem('thehub:addiction-helper:v1:2026-07-09')), null);
+      assert.notEqual(await page.evaluate(() => localStorage.getItem('thehub:addiction-helper:v1:2026-07-09')), null);
       await page.locator('#phone-addiction').tap();
+      await page.waitForFunction(() => localStorage.getItem('thehub:addiction-helper:v1:2026-07-09') === null);
+      assert.equal(await page.evaluate(() => window.__hubFirebase.docs['account-a'].habits['2026-07-09'].coffees), 2);
       assert.equal(await page.locator('#addiction-streak').textContent(), 'Smoke-free · 4 days · Best 4');
       assert.equal(await page.locator('#addiction-cutoff').textContent(), 'Past 15:00 · skip coffee for better sleep');
       assert.equal(await page.locator('#addiction-cutoff').getAttribute('data-warning'), 'true');

@@ -109,7 +109,8 @@ export async function runTransaction(database, update) {
   const transaction = {
     async get(reference) {
       const [, uid, collection, id] = reference.path;
-      const data = collection === 'health' ? service.docs[uid]?.health?.[id] : service.docs[uid]?.[id];
+      const account = service.docs[uid];
+      const data = collection === 'hub' ? account?.[id] : account?.[collection]?.[id];
       return { exists: () => data !== undefined, data: () => structuredClone(data) };
     },
     set(reference, data) { writes.push({ path: reference.path, data: structuredClone(data) }); }
@@ -121,9 +122,14 @@ export async function runTransaction(database, update) {
     if (collection === 'health') {
       (account.health ??= {})[id] = write.data;
       service.healthWrites.push(write);
-    } else account[id] = write.data;
+    } else if (collection === 'hub') account[id] = write.data;
+    else (account[collection] ??= {})[id] = write.data;
   }
   if (writes.some(write => write.path[2] === 'hub')) service.imports++;
   service.publish();
+  if (service.loseHabitImportAck && writes.some(write => write.path[2] === 'habitImports')) {
+    service.loseHabitImportAck = false;
+    throw new Error('Import committed, but its acknowledgement was lost.');
+  }
   return result;
 }
