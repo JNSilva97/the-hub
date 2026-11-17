@@ -62,6 +62,7 @@ test('offline startup and native queued ticks survive closing; private account d
   failInstall = false;
   await page.reload();
   await page.waitForFunction(() => navigator.serviceWorker.controller && document.getElementById('offline-status').textContent.includes('ready'));
+  await page.waitForFunction(() => document.getElementById('account-launch').textContent === 'Account & sync');
   const definitions = JSON.parse(readFileSync(path.join(root, 'routines.demo.json'), 'utf8'));
   definitions.routines[0].name = 'Offline private fixture';
   // Seed only this fake project's local cache; networking is disabled before any write.
