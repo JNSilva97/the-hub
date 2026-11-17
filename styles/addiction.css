@@ -78,7 +78,12 @@
 .addiction-coffee { border-color: #645034; background: radial-gradient(ellipse at top right, #3a2c1a, #171a22 74%); }
 .addiction-coffee::before { background: repeating-linear-gradient(135deg, transparent 0 16px, #efb56d12 17px 18px); mask-image: linear-gradient(110deg, transparent 48%, black); }
 .addiction-coffee .addiction-count { color: #ffd99e; }
-.addiction-coffee[data-window="closed"] { border-color: #594638; background: #1d1b20; }
+.addiction-coffee[data-warning="true"] {
+  border-color: #e0a455;
+  background: radial-gradient(ellipse at top right, #523820, #231b21 75%);
+}
+.addiction-coffee[data-warning="true"] #addiction-cutoff { color: #ffda9e; font-weight: 600; }
+.addiction-coffee[data-warning="true"] #addiction-log-coffee { border-color: #c58a47; }
 .addiction-lozenge { border-color: #3c677f; background: radial-gradient(ellipse at 100% 0%, #19384b, #0d1b29 72%); }
 .addiction-lozenge::before {
   background: radial-gradient(circle, #9ddaff36 1px, transparent 1.5px) right top / 14px 14px;
@@ -141,7 +146,7 @@
 .addiction-history tbody tr:first-child { background: linear-gradient(90deg, #17364b, #0f2232); }
 .addiction-history td[data-state="smoked"] { color: #ffb4bd; }
 .addiction-history td[data-state="clear"] { color: #8fe3c7; }
-.addiction-history td[data-state="limit"] { color: #ffd88a; }
+.addiction-history td[data-state="over-goal"] { color: #ffd88a; }
 #addiction-savings { color: #a2e4ff; font-weight: 600; }
 
 .addiction-settings summary { cursor: pointer; color: #e7f5ff; font: 600 18px var(--font-interface); }

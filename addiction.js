@@ -145,7 +145,7 @@ function createAddictionHelper(panel, health) {
         const cell = document.createElement('td');
         cell.textContent = row[key];
         if (key === 'cigarettes') cell.dataset.state = row.cigarettes ? 'smoked' : 'clear';
-        if (key === 'coffees' && row.coffees >= model.COFFEE_LIMIT) cell.dataset.state = 'limit';
+        if (key === 'coffees' && row.coffees > model.COFFEE_GOAL) cell.dataset.state = 'over-goal';
         line.append(cell);
       }
       return line;
@@ -172,20 +172,22 @@ function createAddictionHelper(panel, health) {
     element('cigarettes').textContent = `${plural(counts.cigarettes, 'cigarette')} today`;
     const streak = model.smokeFreeStreak(days, day);
     element('streak').textContent = `Smoke-free · ${plural(streak.current, 'day')} · Best ${streak.best}`;
-    element('coffees').textContent = `${counts.coffees} / ${model.COFFEE_LIMIT} coffees today`;
-    element('coffee-progress').value = Math.min(counts.coffees, model.COFFEE_LIMIT);
+    element('coffees').textContent = `${counts.coffees} / ${model.COFFEE_GOAL} coffees today`;
+    element('coffee-progress').value = Math.min(counts.coffees, model.COFFEE_GOAL);
     const coffeeWindow = model.coffeeWindow(day, clockFormat.format(now));
-    const late = coffeeWindow === 'closed';
-    element('coffee').dataset.window = coffeeWindow;
-    element('cutoff').textContent = {
-      'closed': 'Coffee closed for today · 17:00 cut-off',
+    const warnings = [];
+    if (counts.coffees > model.COFFEE_GOAL) warnings.push(`Above your ${model.COFFEE_GOAL}-coffee goal`);
+    if (coffeeWindow === 'closed') warnings.push('Past the 17:00 cut-off');
+    const cutoff = element('cutoff');
+    const coffeeStatus = warnings.length ? `Warning · ${warnings.join(' · ')}` : {
       'open': 'Coffee until 17:00',
       'weekend': 'No time cut-off today · Friday or Saturday',
       'holiday-eve': 'No time cut-off today · holiday eve'
     }[coffeeWindow];
-    element('cutoff').dataset.warning = String(late);
+    if (cutoff.textContent !== coffeeStatus) cutoff.textContent = coffeeStatus;
+    element('coffee').dataset.warning = cutoff.dataset.warning = String(warnings.length > 0);
     for (const { key, add, undo } of counters) {
-      add.disabled = key === 'coffees' && (late || counts.coffees >= model.COFFEE_LIMIT);
+      add.disabled = counts[key] >= model.MAX_DAILY_COUNT;
       undo.disabled = !counts[key];
     }
     const stock = health?.nicotineState();
@@ -262,9 +264,8 @@ function createAddictionHelper(panel, health) {
     let current;
     try { current = currentDays().get(day) ?? { cigarettes: 0, coffees: 0 }; } catch { notice = 'Saved counts could not be read on this device.'; render(); return; }
     const next = current[key] + delta;
-    if (next < 0 || delta > 0 && key === 'coffees' &&
-      (current.coffees >= model.COFFEE_LIMIT || model.coffeeWindow(day, clockFormat.format(now)) === 'closed')) { render(); return; }
-    notice = key === 'coffees' && delta > 0 && next === model.COFFEE_LIMIT ? 'Daily coffee limit reached.' : '';
+    if (next < 0 || next > model.MAX_DAILY_COUNT) return;
+    notice = '';
     if (synced()) {
       const rollback = key === 'cigarettes' ? changeQuit(day, delta, now.getTime()) : undefined;
       account.add(day, { [key]: delta }).catch(() => {
@@ -338,10 +339,10 @@ function createAddictionHelper(panel, health) {
   window.addEventListener('online', () => { migrate(); if (panel.open) render(); });
   window.addEventListener('offline', () => { if (panel.open) render(); });
   document.addEventListener('visibilitychange', () => { if (panel.open && !document.hidden) render(); });
-  import('./habits-model.mjs?v=3').then(module => {
+  import('./habits-model.mjs?v=4').then(module => {
     model = module;
     render();
-    return import('./cloud-habits.js?v=3');
+    return import('./cloud-habits.js?v=4');
   }).then(module => {
     account = module.createHabitsAccount(() => {
       migrate();

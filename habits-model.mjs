@@ -1,5 +1,6 @@
 // Daily tobacco and coffee counts, keyed by Lisbon calendar day (YYYY-MM-DD).
-export const COFFEE_LIMIT = 3;
+export const COFFEE_GOAL = 3;
+export const MAX_DAILY_COUNT = 500;
 export const defaultSettings = Object.freeze({ coffeeCutoff: '17:00', pouchPrice: null, pouchCigarettes: null, baseline: null });
 
 export function addDays(day, amount) {
@@ -7,7 +8,7 @@ export function addDays(day, amount) {
   return new Date(Date.UTC(year, month - 1, date + amount)).toISOString().slice(0, 10);
 }
 export const validDay = day => typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) && addDays(day, 0) === day;
-const validCount = value => Number.isSafeInteger(value) && value >= 0 && value <= 500;
+const validCount = value => Number.isSafeInteger(value) && value >= 0 && value <= MAX_DAILY_COUNT;
 
 export function readDay(data) {
   const day = { cigarettes: data?.cigarettes ?? 0, coffees: data?.coffees ?? 0 };
