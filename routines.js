@@ -1,13 +1,13 @@
 import {
-  validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections,
+  validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections, linkedDoseReplaces,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=pouch-grooming-1';
-import { cloudWorkspace } from './cloud.js?v=pouch-grooming-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=pouch-grooming-1';
-import { createRoutineTools } from './routine-tools.js?v=pouch-grooming-1';
+} from './routine-model.mjs?v=wind-down-flow-1';
+import { cloudWorkspace } from './cloud.js?v=wind-down-flow-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=wind-down-flow-1';
+import { createRoutineTools } from './routine-tools.js?v=wind-down-flow-1';
 
-export { createHealthAccount } from './cloud-health.js?v=pouch-grooming-1';
+export { createHealthAccount } from './cloud-health.js?v=wind-down-flow-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -140,6 +140,7 @@ function updateProgress() {
   for (const input of content.querySelectorAll('input[data-check]')) {
     const key = input.hasAttribute('data-minoxidil') ? minoxidilCheckKey(progressDay) : input.dataset.check;
     input.checked = state.checks[key] === true;
+    if (input.dataset.healthDose) input.closest('.check-row').hidden = Boolean(linkedDoseReplaces({ label: input.dataset.healthDose }, medicationProgress.get(selected.id)));
   }
   for (const row of content.querySelectorAll('.linked-check-row')) {
     const input = row.querySelector('input');
@@ -208,7 +209,7 @@ function createSkinCareRow(key, title, options) {
     button.addEventListener('click', () => choose(button, option, true));
     buttons.append(button);
   }
-  for (const [option, title] of [['l', 'Later'], ['n', 'Not needed']]) {
+  for (const [option, title] of [['l', 'Later']]) {
     const button = make('button', '', title);
     button.type = 'button';
     button.dataset.skinCareDisposition = option;
@@ -260,6 +261,10 @@ function selectRoutine(routine, remember = true) {
       const input = document.createElement('input');
       input.type = 'checkbox';
       input.dataset.check = key;
+      if (/^take (?:melatonin|valdispert\s*noite)$/i.test(item.label.trim())) {
+        input.dataset.healthDose = item.label;
+        section.dataset.medicationTarget = '';
+      }
       const minoxidil = isMinoxidilItem(item.label);
       if (minoxidil) input.dataset.minoxidil = '';
       input.addEventListener('change', () => {
@@ -276,7 +281,7 @@ function selectRoutine(routine, remember = true) {
     content.append(section);
   }
   const lastRequired = [...content.querySelectorAll('.check-section:not([data-optional]) .check-items')].at(-1);
-  (lastRequired ?? content).append(medicationSection);
+  (content.querySelector('[data-medication-target] .check-items') ?? lastRequired ?? content).append(medicationSection);
   updateProgress();
   document.dispatchEvent(new CustomEvent('hub:checklistview', { detail: { scope: workspaceIdentity(), routines: routines.map(({ id, name }) => ({ id, name })), selected: { id: routine.id, name: routine.name } } }));
 }
@@ -291,8 +296,9 @@ function createLinkedRow(item, target) {
   const status = make('span', 'linked-check-status');
   status.dataset.checklistName = target.name;
   label.append(input, make('span', '', item.label), status);
-  const open = make('button', 'routine-linked-button', `Open ${target.name}`);
+  const open = make('button', 'routine-linked-button', 'Open');
   open.type = 'button';
+  open.setAttribute('aria-label', `Open ${target.name}`);
   open.addEventListener('click', () => {
     selectRoutine(target);
     const heading = document.getElementById('routine-name');

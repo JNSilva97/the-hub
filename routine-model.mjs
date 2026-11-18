@@ -47,11 +47,16 @@ export const isMinoxidilItem = label => /^(?:apply )?minoxidil[.!]?$/i.test(labe
 
 // Keep saved item IDs and daily markers intact while shortening familiar labels.
 export function routineItemLabel(routine, item) {
-  if (!['morning routine', 'getting ready'].includes(routine.name.trim().toLowerCase())) return item.label;
-  if (skinCareOptionsFor(item.label).includes('t')) return 'Moisturiser or Self-tanner';
+  const windDown = routine.name.trim().toLowerCase() === 'wind down';
+  if (!windDown && !['morning routine', 'getting ready'].includes(routine.name.trim().toLowerCase())) return item.label;
+  if (skinCareOptionsFor(item.label).includes('t')) return windDown ? 'Moisturizer or Self-tanner' : 'Moisturiser or Self-tanner';
   const labels = {
     'eat breakfast': 'Breakfast',
     'floss': 'Floss teeth',
+    'flosh teeth': 'Floss teeth',
+    'put in retainer': 'Retainer',
+    'set alarm for tomorrow': 'Alarm',
+    'take melatonin': 'Take ValdispertNoite',
     'take a shower': 'Shower',
     'apply minoxidil': 'Minoxidil',
     'apply deodorant': 'Deodorant',
@@ -64,6 +69,13 @@ export function routineItemLabel(routine, item) {
     'remove hair between eyebrows': 'Trim eyebrows',
     'clean eyebrows': 'Trim eyebrows',
     'belt bag': 'Pouch',
+    'underwear': 'Underwear',
+    'socks': 'Socks',
+    'pants': 'Pants',
+    'shirt': 'Shirt',
+    'shoes': 'Shoes',
+    'jacket': 'Jacket',
+    'sweatshirt': 'Sweatshirt',
     'put on underwear': 'Underwear',
     'put on socks': 'Socks',
     'put on pants / shorts': 'Pants',
@@ -72,12 +84,37 @@ export function routineItemLabel(routine, item) {
     'put on a sweatshirt / jumper': 'Sweatshirt',
     'put on a jacket': 'Jacket'
   };
-  const label = item.label.trim().replace(/\s*\(if needed\)$/i, '');
+  let label = item.label.trim().replace(/\s*\(if needed\)$/i, '');
+  if (windDown && /^prepare (?:underwear|socks|pants|shirt|shoes|jacket|sweatshirt)$/i.test(label)) label = label.replace(/^prepare /i, '');
   return labels[label.toLowerCase()] ?? label;
 }
 
-// Upgrade the original Getting Ready sections without replacing retained task IDs.
+export function linkedDoseReplaces(item, medicationProgress) {
+  return /^take (?:melatonin|valdispert\s*noite)$/i.test(item.label.trim())
+    && medicationProgress?.names?.some(name => /valdispert\s*noite|melatonin/i.test(name));
+}
+
+function updateWindDown(routine) {
+  const order = ['Wash face', 'Moisturizer or Self-tanner', 'Brush teeth', 'Floss teeth', 'Retainer', 'Minoxidil',
+    'Alarm', 'Charge phone', 'Charge watch', 'Take ValdispertNoite', 'Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes', 'Jacket', 'Sweatshirt'];
+  const rank = item => { const index = order.indexOf(routineItemLabel(routine, item)); return index < 0 ? order.length : index; };
+  const groupRank = group => {
+    const ranks = group.items.map(rank);
+    if (ranks.some(value => value < 6)) return 0;
+    if (ranks.some(value => value >= 6 && value < 9)) return 1;
+    if (ranks.includes(9)) return 2;
+    if (ranks.some(value => value >= 10 && value < 15)) return 3;
+    if (ranks.some(value => value >= 15 && value < 17)) return 4;
+    return 5;
+  };
+  return { ...routine, groups: routine.groups.map(group => ({ ...group,
+    items: [...group.items].sort((a, b) => rank(a) - rank(b))
+  })).sort((a, b) => groupRank(a) - groupRank(b)) };
+}
+
+// Refresh the built-in sections without replacing retained task IDs.
 export function updateRoutineSections(routine) {
+  if (routine.name.trim().toLowerCase() === 'wind down') return updateWindDown(routine);
   if (routine.name.trim().toLowerCase() !== 'getting ready') return routine;
   return { ...routine, groups: routine.groups.map(group => {
     const title = group.title.replace(/\s*\(if needed\)/gi, '').trim();
@@ -181,6 +218,7 @@ export function getWorkspaceProgress(routines, state, skinCare, day = lisbonDay(
     const progress = work.get(routine.id);
     for (const group of routine.groups) {
       for (const item of group.items) {
+        if (linkedDoseReplaces(item, medicationProgress.get(routine.id))) continue;
         if (work.has(item.linkedChecklist)) {
           (group.optional ? progress.optionalLinks : progress.links).push(item.linkedChecklist);
           if (!group.optional) progress.total++;

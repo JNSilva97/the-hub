@@ -963,8 +963,9 @@ function createHealth(panel) {
     for (const medication of daily) {
       const linked = linkedChecklist(binding(medication, entries));
       if (!linked) continue;
-      const progress = linkedProgress.get(linked.id) ?? { done: 0, total: 0 };
+      const progress = linkedProgress.get(linked.id) ?? { done: 0, total: 0, names: [] };
       progress.total++;
+      progress.names.push(configured(medication, entries).name);
       if (taken(medication, entries, day)) progress.done++;
       linkedProgress.set(linked.id, progress);
     }

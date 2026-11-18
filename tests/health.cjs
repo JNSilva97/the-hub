@@ -31,6 +31,37 @@ async function copyHealth(from, to, publish = true) {
 
 test('Account Health', { timeout: 150000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true }); t.after(() => browser.close());
+  await t.test('Wind Down places its linked Valdispert dose after charging and counts it once', async () => {
+    const account = makeAccount();
+    account.routines.routines[0] = { id: 'personal-care', name: 'Wind Down', description: 'Evening.', groups: [
+      { id: 'health', title: 'Health', optional: false, items: [{ id: 'melatonin', label: 'Take melatonin' }] },
+      { id: 'care', title: 'Care', optional: false, items: [{ id: 'face', label: 'Wash face' }, { id: 'minoxidil', label: 'Apply minoxidil' }] },
+      { id: 'bed', title: 'Bedtime', optional: false, items: [{ id: 'alarm', label: 'Set alarm for tomorrow' }, { id: 'phone', label: 'Charge phone' }, { id: 'watch', label: 'Charge watch' }] }
+    ] };
+    const health = seededHealth();
+    const [settings] = JSON.parse(health[firstId].payload);
+    settings.name = 'ValdispertNoite';
+    health[firstId].payload = JSON.stringify([settings]);
+    delete health[secondId];
+    const { context, page, errors } = await fixture(browser, { width: 390, mobile: true, motion: 'reduce', firebase: true,
+      cloudDocuments: { 'account-a': { ...account, health } } });
+    try {
+      await ready(page); await openRoutines(page);
+      const dose = page.locator(`[data-dose="${firstId}"]`);
+      await dose.waitFor();
+      assert.deepEqual(await page.locator('#routine-content .check-row:visible > span').evaluateAll(spans => spans.map(span => span.querySelector('strong')?.textContent ?? span.textContent)), [
+        'Wash face', 'Minoxidil', 'Alarm', 'Charge phone', 'Charge watch', 'Take ValdispertNoite'
+      ]);
+      assert.equal(await page.locator('#routine-progress-label').textContent(), '0 of 6 ready');
+      await dose.check(); await waitStock(page, firstId, 27);
+      assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 6 ready');
+      await page.locator('#medication-open-health').click();
+      await page.getByRole('button', { name: 'Undo ValdispertNoite dose', exact: true }).click();
+      await waitStock(page, firstId, 28); await closeHealth(page);
+      assert.equal(await dose.isChecked(), false);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
   await t.test('Morning Routine shows linked doses in order independently of the Health cards', async () => {
     const account = makeAccount();
     account.routines.routines[0].name = 'Morning Routine';

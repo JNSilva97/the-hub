@@ -42,6 +42,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         assert.equal(await page.getByRole('checkbox', { name: 'Breakfast', exact: true }).isChecked(), true);
         assert.equal(await page.getByRole('checkbox', { name: 'Floss teeth', exact: true }).count(), 1);
         assert.equal(await page.locator('.skin-care-copy > span:first-child').textContent(), 'Moisturiser or Self-tanner');
+        assert.equal(await page.getByRole('button', { name: 'Not needed', exact: true }).count(), 0);
         const positions = await page.locator('.skin-care-row').evaluate(row => {
           const copy = row.querySelector('.skin-care-copy').getBoundingClientRect();
           const actions = row.querySelector('.skin-care-actions').getBoundingClientRect();
@@ -174,6 +175,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.locator('#control-close').click();
       const open = page.getByRole('button', { name: `Open ${target.name}`, exact: true });
       assert.equal(await open.isVisible(), true);
+      assert.equal(await open.evaluate(button => button.getBoundingClientRect().left >= button.previousElementSibling.getBoundingClientRect().right), true);
       await open.tap();
       assert.equal(await page.locator('#routine-name').textContent(), target.name);
       await chooseRoutine(page, source.id);
@@ -367,7 +369,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.5');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.6');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);

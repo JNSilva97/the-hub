@@ -5,6 +5,29 @@ import { cleanRoutines, keepProgress, createBackup, parseBackup, removedItems, M
 const routines = JSON.parse(readFileSync(new URL('../routines.demo.json', import.meta.url))).routines;
 const key = 'personal-care/care/item-1';
 
+test('Wind Down reorders existing tasks without changing their keys or optional checklist links', () => {
+  const group = (id, title, labels, optional = false) => ({ id, title, optional, items: labels.map((label, i) => ({ id: `i-${i}`, label })) });
+  const original = [{ id: 'wind', name: 'Wind Down', description: 'Evening.', groups: [
+    group('health', 'Health', ['Take melatonin']),
+    group('care', 'Hygiene & Personal Care', ['Wash face', 'Floss', 'Brush teeth', 'Put in retainer', 'Apply minoxidil', 'Apply moisturizer or self-tanner']),
+    group('bed', 'Bedtime Preparation', ['Set alarm for tomorrow', 'Charge phone', 'Charge watch']),
+    group('outfit', 'Tomorrow’s outfit', ['Put on underwear', 'Put on socks', 'Put on pants / shorts', 'Put on a T-shirt / shirt', 'Put on shoes / sneakers'], true),
+    group('extra', 'Optional clothing', ['Put on a sweatshirt / jumper', 'Put on a jacket'], true),
+    { id: 'office', title: 'Office', optional: true, items: [{ id: 'office', label: 'Complete Office Preparation', linkedChecklist: 'workday' }] }
+  ] }];
+  const updated = cleanRoutines(original);
+  assert.deepEqual(updated[0].groups.map(group => group.id), ['care', 'bed', 'health', 'outfit', 'extra', 'office']);
+  assert.deepEqual(updated[0].groups[0].items.map(item => item.label), ['Wash face', 'Moisturizer or Self-tanner', 'Brush teeth', 'Floss teeth', 'Retainer', 'Minoxidil']);
+  assert.deepEqual(updated[0].groups[0].items.map(item => item.id), ['i-0', 'i-5', 'i-2', 'i-1', 'i-3', 'i-4']);
+  assert.deepEqual(updated[0].groups[1].items.map(item => item.label), ['Alarm', 'Charge phone', 'Charge watch']);
+  assert.equal(updated[0].groups[2].items[0].label, 'Take ValdispertNoite');
+  assert.deepEqual(updated[0].groups[4].items.map(item => item.label), ['Jacket', 'Sweatshirt']);
+  assert.deepEqual(updated[0].groups[5], original[0].groups[5]);
+  const checks = { 'wind/care/i-2': true, '@daily/minoxidil/2026-11-18': true };
+  assert.deepEqual(keepProgress(updated, { checks, optional: {} }).checks, checks);
+  assert.deepEqual(cleanRoutines(updated), updated);
+});
+
 test('Getting Ready updates retain task IDs and optional flags; new W filters has its own saved tick', () => {
   const labels = ['Shave / Trim beard', 'Remove unwanted body hair', 'Remove hair between eyebrows', 'Trim nails'];
   const data = [{ id: 'getting-ready', name: 'Getting Ready', description: 'Before heading out.', groups: [

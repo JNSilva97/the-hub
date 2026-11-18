@@ -404,11 +404,17 @@
 
 .linked-check-row {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   border: 1px solid #17334b;
   background: #060e1a;
 }
 
-.linked-check-row .check-row { border: 0; }
+.linked-check-row .check-row { border: 0; min-width: 0; overflow-wrap: anywhere; }
+.linked-check-row > .routine-linked-button { justify-self: end; margin: 0 13px 0 0; max-width: 160px; }
+@media (max-width: 700px) {
+  .linked-check-row > .routine-linked-button { max-width: 120px; padding-inline: 8px; }
+}
 .routine-linked-button { justify-self: start; margin: 0 13px 10px; text-align: start; }
 .linked-check-row .check-row { flex-wrap: wrap; cursor: default; }
 .linked-check-row .check-row:hover { background: transparent; }
