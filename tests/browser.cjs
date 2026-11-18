@@ -27,6 +27,8 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         { id: 'shower', label: 'Take a shower' }, { id: 'minoxidil', label: 'Apply minoxidil' },
         { id: 'deodorant', label: 'Apply deodorant' }, { id: 'perfume', label: 'Apply perfume' },
         { id: 'lenses', label: 'Put in contact lenses' }, { id: 'cream', label: 'Apply intimate-care cream' }
+      ] }, { id: 'grooming', title: 'Grooming', optional: true, items: [
+        { id: 'shave', label: 'Shave beard' }, { id: 'eyebrows', label: 'Clean eyebrows' }
       ] }, { id: 'bag', title: 'Belt bag', optional: true, items: [
         { id: 'filters', label: 'Tobacco filters' }, { id: 'small', label: 'Small rolling papers' },
         { id: 'tobacco', label: 'Tobacco' }, { id: 'w', label: 'W' },
@@ -52,8 +54,10 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         for (const name of ['Shower', 'Minoxidil', 'Deodorant', 'Perfume', 'Contact lenses', 'Care cream']) {
           assert.equal(await page.getByRole('checkbox', { name, exact: true }).count(), 1);
         }
-        const bag = page.locator('.check-section').filter({ has: page.getByRole('heading', { name: /Belt bag/i }) });
-        assert.deepEqual(await bag.locator('.check-row > span').allTextContents(), ['Tobacco', 'Small papers', 'Filters', 'W', 'Large papers', 'W filters']);
+        const grooming = page.locator('.check-section').filter({ has: page.getByRole('heading', { name: /^Grooming\b/ }) });
+        assert.deepEqual(await grooming.locator('.check-row > span').allTextContents(), ['Shave beard', 'Trim beard', 'Trim eyebrows']);
+        const bag = page.locator('.check-section').filter({ has: page.getByRole('heading', { name: /^Pouch\b/ }) });
+        assert.deepEqual(await bag.locator('.check-row > span').allTextContents(), ['Tobacco', 'Small papers', 'Filters', 'W', 'Large papers', 'W filters', 'Grinder']);
         const filters = page.locator('input[data-check="getting-ready/bag/w-filters"]');
         await filters.check();
         await chooseRoutine(page, 'morning'); await chooseRoutine(page, 'getting-ready');
@@ -363,7 +367,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.4');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.5');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);

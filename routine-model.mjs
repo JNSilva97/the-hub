@@ -61,7 +61,9 @@ export function routineItemLabel(routine, item) {
     'apply intimate-care cream': 'Care cream',
     'shave / trim beard': 'Shave beard',
     'remove unwanted body hair': 'Shave body hair',
-    'remove hair between eyebrows': 'Clean eyebrows',
+    'remove hair between eyebrows': 'Trim eyebrows',
+    'clean eyebrows': 'Trim eyebrows',
+    'belt bag': 'Pouch',
     'put on underwear': 'Underwear',
     'put on socks': 'Socks',
     'put on pants / shorts': 'Pants',
@@ -79,34 +81,45 @@ export function updateRoutineSections(routine) {
   if (routine.name.trim().toLowerCase() !== 'getting ready') return routine;
   return { ...routine, groups: routine.groups.map(group => {
     const title = group.title.replace(/\s*\(if needed\)/gi, '').trim();
-    if (!/^belt bag(?: contents)?$/i.test(title)) {
+    const occupied = new Set(group.items.map(item => item.id));
+    const newItem = label => {
+      const base = label.toLowerCase().replaceAll(' ', '-');
+      let id = base;
+      for (let suffix = 2; occupied.has(id); suffix++) id = `${base}-${suffix}`;
+      occupied.add(id);
+      return { id, label };
+    };
+    if (/^grooming$/i.test(title)) {
+      const items = [...group.items];
+      const shave = items.findIndex(item => routineItemLabel(routine, item) === 'Shave beard');
+      const legacyGrooming = items.some(item => /^(?:shave \/ trim beard|clean eyebrows|remove hair between eyebrows)$/i.test(item.label.trim()));
+      if (legacyGrooming && shave >= 0 && !items.some(item => /^trim beard$/i.test(item.label.trim()))) items.splice(shave + 1, 0, newItem('Trim beard'));
+      return { ...group, title, items };
+    }
+    if (!/^(?:belt bag(?: contents)?|pouch)$/i.test(title)) {
       if (/^optional clothing$/i.test(title) && group.items.some(item => /^put on /i.test(item.label))) {
         const rank = item => ['Sweatshirt', 'Jacket'].indexOf(routineItemLabel(routine, item));
         return { ...group, title, items: [...group.items].sort((a, b) => (rank(a) < 0 ? 2 : rank(a)) - (rank(b) < 0 ? 2 : rank(b))) };
       }
       return { ...group, title };
     }
-    const legacy = group.items.some(item => /grinder|rolling papers|tobacco filters|mortalhas|filtros de tabaco/i.test(item.label));
-    if (!legacy) return { ...group, title };
+    const legacy = group.items.some(item => /rolling papers|tobacco filters|mortalhas|filtros de tabaco/i.test(item.label));
+    if (!legacy && /^pouch$/i.test(title)) return { ...group, title };
     const names = [
       ['Tobacco', /^(?:rolling )?tobacco$|^tabaco$/i],
       ['Small papers', /^small (?:rolling )?papers$|^mortalhas pequenas?$/i],
       ['Filters', /^(?:tobacco )?filters$|^filtros(?: de tabaco)?$/i],
       ['W', /^w$/i],
       ['Large papers', /^large (?:rolling )?papers$|^mortalhas grandes$/i],
-      ['W filters', /^w filters$/i]
+      ['W filters', /^w filters$/i],
+      ['Grinder', /^grinder$/i]
     ];
-    const occupied = new Set(group.items.map(item => item.id));
     const items = names.map(([label, pattern]) => {
       const existing = group.items.find(item => pattern.test(item.label.trim()));
       if (existing) return { ...existing, label };
-      const base = label.toLowerCase().replaceAll(' ', '-');
-      let id = base;
-      for (let suffix = 2; occupied.has(id); suffix++) id = `${base}-${suffix}`;
-      occupied.add(id);
-      return { id, label };
+      return newItem(label);
     });
-    return { ...group, title, items };
+    return { ...group, title: 'Pouch', items };
   }) };
 }
 export const minoxidilCheckKey = day => `@daily/minoxidil/${day}`;
