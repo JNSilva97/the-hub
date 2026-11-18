@@ -28,6 +28,27 @@ test('Wind Down reorders existing tasks without changing their keys or optional 
   assert.deepEqual(cleanRoutines(updated), updated);
 });
 
+test('Wind Down expands the old outfit shortcut and replaces all Prepare clothing labels', () => {
+  const base = { id: 'wind', name: 'Wind Down', description: 'Evening.', groups: [
+    { id: 'outfit', title: "Tomorrow's outfit", optional: true, items: [{ id: 'item-1', label: "Prepare tomorrow's outfit", linkedChecklist: 'getting-ready' }] },
+    { id: 'outerwear', title: 'Optional clothing', optional: true, items: [{ id: 'sweat', label: 'Prepare a sweatshirt / jumper (if needed)' }, { id: 'jacket', label: 'Prepare a jacket (if needed)' }] }
+  ] };
+  const [updated] = cleanRoutines([base]);
+  assert.equal(updated.groups[0].title, 'Prepare outfit');
+  assert.deepEqual(updated.groups[0].items.map(item => item.label), ['Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes']);
+  assert.equal(updated.groups[0].items.some(item => item.linkedChecklist), false);
+  assert.deepEqual(updated.groups[1].items, [{ id: 'jacket', label: 'Jacket' }, { id: 'sweat', label: 'Sweatshirt' }]);
+  assert.equal(updated.groups.every(group => group.optional), true);
+  assert.deepEqual(cleanRoutines([updated]), [updated]);
+  const separateItems = structuredClone(base);
+  separateItems.groups[0].items = ['Prepare underwear', 'Prepare socks', 'Prepare pants / shorts', 'Prepare a T-shirt / shirt', 'Prepare shoes / sneakers'].map((label, i) => ({ id: `old-${i}`, label }));
+  const [renamed] = cleanRoutines([separateItems]);
+  assert.deepEqual(renamed.groups[0].items.map(item => item.label), ['Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes']);
+  assert.deepEqual(renamed.groups[0].items.map(item => item.id), ['old-0', 'old-1', 'old-2', 'old-3', 'old-4']);
+  const saved = { checks: { 'wind/outfit/old-2': true, 'wind/outerwear/jacket': true }, optional: {} };
+  assert.deepEqual(keepProgress([renamed], saved), saved);
+});
+
 test('Getting Ready updates retain task IDs and optional flags; new W filters has its own saved tick', () => {
   const labels = ['Shave / Trim beard', 'Remove unwanted body hair', 'Remove hair between eyebrows', 'Trim nails'];
   const data = [{ id: 'getting-ready', name: 'Getting Ready', description: 'Before heading out.', groups: [

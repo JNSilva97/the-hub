@@ -36,7 +36,9 @@ test('Account Health', { timeout: 150000 }, async t => {
     account.routines.routines[0] = { id: 'personal-care', name: 'Wind Down', description: 'Evening.', groups: [
       { id: 'health', title: 'Health', optional: false, items: [{ id: 'melatonin', label: 'Take melatonin' }] },
       { id: 'care', title: 'Care', optional: false, items: [{ id: 'face', label: 'Wash face' }, { id: 'minoxidil', label: 'Apply minoxidil' }] },
-      { id: 'bed', title: 'Bedtime', optional: false, items: [{ id: 'alarm', label: 'Set alarm for tomorrow' }, { id: 'phone', label: 'Charge phone' }, { id: 'watch', label: 'Charge watch' }] }
+      { id: 'bed', title: 'Bedtime', optional: false, items: [{ id: 'alarm', label: 'Set alarm for tomorrow' }, { id: 'phone', label: 'Charge phone' }, { id: 'watch', label: 'Charge watch' }] },
+      { id: 'outfit', title: "Tomorrow's outfit", optional: true, items: [{ id: 'outfit', label: "Prepare tomorrow's outfit", linkedChecklist: 'getting-ready' }] },
+      { id: 'outerwear', title: 'Optional clothing', optional: true, items: [{ id: 'sweat', label: 'Prepare a sweatshirt / jumper (if needed)' }, { id: 'jacket', label: 'Prepare a jacket (if needed)' }] }
     ] };
     const health = seededHealth();
     const [settings] = JSON.parse(health[firstId].payload);
@@ -49,10 +51,19 @@ test('Account Health', { timeout: 150000 }, async t => {
       await ready(page); await openRoutines(page);
       const dose = page.locator(`[data-dose="${firstId}"]`);
       await dose.waitFor();
-      assert.deepEqual(await page.locator('#routine-content .check-row:visible > span').evaluateAll(spans => spans.map(span => span.querySelector('strong')?.textContent ?? span.textContent)), [
+      assert.deepEqual(await page.locator('#routine-content .check-section:not([data-optional]) .check-row:visible > span').evaluateAll(spans => spans.map(span => span.querySelector('strong')?.textContent ?? span.textContent)), [
         'Wash face', 'Minoxidil', 'Alarm', 'Charge phone', 'Charge watch', 'Take ValdispertNoite'
       ]);
       assert.equal(await page.locator('#routine-progress-label').textContent(), '0 of 6 ready');
+      const outfit = page.locator('.check-section').filter({ has: page.getByRole('heading', { name: /^Prepare outfit/ }) });
+      const outerwear = page.locator('.check-section').filter({ has: page.getByRole('heading', { name: /^Optional clothing/ }) });
+      assert.deepEqual(await outfit.locator('.check-row > span').allTextContents(), ['Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes']);
+      assert.deepEqual(await outerwear.locator('.check-row > span').allTextContents(), ['Jacket', 'Sweatshirt']);
+      assert.equal(await outfit.locator('.linked-check-row').count(), 0);
+      const underwear = outfit.locator('input').first();
+      await underwear.check();
+      assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 7 ready');
+      await underwear.uncheck();
       await dose.check(); await waitStock(page, firstId, 27);
       assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 6 ready');
       await page.locator('#medication-open-health').click();

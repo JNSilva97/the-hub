@@ -85,7 +85,13 @@ export function routineItemLabel(routine, item) {
     'put on a jacket': 'Jacket'
   };
   let label = item.label.trim().replace(/\s*\(if needed\)$/i, '');
-  if (windDown && /^prepare (?:underwear|socks|pants|shirt|shoes|jacket|sweatshirt)$/i.test(label)) label = label.replace(/^prepare /i, '');
+  if (windDown) {
+    const clothing = /^(?:prepare|put on)\s+(?:a\s+)?(.+?)(?:\s+for tomorrow)?$/i.exec(label)?.[1] ?? label;
+    const names = { underwear: 'Underwear', socks: 'Socks', pants: 'Pants', 'pants / shorts': 'Pants',
+      shirt: 'Shirt', 't-shirt / shirt': 'Shirt', shoes: 'Shoes', 'shoes / sneakers': 'Shoes',
+      jacket: 'Jacket', sweatshirt: 'Sweatshirt', 'sweatshirt / jumper': 'Sweatshirt', sweetshirt: 'Sweatshirt' };
+    if (names[clothing.toLowerCase()]) return names[clothing.toLowerCase()];
+  }
   return labels[label.toLowerCase()] ?? label;
 }
 
@@ -95,6 +101,26 @@ export function linkedDoseReplaces(item, medicationProgress) {
 }
 
 function updateWindDown(routine) {
+  const groups = routine.groups.map(group => ({ ...group, items: [...group.items] }));
+  const clothingGroups = groups.filter(group => /outfit|clothing|clothes/i.test(group.title) || group.items.some(item => /^prepare tomorrow['’]s outfit/i.test(item.label)));
+  const outerwear = clothingGroups.find(group => /optional.*(?:clothing|clothes)|outerwear/i.test(group.title));
+  const outfit = clothingGroups.find(group => group !== outerwear);
+  const groupIds = new Set(groups.map(group => group.id));
+  const uniqueId = (base, occupied) => { let id = base; for (let suffix = 2; occupied.has(id); suffix++) id = `${base}-${suffix}`; occupied.add(id); return id; };
+  const completeClothing = (existing, title, names, base) => {
+    const group = existing ?? { id: uniqueId(base, groupIds), title, optional: true, items: [] };
+    const itemIds = new Set(group.items.map(item => item.id));
+    const items = names.map(label => {
+      const item = group.items.find(item => !item.linkedChecklist && routineItemLabel(routine, item) === label);
+      return item ? { id: item.id, label } : { id: uniqueId(label.toLowerCase(), itemIds), label };
+    });
+    const updated = { ...group, title, optional: true, items };
+    if (existing) groups[groups.indexOf(existing)] = updated;
+    else groups.push(updated);
+  };
+  // The former outfit shortcut is a clothing checklist, not a dependency on Getting Ready.
+  completeClothing(outfit, 'Prepare outfit', ['Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes'], 'outfit');
+  completeClothing(outerwear, 'Optional clothing', ['Jacket', 'Sweatshirt'], 'optional-clothing');
   const order = ['Wash face', 'Moisturizer or Self-tanner', 'Brush teeth', 'Floss teeth', 'Retainer', 'Minoxidil',
     'Alarm', 'Charge phone', 'Charge watch', 'Take ValdispertNoite', 'Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes', 'Jacket', 'Sweatshirt'];
   const rank = item => { const index = order.indexOf(routineItemLabel(routine, item)); return index < 0 ? order.length : index; };
@@ -107,7 +133,7 @@ function updateWindDown(routine) {
     if (ranks.some(value => value >= 15 && value < 17)) return 4;
     return 5;
   };
-  return { ...routine, groups: routine.groups.map(group => ({ ...group,
+  return { ...routine, groups: groups.map(group => ({ ...group,
     items: [...group.items].sort((a, b) => rank(a) - rank(b))
   })).sort((a, b) => groupRank(a) - groupRank(b)) };
 }
