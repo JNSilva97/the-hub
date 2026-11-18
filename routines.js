@@ -2,12 +2,12 @@ import {
   validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections, linkedDoseReplaces,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=muay-thai-lists-1';
-import { cloudWorkspace } from './cloud.js?v=muay-thai-lists-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=muay-thai-lists-1';
-import { createRoutineTools } from './routine-tools.js?v=muay-thai-lists-1';
+} from './routine-model.mjs?v=muay-thai-towel-1';
+import { cloudWorkspace } from './cloud.js?v=muay-thai-towel-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=muay-thai-towel-1';
+import { createRoutineTools } from './routine-tools.js?v=muay-thai-towel-1';
 
-export { createHealthAccount } from './cloud-health.js?v=muay-thai-lists-1';
+export { createHealthAccount } from './cloud-health.js?v=muay-thai-towel-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');

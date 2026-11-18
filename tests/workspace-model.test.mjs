@@ -36,8 +36,8 @@ test('Muay Thai shortens training clothes and splits the bag essentials', () => 
   ] };
   const [updated] = cleanRoutines([base]);
   assert.deepEqual(updated.groups[0].items.map(item => item.label), ['T-shirt', 'Shorts', 'Socks', 'Shoes', 'Sweatshirt']);
-  assert.deepEqual(updated.groups[1].items.map(item => item.label), ['Backpack', 'Locker', 'Gym pass', 'Water', 'Earphones', 'Phone', 'Wallet', 'Keys']);
-  assert.deepEqual(updated.groups[1].items.map(item => item.id), ['bag-0', 'bag-1', 'bag-2', 'bag-4', 'bag-5', 'bag-6', 'wallet', 'keys']);
+  assert.deepEqual(updated.groups[1].items.map(item => item.label), ['Backpack', 'Locker', 'Gym pass', 'Towel', 'Water', 'Earphones', 'Phone', 'Wallet', 'Keys']);
+  assert.deepEqual(updated.groups[1].items.map(item => item.id), ['bag-0', 'bag-1', 'bag-2', 'bag-3', 'bag-4', 'bag-5', 'bag-6', 'wallet', 'keys']);
   assert.deepEqual(cleanRoutines([updated]), [updated]);
 });
 
