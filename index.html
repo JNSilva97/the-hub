@@ -15,11 +15,11 @@
   <link rel="stylesheet" href="styles/shell.css?v=modules-1">
   <link rel="stylesheet" href="styles/core.css?v=modules-1">
   <link rel="stylesheet" href="styles/access.css?v=full-print-1">
-  <link rel="stylesheet" href="styles/panels.css?v=addiction-helper-1">
-  <link rel="stylesheet" href="styles/routines.css?v=goals-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=addiction-helper-1">
+  <link rel="stylesheet" href="styles/panels.css?v=checklist-flow-1">
+  <link rel="stylesheet" href="styles/routines.css?v=checklist-flow-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=checklist-flow-1">
   <link rel="stylesheet" href="styles/notes.css?v=dark-glass-1">
-  <link rel="stylesheet" href="styles/health.css?v=addiction-helper-2">
+  <link rel="stylesheet" href="styles/health.css?v=checklist-flow-1">
   <link rel="stylesheet" href="styles/addiction.css?v=5">
   <link rel="stylesheet" href="styles/motion.css?v=modules-1">
 </head>
@@ -369,7 +369,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.18.1</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.18.2</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -463,11 +463,11 @@
         <div id="routine-progress" class="routine-progress" role="progressbar" aria-label="Checklist completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
         <p class="checklist-hint">Tick things off in any order.</p>
         <div id="routine-content"></div>
-        <section id="personal-care-medications" class="routine-medications" hidden aria-labelledby="medication-title">
-          <div class="health-toolbar"><h4 id="medication-title">Medication</h4><button id="medication-open-health" class="health-button" type="button">Open Health</button></div>
-          <p>Doses and stock sync with your Health account.</p>
-          <p id="medication-today"></p><div id="medication-checks"></div><p id="medication-status" role="status"></p>
-        </section>
+        <div id="personal-care-medications" class="routine-medications" hidden>
+          <p id="medication-today" hidden></p><div id="medication-checks"></div>
+          <p id="medication-status" role="status"></p>
+          <button id="medication-open-health" class="routine-linked-button" type="button">Open Health</button>
+        </div>
         </div>
         <section id="checklist-control" class="control-dialog inline-editor" hidden aria-labelledby="control-title">
           <div class="command-heading"><h2 id="control-title">EDIT CHECKLIST</h2><button id="control-close" class="routine-exit" type="button" aria-label="Back to checklist">Back</button></div>
@@ -529,11 +529,11 @@
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
   <script defer src="core-progress.js?v=goals-1"></script>
-  <script defer src="notes.js?v=addiction-helper-1"></script>
+  <script defer src="notes.js?v=checklist-flow-1"></script>
   <script defer src="checklist-picker.js?v=review-1"></script>
-  <script defer src="health.js?v=drag-focus-1"></script>
-  <script defer src="addiction.js?v=7"></script>
-  <script defer src="interface.js?v=modules-1"></script>
+  <script defer src="health.js?v=checklist-flow-1"></script>
+  <script defer src="addiction.js?v=8"></script>
+  <script defer src="interface.js?v=checklist-flow-1"></script>
   <script defer src="interface-sound.js?v=intro-autoplay-2"></script>
   <script defer src="pointer-effects.js?v=modules-1"></script>
   <script defer src="experience.js?v=startup-scan-1" onerror="document.getElementById('startup-cover')?.remove()"></script>

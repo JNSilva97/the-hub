@@ -53,7 +53,7 @@ export function progressKey(item, key, day) {
 
 // The compact suffix fits inside the existing progress key limit, even with three 50-character IDs.
 const dayToken = day => Math.floor(Date.parse(day + 'T00:00:00Z') / 86400000).toString(36);
-const skinCareMarker = /^([a-z][a-z0-9-]*\/[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*)~([0-9a-z]{1,5})([mst])$/;
+const skinCareMarker = /^([a-z][a-z0-9-]*\/[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*)~([0-9a-z]{1,5})([mstln])$/;
 export const skinCareItemKey = key => skinCareMarker.exec(key)?.[1];
 
 export function skinCareProgress(checks, day = lisbonDay()) {
@@ -65,7 +65,7 @@ export function skinCareProgress(checks, day = lisbonDay()) {
     const marker = skinCareMarker.exec(key);
     if (marker?.[2] !== token) continue;
     selected.set(marker[1], marker[3]);
-    used.add(marker[3]);
+    if (marker[3] in skinCareOptions) used.add(marker[3]);
   }
   return { selected, used };
 }
@@ -75,7 +75,7 @@ export function setSkinCareChoice(routines, progress, key, option, checked, day 
   const item = routines.find(routine => routine.id === routineId)?.groups.find(group => group.id === groupId)
     ?.items.find(item => item.id === itemId);
   const options = item ? skinCareOptionsFor(item.label) : [];
-  if (!options.includes(option)) throw new Error('This checklist item changed. Open the checklist again.');
+  if (!options.length || ![...options, 'l', 'n'].includes(option)) throw new Error('This checklist item changed. Open the checklist again.');
   const { selected, used } = skinCareProgress(progress.checks, day);
   const previous = selected.get(key);
   if ((checked && previous === option) || (!checked && previous !== option)) return progress;
@@ -92,23 +92,31 @@ export function setSkinCareChoice(routines, progress, key, option, checked, day 
 
 export const isComplete = progress => Boolean(progress) && progress.total > 0 && progress.done === progress.total;
 
-export function getWorkspaceProgress(routines, state, skinCare, day = lisbonDay()) {
+export function getWorkspaceProgress(routines, state, skinCare, day = lisbonDay(), medicationProgress = new Map()) {
   skinCare ??= skinCareProgress(state.checks, day);
-  const work = new Map(routines.map(routine => [routine.id, { done: 0, total: 0, links: [] }]));
+  const work = new Map(routines.map(routine => [routine.id, {
+    done: medicationProgress.get(routine.id)?.done ?? 0,
+    total: medicationProgress.get(routine.id)?.total ?? 0,
+    links: [], optionalLinks: []
+  }]));
   for (const routine of routines) {
     const progress = work.get(routine.id);
     for (const group of routine.groups) {
-      if (group.optional && state.optional[groupKey(routine, group)] !== true) continue;
-      progress.total += group.items.length;
       for (const item of group.items) {
         if (work.has(item.linkedChecklist)) {
-          progress.links.push(item.linkedChecklist);
+          (group.optional ? progress.optionalLinks : progress.links).push(item.linkedChecklist);
+          if (!group.optional) progress.total++;
           continue;
         }
         const key = itemKey(routine, group, item);
         const options = skinCareOptionsFor(item.label);
-        if (state.checks[progressKey(item, key, day)] === true || options.includes(skinCare.selected.get(key))
-          || options.length && options.every(option => skinCare.used.has(option))) progress.done++;
+        const choice = skinCare.selected.get(key);
+        if (options.length && ['l', 'n'].includes(choice)) continue;
+        const done = state.checks[progressKey(item, key, day)] === true || options.includes(choice)
+          || options.length && options.every(option => skinCare.used.has(option));
+        if (group.optional && !done) continue;
+        progress.total++;
+        if (done) progress.done++;
       }
     }
   }
@@ -119,13 +127,16 @@ export function getWorkspaceProgress(routines, state, skinCare, day = lisbonDay(
     // A dependency back to a checklist being checked cannot complete the cycle.
     completed.set(id, false);
     const { done, total, links } = work.get(id);
-    const complete = total > 0 && done + links.length === total && links.every(checkComplete);
+    const optionalDone = work.get(id).optionalLinks.filter(checkComplete).length;
+    const complete = total + optionalDone > 0 && done + links.length === total && links.every(checkComplete);
     completed.set(id, complete);
     return complete;
   }
 
-  return new Map([...work].map(([id, { done, total, links }]) => {
-    const finished = done + links.filter(checkComplete).length;
+  return new Map([...work].map(([id, { done, total, links, optionalLinks }]) => {
+    const optionalDone = optionalLinks.filter(checkComplete).length;
+    const finished = done + links.filter(checkComplete).length + optionalDone;
+    total += optionalDone;
     return [id, { done: finished, total, percent: total ? Math.round(finished / total * 100) : 0 }];
   }));
 }

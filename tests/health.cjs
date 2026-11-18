@@ -58,7 +58,10 @@ test('Account Health', { timeout: 150000 }, async t => {
       await ready(page); await openRoutines(page);
       const check = page.locator(`[data-dose="${firstId}"]`);
       assert.equal(await check.isVisible(), true);
+      assert.equal(await check.evaluate(input => Boolean(input.closest('#routine-content .check-items'))), true);
+      assert.equal(await page.locator('#routine-progress-label').textContent(), '0 of 5 ready');
       await check.check(); await waitStock(page, firstId, 27);
+      assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 5 ready');
       await page.locator('#medication-open-health').click();
       assert.equal(await page.locator('#app-title').textContent(), 'Health');
       assert.equal(await page.locator('#health-data-badge').textContent(), 'PRIVATE / YOUR ACCOUNT');
@@ -70,6 +73,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       await page.getByRole('button', { name: 'Mark Sample B taken' }).click(); await waitStock(page, secondId, 8);
       await closeHealth(page);
       assert.equal(await page.locator(`[data-dose="${secondId}"]`).isChecked(), true);
+      assert.equal(await page.locator('#routine-progress-label').textContent(), '2 of 5 ready');
       await page.locator('.check-row input').first().check();
       await page.locator('#routine-restart').click(); await page.locator('#restart-confirm').click();
       assert.equal(await page.locator('.check-row input').first().isChecked(), false);

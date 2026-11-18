@@ -6,6 +6,8 @@ The app has three parts: HTML puts things on the screen, CSS makes them look and
 
 Open the homepage and choose the **Goals** module. Pick a checklist and tick its items. **Find anything** opens a search box that can take you straight to a checklist. **Settings** controls animation and optional sound.
 
+Optional tasks are always visible and can be ticked individually. Unticked optional tasks do not block completion. Linked daily medication appears inside the checklist and shares its progress counter. For skincare, **Later** and **Not needed** exclude only the current checklist item for today; **Undo** restores it. The remaining skincare choice stays available in other checklists.
+
 Goals shows the full checklist as soon as you open it. Tick things off in whichever order suits you. Checked rows stay where they are, and tapping one again clears its tick. Optional section switches are right in the list. Progress saves automatically.
 
 Sign in to open **Health** and see today’s doses and stock. Use **Add medication** to get started, **Mark taken** to record a dose, and **Undo** to put the recorded amount back. A **Linked checklist** lets you record that dose from Goals. Account Health syncs after its rules are enabled.

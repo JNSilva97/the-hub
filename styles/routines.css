@@ -362,6 +362,11 @@
   cursor: default;
 }
 
+.skin-care-row[data-skipped="true"] { border-style: dashed; color: #9cb9d2; }
+.skin-care-actions [data-skin-care-disposition] { background: transparent; color: #a8c5dc; }
+.optional-task { margin-left: auto; color: #9abbd0; font-size: 11px; text-decoration: none !important; }
+.check-section[data-optional] .check-section-title::after { content: ' · Optional'; color: #7ea3be; letter-spacing: .04em; }
+
 .skin-care-actions {
   display: flex;
   flex-wrap: wrap;
@@ -407,40 +412,6 @@
 .skin-care-error { color: #ffca9e; }
 .skin-care-row :is(.skin-care-status, .skin-care-error, .skin-care-actions):empty,
 .skin-care-actions:not(:has(button:not([hidden]))) { display: none; }
-
-.optional-group {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  min-height: 48px;
-  padding: 11px 13px;
-  border: 1px dashed #17334b;
-  background: #060e1a;
-  line-height: 1.5;
-  cursor: pointer;
-  color: #96caff;
-  margin-bottom: 12px;
-  font-size: 12px;
-}
-
-.optional-group:hover {
-  background: #0a1930;
-}
-
-.optional-group input {
-  flex-shrink: 0;
-  width: 19px;
-  height: 19px;
-  margin: 0px;
-  accent-color: #218bff;
-}
-
-.optional-group:focus-within {
-  outline: #91caff solid 2px;
-  outline-offset: 2px;
-  position: relative;
-  z-index: 1;
-}
 
 .routine-feedback {
   background: #02070f;

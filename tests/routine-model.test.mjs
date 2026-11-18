@@ -11,15 +11,17 @@ test('demo data contains five valid routines', () => {
   assert.equal(validateRoutines(demo).length, 5);
 });
 
-test('optional sections count only when enabled and keep their ticks', () => {
+test('every optional task counts only when checked, independently of old section switches', () => {
   const state = parseProgress(null);
   state.checks['workday/work/item-1'] = true;
   state.checks['workday/after-work/item-1'] = true;
-  assert.deepEqual(getProgress(work, state), { done: 1, total: 4, percent: 25 });
+  assert.deepEqual(getProgress(work, state), { done: 2, total: 5, percent: 40 });
   state.optional['workday/after-work'] = true;
-  assert.deepEqual(getProgress(work, state), { done: 2, total: 6, percent: 33 });
+  assert.deepEqual(getProgress(work, state), { done: 2, total: 5, percent: 40 });
   state.optional['workday/after-work'] = false;
   assert.equal(state.checks['workday/after-work/item-1'], true);
+  assert.deepEqual(getProgress(work, state), { done: 2, total: 5, percent: 40 });
+  delete state.checks['workday/after-work/item-1'];
   assert.deepEqual(getProgress(work, state), { done: 1, total: 4, percent: 25 });
 });
 
@@ -92,6 +94,30 @@ test('shared skincare choices follow the Lisbon day and survive a checklist back
   assert.deepEqual(skinCareProgress(restartRoutine(routines[1], both).checks, day).used, new Set(['m']));
 });
 
+test('Later and Not needed exclude only their skincare occurrence and survive backup and the Lisbon day', () => {
+  const routines = ['morning', 'getting-ready', 'wind-down'].map(id => ({
+    id, name: id, description: 'A checklist.',
+    groups: [{ id: 'care', title: 'Care', optional: false, items: [
+      { id: 'skin', label: 'Apply moisturiser or self-tanner' }, { id: 'teeth', label: 'Brush teeth' }
+    ] }]
+  }));
+  const day = lisbonDay();
+  let state = setSkinCareChoice(routines, parseProgress(null), 'morning/care/skin', 't', true, day);
+  state = setSkinCareChoice(routines, state, 'getting-ready/care/skin', 'l', true, day);
+  assert.deepEqual(getProgress(routines[1], state), { done: 0, total: 1, percent: 0 });
+  assert.deepEqual(skinCareProgress(state.checks).used, new Set(['t']));
+  assert.deepEqual(getProgress(routines[2], state), { done: 0, total: 2, percent: 0 });
+  state = setSkinCareChoice(routines, state, 'wind-down/care/skin', 'm', true, day);
+  assert.equal(getProgress(routines[2], state).done, 1);
+  state = setSkinCareChoice(routines, state, 'getting-ready/care/skin', 'l', false, day);
+  assert.equal(getProgress(routines[1], state).done, 1);
+  state = setSkinCareChoice(routines, state, 'getting-ready/care/skin', 'n', true, day);
+  const restored = parseBackup(JSON.stringify(createBackup(routines, state))).progress;
+  assert.equal(skinCareProgress(restored.checks).selected.get('getting-ready/care/skin'), 'n');
+  assert.deepEqual(getProgress(routines[1], restored), { done: 0, total: 1, percent: 0 });
+  assert.equal(skinCareProgress(restored.checks, '2099-01-01').selected.size, 0);
+});
+
 test('linked items tick themselves when their checklist is complete', () => {
   const routines = validateRoutines({ version: 1, routines: [
     { id: 'wind-down', name: 'Wind Down', description: 'Evening.', groups: [
@@ -103,7 +129,7 @@ test('linked items tick themselves when their checklist is complete', () => {
   const state = parseProgress(null);
   state.optional['wind-down/office'] = true;
   state.checks['wind-down/office/item-1'] = true;
-  assert.deepEqual(getProgress(windDown, state, undefined, routines), { done: 0, total: 1, percent: 0 });
+  assert.deepEqual(getProgress(windDown, state, undefined, routines), { done: 0, total: 0, percent: 0 });
   state.checks['workday/bag/item-1'] = true;
   state.checks['workday/bag/item-2'] = true;
   assert.equal(getProgress(workday, state, undefined, routines).done, 2);

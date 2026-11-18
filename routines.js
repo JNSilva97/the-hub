@@ -1,13 +1,13 @@
 import {
-  validateRoutines, parseProgress, groupKey, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay,
+  validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=addiction-helper-1';
-import { cloudWorkspace } from './cloud.js?v=addiction-helper-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=addiction-helper-1';
-import { createRoutineTools } from './routine-tools.js?v=addiction-helper-1';
+} from './routine-model.mjs?v=checklist-flow-1';
+import { cloudWorkspace } from './cloud.js?v=checklist-flow-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=checklist-flow-1';
+import { createRoutineTools } from './routine-tools.js?v=checklist-flow-1';
 
-export { createHealthAccount } from './cloud-health.js?v=addiction-helper-1';
+export { createHealthAccount } from './cloud-health.js?v=checklist-flow-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -18,6 +18,7 @@ picker.addEventListener('change', () => {
   if (routine) selectRoutine(routine);
 });
 const content = document.getElementById('routine-content');
+const medicationSection = document.getElementById('personal-care-medications');
 const notice = document.getElementById('routine-notice');
 const sourceBadge = document.getElementById('routine-source');
 const restartDialog = document.getElementById('restart-dialog');
@@ -33,6 +34,7 @@ let storageAvailable = true;
 let loadGeneration = 0;
 let progressDay;
 let pendingSkinCare;
+let medicationProgress = new Map();
 
 const inAccount = () => dialog.dataset.source === 'account';
 function workspaceIdentity() {
@@ -107,19 +109,31 @@ function save() {
 function updateProgress() {
   progressDay = lisbonDay();
   const skinCare = skinCareProgress(state.checks, progressDay);
-  const workspaceProgress = getWorkspaceProgress(routines, state, skinCare, progressDay);
+  const workspaceProgress = getWorkspaceProgress(routines, state, skinCare, progressDay, medicationProgress);
   for (const row of content.querySelectorAll('[data-skin-care]')) {
     const choices = [...row.querySelectorAll('button[data-skin-care-option]')];
     const selectedOption = skinCare.selected.get(row.dataset.skinCare);
     const choice = choices.some(button => button.dataset.skinCareOption === selectedOption) ? selectedOption : undefined;
+    const disposition = ['l', 'n'].includes(selectedOption) ? selectedOption : undefined;
     const legacy = state.checks[row.dataset.skinCare] === true;
     const bothUsed = choices.every(button => skinCare.used.has(button.dataset.skinCareOption));
     const status = row.querySelector('.skin-care-status');
-    status.textContent = choice ? `${skinCareOptions[choice]} applied today` : bothUsed ? 'Both options already applied today' : legacy ? 'Previously ticked · choose what you applied today' : '';
-    row.dataset.done = String(Boolean(choice) || bothUsed || legacy);
+    const elsewhere = choices.filter(button => skinCare.used.has(button.dataset.skinCareOption)).map(button => {
+      const option = button.dataset.skinCareOption;
+      const source = [...skinCare.selected].find(([, value]) => value === option)?.[0].split('/')[0];
+      const name = routines.find(routine => routine.id === source)?.name;
+      return `${skinCareOptions[option]} · Done in ${name ?? 'another checklist'}`;
+    }).join(' · ');
+    status.textContent = disposition === 'l' ? 'Later · excluded from this checklist'
+      : disposition === 'n' ? 'Not needed · excluded from this checklist'
+      : choice ? `${skinCareOptions[choice]} applied today` : elsewhere || (legacy ? 'Previously ticked · choose what you applied today' : '');
+    row.dataset.done = String(!disposition && (Boolean(choice) || bothUsed || legacy));
+    row.dataset.skipped = String(Boolean(disposition));
     for (const button of row.querySelectorAll('button')) {
       const option = button.dataset.skinCareOption;
-      button.hidden = option ? Boolean(choice) || skinCare.used.has(option) : !choice;
+      const skip = button.dataset.skinCareDisposition;
+      button.hidden = option ? Boolean(choice || disposition) || skinCare.used.has(option)
+        : skip ? Boolean(choice || disposition) || bothUsed : !(choice || disposition);
       button.disabled = Boolean(pendingSkinCare);
     }
   }
@@ -134,10 +148,6 @@ function updateProgress() {
     const status = row.querySelector('.linked-check-status');
     const name = status.dataset.checklistName;
     status.textContent = input.checked ? `${name} complete` : `${name}: ${linked.done} of ${linked.total} ready`;
-  }
-  for (const input of content.querySelectorAll('input[data-group]')) {
-    input.checked = state.optional[input.dataset.group] === true;
-    input.closest('.check-section').querySelector('.check-items').hidden = !input.checked;
   }
   const signals = routines.map(routine => {
     const progress = workspaceProgress.get(routine.id);
@@ -198,6 +208,13 @@ function createSkinCareRow(key, title, options) {
     button.addEventListener('click', () => choose(button, option, true));
     buttons.append(button);
   }
+  for (const [option, title] of [['l', 'Later'], ['n', 'Not needed']]) {
+    const button = make('button', '', title);
+    button.type = 'button';
+    button.dataset.skinCareDisposition = option;
+    button.addEventListener('click', () => choose(button, option, true));
+    buttons.append(button);
+  }
   const undo = make('button', '', 'Undo');
   undo.type = 'button';
   undo.setAttribute('aria-label', 'Undo skincare choice');
@@ -217,29 +234,13 @@ function selectRoutine(routine, remember = true) {
   for (const button of list.children) button.setAttribute('aria-pressed', String(button.dataset.routine === routine.id));
   document.getElementById('routine-name').textContent = routine.name;
   document.getElementById('routine-description').textContent = routine.description;
+  document.getElementById('routine-reader').append(medicationSection);
   content.replaceChildren();
   for (const group of routine.groups) {
     const section = make('section', 'check-section');
     const body = make('div', 'check-items');
-    if (group.optional) {
-      const label = make('label', 'optional-group');
-      const toggle = document.createElement('input');
-      toggle.type = 'checkbox';
-      toggle.dataset.group = groupKey(routine, group);
-      toggle.checked = state.optional[groupKey(routine, group)] === true;
-      body.hidden = !toggle.checked;
-      toggle.addEventListener('change', () => {
-        state = latestProgress();
-        state.optional[groupKey(routine, group)] = toggle.checked;
-        body.hidden = !toggle.checked;
-        save();
-        updateProgress();
-      });
-      label.append(toggle, make('span', '', `Include ${group.title}`));
-      section.append(label);
-    } else {
-      section.append(make('h4', 'check-section-title', group.title));
-    }
+    section.append(make('h4', 'check-section-title', group.title));
+    if (group.optional) section.dataset.optional = 'true';
     for (const item of group.items) {
       const key = itemKey(routine, group, item);
       const target = routines.find(candidate => candidate.id === item.linkedChecklist);
@@ -265,11 +266,14 @@ function selectRoutine(routine, remember = true) {
         updateProgress();
       });
       label.append(input, make('span', '', item.label));
+      if (group.optional) label.append(make('small', 'optional-task', 'Optional'));
       body.append(label);
     }
     section.append(body);
     content.append(section);
   }
+  const lastRequired = [...content.querySelectorAll('.check-section:not([data-optional]) .check-items')].at(-1);
+  (lastRequired ?? content).append(medicationSection);
   updateProgress();
   document.dispatchEvent(new CustomEvent('hub:checklistview', { detail: { scope: workspaceIdentity(), routines: routines.map(({ id, name }) => ({ id, name })), selected: { id: routine.id, name: routine.name } } }));
 }
@@ -300,7 +304,7 @@ function createLinkedRow(item, target) {
 document.getElementById('routine-restart').addEventListener('click', () => {
   if (!selected || restartDialog.open) return;
   pendingRestart = selected;
-  document.getElementById('restart-description').textContent = `Clear the ticks in ${selected.name}? Your other checklists and optional section choices will stay as they are.`;
+  document.getElementById('restart-description').textContent = `Clear the ticks in ${selected.name}? Your other checklists and Health records will stay as they are.`;
   restartDialog.showModal();
 });
 
@@ -322,12 +326,14 @@ export async function initialiseRoutines() {
   selectionKey = undefined;
   routines = [];
   selected = undefined;
+  medicationProgress = new Map();
   pendingRestart = undefined;
   restartDialog.close();
   list.replaceChildren();
   routinePicker.close();
   picker.replaceChildren();
   picker.disabled = true;
+  document.getElementById('routine-reader').append(medicationSection);
   content.replaceChildren();
   document.getElementById('restart-description').textContent = '';
   content.closest('.routine-detail').dataset.complete = 'false';
@@ -460,6 +466,11 @@ createRoutineTools({
   identity: workspaceIdentity
 });
 
+document.addEventListener('hub:medicationprogress', event => {
+  if (!selected || event.detail.scope !== workspaceIdentity()) return;
+  medicationProgress = new Map(event.detail.progress);
+  updateProgress();
+});
 document.addEventListener('hub:cloudprogress', () => {
   if (!inAccount() || !cloudWorkspace.active || !selected) return;
   state = cloudWorkspace.progress;

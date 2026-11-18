@@ -184,10 +184,9 @@
 #health-content #health-status:not(:empty) { margin-top: 10px; }
 #health-status:empty { display: none; }
 #health-status[data-warning="true"], #medication-status[data-warning="true"] { color: #ffd294; }
-.routine-medications { margin-top: 24px; padding-top: 20px; border-top: 1px solid #245880; }
-.routine-medications h4 { color: #9dc6e8; margin: 0; text-transform: uppercase; letter-spacing: .12em; font: 600 13px var(--font-interface); }
-.routine-medications .health-toolbar { padding: 0 0 12px; }
-.routine-medications p { margin: 8px 0 14px; font-size: 12px; }
+.routine-medications, #medication-checks { display: contents; }
+#medication-status:empty { display: none; }
+.routine-medications #medication-open-health { margin: 8px 0 0; font-size: 13px; }
 .health-import-card { display: grid; gap: 10px; padding: clamp(12px, 3vw, 20px); border: 1px solid var(--health-edge); border-radius: 7px; background: var(--panel-raised); }
 #health-import label { font-size: 14px; color: #cae0f1; }
 #health-import-file { width: 100%; min-height: 44px; color: #c0d4e6; font: inherit; font-size: 14px; }
@@ -200,14 +199,17 @@
 #health-import-save { justify-self: start; }
 #health-import-status { overflow-wrap: anywhere; color: #c1e8ff; }
 #health-import-status:empty { display: none; }
-.medication-row { display: flex; align-items: center; gap: 13px; min-height: 56px; padding: 12px; border: 1px solid #245880; background: #061523; cursor: pointer; }
+.medication-row { display: flex; align-items: center; gap: 13px; }
+.check-items > .check-row:has(+ .routine-medications:not([hidden])) { border-bottom: 0; }
 .medication-row + .medication-row { border-top: 0; }
-.medication-row input { width: 20px; height: 20px; flex-shrink: 0; accent-color: #218bff; }
+.medication-row input { flex-shrink: 0; }
 .medication-row strong, .medication-row small { display: block; }
-.medication-row strong { color: #d5edfc; font-weight: 500; font-size: 15px; }
+.medication-row strong { color: inherit; font-weight: 400; font-size: inherit; }
 .medication-row small { color: #9cbcd5; margin-top: 4px; font-size: 12px; }
 .medication-row:has(input:checked) { background: #0b3046; }
+.check-row.medication-row:has(input:checked) > span { text-decoration: none; }
 .medication-row:has(input:checked) strong { text-decoration: line-through; }
+.medication-row:has(input:checked) small { text-decoration: none; }
 .medication-row:focus-within { outline: 2px solid #91caff; outline-offset: 2px; }
 @media (max-width: 700px) {
   #health-medications { grid-template-columns: minmax(0, 1fr); }

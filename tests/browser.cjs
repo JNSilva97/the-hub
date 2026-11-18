@@ -49,12 +49,56 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await choice(other, 'Undo skincare choice').waitFor();
       await sync(other, page);
       await chooseRoutine(page, routines.routines[2].id);
-      assert.equal(await page.locator('.skin-care-status').textContent(), 'Both options already applied today');
+      assert.match(await page.locator('.skin-care-status').textContent(), /Done in/);
       await choice(other, 'Undo skincare choice').tap();
       await choice(other, 'Self-tanner').waitFor();
       await sync(other, page);
       assert.equal(await choice(page, 'Self-tanner').isVisible(), true);
       assert.equal(await choice(page, 'Moisturiser').count(), 0);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test('skincare can be deferred in Getting Ready and completed in Wind Down across devices', async () => {
+    const data = { version: 1, routines: ['morning', 'getting-ready', 'wind-down'].map((id, index) => ({
+      id, name: ['Morning Routine', 'Getting Ready', 'Wind Down'][index], description: 'Daily care.',
+      groups: [{ id: 'care', title: 'Care', optional: false, items: [
+        { id: 'teeth', label: 'Brush teeth' }, { id: 'skin', label: 'Apply moisturiser or self-tanner' }
+      ] }]
+    })) };
+    const { context, page, errors } = await fixture(browser, { width: 390, mobile: true, motion: 'reduce', firebase: true,
+      cloudDocuments: { 'account-a': { routines: data, progress: { checks: {}, optional: {} } } } });
+    try {
+      const other = await context.newPage();
+      await Promise.all([ready(page), ready(other)]);
+      await Promise.all([openRoutines(page), openRoutines(other)]);
+      const choice = (tab, name) => tab.locator('.skin-care-row').getByRole('button', { name, exact: true });
+      const sync = async (from, to) => {
+        const progress = await from.evaluate(() => window.__hubFirebase.docs['account-a'].progress);
+        await to.evaluate(progress => {
+          window.__hubFirebase.docs['account-a'].progress = progress;
+          window.__hubFirebase.publish();
+        }, progress);
+      };
+      await choice(page, 'Self-tanner').tap();
+      await sync(page, other);
+      await chooseRoutine(other, 'getting-ready');
+      assert.match(await other.locator('.skin-care-status').textContent(), /Self-tanner · Done in Morning Routine/);
+      await choice(other, 'Later').tap();
+      await other.locator('.skin-care-status').filter({ hasText: 'Later · excluded' }).waitFor();
+      await other.locator('[data-check="getting-ready/care/teeth"]').check();
+      assert.equal(await other.locator('.routine-detail').getAttribute('data-complete'), 'true');
+      await sync(other, page);
+      await chooseRoutine(page, 'getting-ready');
+      assert.match(await page.locator('.skin-care-status').textContent(), /^Later/);
+      await chooseRoutine(page, 'wind-down');
+      await choice(page, 'Moisturiser').tap();
+      await choice(page, 'Undo skincare choice').waitFor();
+      await sync(page, other);
+      assert.match(await other.locator('.skin-care-status').textContent(), /^Later/);
+      await choice(other, 'Undo skincare choice').tap();
+      await other.locator('.skin-care-status').filter({ hasText: 'Done in Morning Routine' }).waitFor();
+      assert.equal(await other.locator('[data-skin-care]').getAttribute('data-done'), 'true');
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });
@@ -79,8 +123,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.getByText('Saved. Your checklists and ticks are ready.', { exact: true }).waitFor();
       await page.locator('#control-close').click();
       const open = page.getByRole('button', { name: `Open ${target.name}`, exact: true });
-      assert.equal(await open.isVisible(), false);
-      await page.getByRole('checkbox', { name: `Include ${source.groups[0].title}`, exact: true }).check();
+      assert.equal(await open.isVisible(), true);
       await open.tap();
       assert.equal(await page.locator('#routine-name').textContent(), target.name);
       await chooseRoutine(page, source.id);
@@ -274,7 +317,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.1');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.2');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -1049,8 +1092,8 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(await page.locator('#core-summary').textContent(), '1 / 5 CHECKLISTS READY');
       assert.equal(await page.locator('.core-progress-fill[data-checklist="personal-care"]').evaluate(el => Number(el.style.strokeDashoffset)), 0);
       const workOffset = await page.locator('.core-progress-fill[data-checklist="workday"]').evaluate(el => Number(el.style.strokeDashoffset));
-      assert.ok(Math.abs(workOffset - 100 * 5 / 6) < .001);
-      assert.equal(await page.locator('#core-signal-list [data-checklist="workday"] .core-signal-count').textContent(), '1 / 6');
+      assert.equal(workOffset, 75);
+      assert.equal(await page.locator('#core-signal-list [data-checklist="workday"] .core-signal-count').textContent(), '1 / 4');
       assert.equal(await page.locator('.core-art > .core-energy').evaluate(el => el.getAnimations().length), 0);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
@@ -1113,15 +1156,15 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await openRoutines(page);
       await chooseRoutine(page, 'workday');
       await page.locator('[data-check="workday/work/item-1"]').check();
-      await page.locator('[data-group="workday/after-work"]').check();
-      assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 6 ready');
+      await page.locator('[data-check="workday/after-work/item-1"]').check();
+      assert.equal(await page.locator('#routine-progress-label').textContent(), '2 of 5 ready');
       await chooseRoutine(page, 'training');
       await page.locator('.check-row input').first().check();
       await ready(page);
       await openRoutines(page);
       await chooseRoutine(page, 'workday');
       assert.equal(await page.locator('[data-check="workday/work/item-1"]').isChecked(), true);
-      assert.equal(await page.locator('[data-group="workday/after-work"]').isChecked(), true);
+      assert.equal(await page.locator('[data-check="workday/after-work/item-1"]').isChecked(), true);
       await page.locator('#routine-restart').click();
       assert.equal(await page.locator('#restart-dialog').evaluate(el => el.open), true);
       assert.equal(await page.locator('#restart-dialog .restart-keep').evaluate(el => el === document.activeElement), true);
@@ -1130,12 +1173,12 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await page.locator('#routine-restart').click();
       await page.getByRole('button', { name: 'Clear ticks', exact: true }).click();
       assert.equal(await page.locator('[data-check="workday/work/item-1"]').isChecked(), false);
-      assert.equal(await page.locator('[data-group="workday/after-work"]').isChecked(), true);
+      assert.equal(await page.locator('[data-check="workday/after-work/item-1"]').isChecked(), false);
       await chooseRoutine(page, 'training');
       assert.equal(await page.locator('.check-row input').first().isChecked(), true);
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.getElementById('routines-dialog').open);
-      await page.waitForFunction(() => document.querySelector('#core-signal-list [data-checklist="workday"] .core-signal-count').textContent === '0 / 6');
+      await page.waitForFunction(() => document.querySelector('#core-signal-list [data-checklist="workday"] .core-signal-count').textContent === '0 / 4');
     } finally { await context.close(); }
   });
 
@@ -1492,20 +1535,18 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         assert.equal(await first.isChecked(), true);
         assert.equal(await last.isChecked(), true);
         assert.equal(await page.locator('[data-check="personal-care/care/item-2"]').isChecked(), false);
-        await page.locator('[data-group="personal-care/extras"]').check();
         const extra = page.locator('[data-check="personal-care/extras/item-2"]');
         await extra.check();
-        assert.match(await page.locator('#routine-progress-label').textContent(), /3 of 5/);
-        await page.locator('[data-group="personal-care/extras"]').uncheck();
+        assert.match(await page.locator('#routine-progress-label').textContent(), /3 of 4/);
+        await extra.uncheck();
         assert.match(await page.locator('#routine-progress-label').textContent(), /2 of 3/);
-        await page.locator('[data-group="personal-care/extras"]').check();
-        assert.equal(await extra.isChecked(), true);
+        await extra.check();
         await chooseRoutine(page, 'training');
         await page.locator('.check-row input').nth(2).check();
         await chooseRoutine(page, 'personal-care');
         await page.locator('#routine-restart').click(); await page.locator('#restart-confirm').click();
         assert.equal(await first.evaluate(el => el === document.activeElement), true);
-        assert.equal(await page.locator('#routine-progress-label').textContent(), '0 of 5 ready');
+        assert.equal(await page.locator('#routine-progress-label').textContent(), '0 of 3 ready');
         assert.equal(await page.locator('[data-routine="training"] .routine-count').textContent(), '1 / 4');
         assert.equal(await page.locator('#routines-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
         assert.deepEqual(errors, []);
@@ -1513,7 +1554,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     });
   }
 
-  await t.test('full checklist exposes optional switches and wraps long item labels on phones', async () => {
+  await t.test('optional tasks are individually available and long labels wrap on phones', async () => {
     const data = JSON.parse(demo);
     data.routines = [data.routines[0]];
     data.routines[0].groups = [data.routines[0].groups[1]];
@@ -1521,14 +1562,13 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     const { context, page } = await fixture(browser, { width: 320, data, motion: 'reduce' });
     try {
       await ready(page); await openRoutines(page);
-      assert.equal(await page.locator('[data-group="personal-care/extras"]').isVisible(), true);
+      assert.equal(await page.locator('.check-section[data-optional]').isVisible(), true);
       assert.equal(await page.locator('.routine-detail').getAttribute('data-complete'), 'false');
-      await page.locator('[data-group="personal-care/extras"]').check();
-      assert.equal(await page.locator('.check-row').first().textContent(), data.routines[0].groups[0].items[0].label);
+      assert.equal(await page.locator('.check-row > span').first().textContent(), data.routines[0].groups[0].items[0].label);
       assert.equal(await page.locator('#routines-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true);
       await page.locator('.check-row input').last().check();
       assert.equal(await page.locator('.check-row input').first().isChecked(), false);
-      assert.match(await page.locator('#routine-progress-label').textContent(), /1 of 2/);
+      assert.equal(await page.locator('.routine-detail').getAttribute('data-complete'), 'true');
     } finally { await context.close(); }
   });
 
@@ -1587,9 +1627,9 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       assert.equal(Object.values(saved.checks).filter(Boolean).length, 2);
       await other.keyboard.press('Escape');
       await other.waitForFunction(() => document.querySelector('#core-signal-list [data-checklist="personal-care"] .core-signal-count').textContent === '2 / 3');
-      await page.locator('[data-group="personal-care/extras"]').check();
-      await other.waitForFunction(() => document.querySelector('#core-signal-list [data-checklist="personal-care"] .core-signal-count').textContent === '2 / 5');
-      assert.equal(await other.locator('.core-art .core-progress-fill[data-checklist="personal-care"]').evaluate(el => Number(el.style.strokeDashoffset)), 60);
+      await page.locator('[data-check="personal-care/extras/item-1"]').check();
+      await other.waitForFunction(() => document.querySelector('#core-signal-list [data-checklist="personal-care"] .core-signal-count').textContent === '3 / 4');
+      assert.equal(await other.locator('.core-art .core-progress-fill[data-checklist="personal-care"]').evaluate(el => Number(el.style.strokeDashoffset)), 25);
       await other.evaluate(key => localStorage.removeItem(key), storageKey);
       await page.waitForFunction(() => !document.querySelectorAll('.check-row input')[0].checked);
     } finally { await context.close(); }

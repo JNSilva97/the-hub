@@ -792,7 +792,7 @@ function createHealth(panel) {
     details.hidden = isNew;
     card.append(heading, editor, details);
     (isNew ? document.getElementById('health-new-medication') : medicationList).append(card);
-    const row = node('label', 'medication-row');
+    const row = node('label', 'check-row medication-row');
     const check = node('input', ''); check.type = 'checkbox'; check.dataset.dose = medication.id;
     check.addEventListener('change', () => recordDose(medication, check.checked));
     const copy = node('span', ''); copy.append(node('strong', ''), node('small', ''));
@@ -831,7 +831,7 @@ function createHealth(panel) {
       const nicotine = isNicotine(current);
       const lozengeCount = nicotine ? lozengesToday(medication, entries, day).length : 0;
       const link = binding(medication, entries); const linked = linkedChecklist(link);
-      const visibleHere = Boolean(linked && workspace.selected && linked.id === workspace.selected.id);
+      const visibleHere = Boolean(!stockOnly && linked && workspace.selected && linked.id === workspace.selected.id);
       view.row.hidden = !visibleHere;
       view.linkText.textContent = link ? 'Checklist unavailable' : 'No linked checklist';
       view.openLinked.hidden = !linked; view.openLinked.disabled = locked;
@@ -912,7 +912,7 @@ function createHealth(panel) {
     document.getElementById('health-sync-retry').hidden = !signedIn || !account.error;
     sync.textContent = signedIn ? account.error || (!account.ready ? navigator.onLine ? 'Loading account Health…' : 'Connect to load account Health.' : readOnly ? 'Offline copy. Connect to record changes.' : busy ? 'Syncing…' : 'Synced to your account.') : 'Sign in to see your medication and stock.';
     sync.dataset.state = signedIn && !account.error && !locked ? 'synced' : '';
-    const visible = workspace.selected ? medications.filter(medication => linkedChecklist(binding(medication, entries))?.id === workspace.selected.id) : [];
+    const visible = workspace.selected ? daily.filter(medication => linkedChecklist(binding(medication, entries))?.id === workspace.selected.id) : [];
     if (workspace.selected && normalizedName(workspace.selected.name) === 'morning routine') {
       const rank = medication => morningDoseOrder.get(medicationIcon(configured(medication, entries))) ?? morningDoseOrder.size;
       visible.sort((first, second) => rank(first) - rank(second));
@@ -959,6 +959,18 @@ function createHealth(panel) {
     document.getElementById('health-history-empty').hidden = history.children.length > 0;
     if (focused) status.focus({ preventScroll: true });
     document.getElementById('health-open-care').disabled = !currentRoutineCard();
+    const linkedProgress = new Map();
+    for (const medication of daily) {
+      const linked = linkedChecklist(binding(medication, entries));
+      if (!linked) continue;
+      const progress = linkedProgress.get(linked.id) ?? { done: 0, total: 0 };
+      progress.total++;
+      if (taken(medication, entries, day)) progress.done++;
+      linkedProgress.set(linked.id, progress);
+    }
+    document.dispatchEvent(new CustomEvent('hub:medicationprogress', {
+      detail: { scope: workspace.scope, progress: [...linkedProgress] }
+    }));
     document.dispatchEvent(new Event('hub:healthchange'));
   }
   function currentRoutineCard() {
