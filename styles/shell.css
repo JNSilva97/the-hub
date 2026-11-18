@@ -408,7 +408,7 @@ main {
   width: 31px;
   height: 27px;
   background: currentColor;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 4.3 20 17' fill='none' stroke='black' stroke-width='1.65' stroke-linecap='round'%3E%3Cpath d='M3 8.5a14 14 0 0 1 18 0M6 12a9 9 0 0 1 12 0m-9 3.5a4.5 4.5 0 0 1 6 0'/%3E%3Ccircle cx='12' cy='19' r='1.25' stroke='none' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 3.4 20 17' fill='none' stroke='black' stroke-width='1.65' stroke-linecap='round'%3E%3Cpath d='M3 8.5a14 14 0 0 1 18 0M6 12a9 9 0 0 1 12 0m-9 3.5a4.5 4.5 0 0 1 6 0'/%3E%3Ccircle cx='12' cy='19' r='1.25' stroke='none' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 .account-launch:hover, .account-launch:focus-visible {

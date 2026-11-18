@@ -1,4 +1,4 @@
-import { cloudWorkspace } from './cloud.js?v=wifi-icon-2';
+import { cloudWorkspace } from './cloud.js?v=wifi-icon-3';
 
 // One versioned ledger per medication. A transaction rechecks doses and stock on the server.
 export function createHealthAccount(onChange, validate) {
