@@ -95,7 +95,7 @@ body.window-hidden ::after {
     transform: perspective(700px) rotateY(4deg) translateX(3px);
   }
 
-  body:not(.motion-paused) .app:nth-child(n+4):hover {
+  body:not(.motion-paused) .app:nth-child(n+5):hover {
     transform: perspective(700px) rotateY(-4deg) translateX(-3px);
   }
 }
@@ -305,15 +305,6 @@ body.window-hidden ::after {
   }
   100% {
     transform: rotate(45deg) scale(0.9);
-  }
-}
-
-@keyframes launch-sheen {
-  0%, 65% {
-    transform: translateX(-120%);
-  }
-  85%, 100% {
-    transform: translateX(120%);
   }
 }
 

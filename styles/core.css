@@ -173,49 +173,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.core-launch {
-  pointer-events: auto;
-  position: absolute;
-  top: 72%;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 11px 24px;
-  border: 1px solid #64b4ff;
-  color: #d9edff;
-  transition: box-shadow 200ms, background 200ms;
-  letter-spacing: 0.12em;
-  isolation: isolate;
-  overflow: hidden;
-  background: linear-gradient(110deg, #10468e, #06182e);
-  min-width: 150px;
-  box-shadow: #1679ff40 0px 0px 28px, #c2efff35 0px 1px inset;
-  font: 500 10px var(--font-display);
-}
-
-.core-launch span {
-  color: #67bcff;
-}
-
-.core-launch::before {
-  content: "";
-  position: absolute;
-  inset: 0px;
-  z-index: -1;
-  background: linear-gradient(105deg, transparent 30%, #b7ebff30, transparent 70%);
-  transform: translateX(-120%);
-  animation: launch-sheen 7s ease-in-out infinite;
-}
-
-.core-launch:hover {
-  background: #1051a0;
-  box-shadow: #287fff80 0px 0px 42px;
-}
-
 .gyro {
   position: absolute;
   inset: 17%;
@@ -297,10 +254,6 @@
   animation: hologram-drift 18s ease-in-out infinite;
 }
 
-.core:has(.core-launch:hover) .eye-focus,
-.core:has(.core-launch:focus-visible) .eye-focus {
-  animation-play-state: paused;
-}
 
 .iris-fibres {
   transform-box: fill-box;
@@ -365,12 +318,4 @@ body:has(#routines-dialog[open]) .ambient-beam {
     top: calc(100% + 8px);
   }
 
-  .core-launch {
-    padding: 8px 16px;
-    min-height: 44px;
-    font-size: 9px;
-    letter-spacing: 0.08em;
-    top: 73%;
-    min-width: 132px;
-  }
 }

@@ -13,7 +13,7 @@ test('Phone workflows', { timeout: 90000 }, async t => {
       const { context, page, errors } = await fixture(browser, { width, height: 640, motion: 'reduce' });
       try {
         await ready(page);
-        assert.equal(await page.locator('.apps > .app').count(), 3);
+        assert.equal(await page.locator('.apps > .app').count(), 5);
         assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), false);
         assert.equal(await page.locator('.future-grid .app').count(), 3);
         assert.equal(await page.locator('[data-icon="projects"]').count(), 0);
@@ -90,7 +90,7 @@ test('Phone workflows', { timeout: 90000 }, async t => {
       assert.equal(await page.locator('#note-text').inputValue(), 'Quick capture\nKeep this note.');
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.waitForFunction(() => document.getElementById('note-new').parentElement.className === 'notes-actions');
-      assert.equal(await page.locator('.apps > .app').count(), 6);
+      assert.equal(await page.locator('.apps > .app').count(), 8);
       assert.equal(await page.locator('#future-spaces').isVisible(), false);
       assert.equal(await page.locator('#note-new').evaluate(el => el.parentElement.className), 'notes-actions');
       assert.equal(await page.locator('#notes-library').evaluate(el => el.open), true);

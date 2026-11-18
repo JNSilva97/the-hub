@@ -156,7 +156,7 @@ function createAddictionHelper(panel, health) {
     }));
     const saved = model.savings(rows, settings, model.firstDay(days, day));
     element('savings').textContent = saved === null
-      ? 'Add your tobacco price, cigarettes per pouch and how many you smoked a day in Helper settings to see what you save.'
+      ? 'Add your tobacco price, cigarettes per pouch and how many you smoked a day in Habits settings to see what you save.'
       : `${money.format(saved)} saved in the last 7 days`;
   }
 
@@ -378,7 +378,7 @@ function createAddictionHelper(panel, health) {
       if (!element('settings').open) fillSettings();
       if (panel.open) render();
     });
-  }).catch(() => { if (!model) notice = 'Addiction Helper could not load. Reload the page to try again.'; render(); });
+  }).catch(() => { if (!model) notice = 'Habits could not load. Reload the page to try again.'; render(); });
 
   return {
     open() {

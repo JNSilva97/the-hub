@@ -33,7 +33,7 @@ async function testHub() {
       if (paused() !== wasPaused) motionToggle.click();
     }
   }
-  assert(apps.length === 6, 'The home screen must show six tiles alongside Goals.');
+  assert(apps.length === 8, 'The home screen must show eight modules.');
   assert(/^\d{2}:\d{2}$/.test(document.getElementById('clock').textContent), 'Clock is missing.');
   assert(document.documentElement.scrollWidth <= innerWidth, 'Horizontal overflow.');
   for (const app of apps) {
@@ -45,9 +45,10 @@ async function testHub() {
     app.focus();
     app.click();
     const notes = app.dataset.icon === 'notes';
-    const active = notes ? document.getElementById('notes-dialog') : dialog;
+    const special = { notes: 'notes-dialog', goals: 'routines-dialog', habits: 'addiction-dialog' }[app.dataset.icon];
+    const active = special ? document.getElementById(special) : dialog;
     assert(active.open, 'App did not open.');
-    assert(notes || document.getElementById('app-title').textContent === app.querySelector('.app-name').textContent, 'Wrong app title.');
+    assert(special || document.getElementById('app-title').textContent === app.querySelector('.app-name').textContent, 'Wrong app title.');
     assert(active.contains(document.activeElement), 'Focus did not enter the app.');
     active.querySelector('form').requestSubmit();
     for (let attempt = 0; active.open && attempt < 30; attempt++) await new Promise(resolve => setTimeout(resolve, 20));
@@ -73,5 +74,5 @@ async function testHub() {
   assert(!routines.open, 'Goals did not close.');
   assert(document.activeElement === routinesLauncher, 'Focus did not return to Goals.');
   if (future) future.open = futureWasOpen;
-  return { passed: true, apps: apps.length + 1, checklists, source: routines.dataset.source, viewport: `${innerWidth}x${innerHeight}` };
+  return { passed: true, apps: apps.length, checklists, source: routines.dataset.source, viewport: `${innerWidth}x${innerHeight}` };
 }

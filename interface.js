@@ -48,6 +48,7 @@ setInterval(updateClock, 1000);
 // App routing belongs here; visual effects only observe the resulting clicks.
 function openApp(button) {
   const icon = button.dataset.icon;
+  if (icon === 'goals' || icon === 'habits') return;
   if (icon === 'notes' && instantNotes) { instantNotes.open(); return; }
   const settings = icon === 'settings';
   const healthOpen = icon === 'health' && Boolean(health);
@@ -70,7 +71,7 @@ const appGrid = document.querySelector('.apps');
 const appButtons = [...appGrid.querySelectorAll('.app')];
 const futureSpaces = document.getElementById('future-spaces');
 const futureGrid = futureSpaces.querySelector('.future-grid');
-const moduleKinds = new Map([['notes', 'Notebook'], ['settings', 'Interface'], ['health', 'Medication and stock']]);
+const moduleKinds = new Map([['goals', 'Routines and checklists'], ['habits', 'Tobacco and coffee'], ['notes', 'Notebook'], ['settings', 'Interface'], ['health', 'Medication and stock']]);
 const futureApps = appButtons.filter(button => !moduleKinds.has(button.dataset.icon));
 for (const button of futureApps) {
   const label = button.querySelector('.app-meta');
@@ -180,13 +181,12 @@ loadRoutines();
     if (palette.open) { palette.close(); return; }
     for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
     const launch = target => { target.focus(); target.click(); };
-    commands = [{ name: 'Goals', kind: 'Routines and checklists', run: () => launch(routinesLauncher) }];
-    if (addiction) commands.push({ name: 'Addiction Helper', kind: 'Tobacco and coffee', run: addiction.open });
+    commands = [];
     for (const card of document.querySelectorAll('.routine-card')) commands.push({
       name: card.querySelector('.routine-card-name').textContent,
       kind: 'Checklist', run: () => { launch(routinesLauncher); card.click(); }
     });
-    for (const app of appButtons) commands.push({
+    for (const app of appButtons.filter(app => !app.disabled)) commands.push({
       name: app.querySelector('.app-name').textContent,
       kind: moduleKinds.get(app.dataset.icon) || 'Coming soon',
       run: () => launch(app)

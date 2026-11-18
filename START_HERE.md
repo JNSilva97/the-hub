@@ -4,13 +4,13 @@ The app has three parts: HTML puts things on the screen, CSS makes them look and
 
 ## 1. Start using it
 
-Open the homepage and choose **Goals** beneath the optical core. Pick a checklist and tick its items. **Find anything** opens a search box that can take you straight to a checklist. **Settings** controls animation and optional sound.
+Open the homepage and choose the **Goals** module. Pick a checklist and tick its items. **Find anything** opens a search box that can take you straight to a checklist. **Settings** controls animation and optional sound.
 
 Goals shows the full checklist as soon as you open it. Tick things off in whichever order suits you. Checked rows stay where they are, and tapping one again clears its tick. Optional section switches are right in the list. Progress saves automatically.
 
 Sign in to open **Health** and see today’s doses and stock. Use **Add medication** to get started, **Mark taken** to record a dose, and **Undo** to put the recorded amount back. A **Linked checklist** lets you record that dose from Goals. Account Health syncs after its rules are enabled.
 
-Open **Addiction Helper** to log cigarettes (goal: zero) and coffees (goal: 3 a day). You can keep logging coffee after the goal or the 17:00 Lisbon cut-off. The card warns in both cases and skips the time warning on Fridays, Saturdays and the eves of Portuguese national holidays. Signed in, these counts sync between your devices. **Time without smoking** counts up from the time you choose and resets when you log a cigarette. Sign in on both devices to see the same timer. The streak counts smoke-free days, and **Last 7 days** shows each day at a glance. When a craving hits, press the red **Log lozenge taken** button: it records a nicotine lozenge in Health and starts a 5-minute craving timer. Health shows the same red button and warns when lozenges run low. Open **Helper settings** to set your tobacco price and cigarettes per pouch to see money saved. Health cards can be dragged to reorder: press and drag with a mouse, or press and hold on a touch screen.
+Open **Habits** to log cigarettes (goal: zero) and coffees (goal: 3 a day). You can keep logging coffee after the goal or the 17:00 Lisbon cut-off. The card warns in both cases and skips the time warning on Fridays, Saturdays and the eves of Portuguese national holidays. Signed in, these counts sync between your devices. **Time without smoking** counts up from the time you choose and resets when you log a cigarette. Sign in on both devices to see the same timer. The streak counts smoke-free days, and **Last 7 days** shows each day at a glance. When a craving hits, press the red **Log lozenge taken** button: it records a nicotine lozenge in Health and starts a 5-minute craving timer. Health shows the same red button and warns when lozenges run low. Open **Habits settings** to set your tobacco price and cigarettes per pouch to see money saved. Health cards can be dragged to reorder: press and drag with a mouse, or press and hold on a touch screen.
 
 Choose **Notes** and start typing. Your first line becomes the title and each edit saves automatically. **New note** starts another note; **Find a note** searches the full text. Notes also opens from **Find anything**. Signed-out/local notes stay in this browser; public sample notes and the PC notebook are separate. Signed-in **Account notes** sync privately through Firebase after the current notes rules are published. **Local notes** returns to the original notebook. Existing local text is copied only through **Copy local notes** and its account confirmation.
 
@@ -97,4 +97,4 @@ Account notes store each submitted version under a new ID and retire its predece
 4. Update affected asset version strings and bump the release cache version in `sw.js` whenever public app files change.
 5. Commit and push the public files; GitHub Pages publishes them.
 
-Goals, Notes, Health and Settings work now. Finance, Calendar and Relationships are marked as coming later.
+Goals, Health, Habits, Notes and Settings work now. Finance, Calendar and Relationships are marked as coming later.

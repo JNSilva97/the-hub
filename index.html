@@ -12,8 +12,8 @@
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles/base.css?v=control-2">
-  <link rel="stylesheet" href="styles/shell.css?v=goals-1">
-  <link rel="stylesheet" href="styles/core.css?v=goals-1">
+  <link rel="stylesheet" href="styles/shell.css?v=modules-1">
+  <link rel="stylesheet" href="styles/core.css?v=modules-1">
   <link rel="stylesheet" href="styles/access.css?v=full-print-1">
   <link rel="stylesheet" href="styles/panels.css?v=addiction-helper-1">
   <link rel="stylesheet" href="styles/routines.css?v=goals-1">
@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="styles/notes.css?v=dark-glass-1">
   <link rel="stylesheet" href="styles/health.css?v=addiction-helper-2">
   <link rel="stylesheet" href="styles/addiction.css?v=5">
-  <link rel="stylesheet" href="styles/motion.css?v=goals-1">
+  <link rel="stylesheet" href="styles/motion.css?v=modules-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -40,6 +40,7 @@
   </div>
   </template>
   <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="habits" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M6 12h3l2-5 3 10 2-5h2"/></symbol>
     <symbol id="goals" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m12 12 8-8m-4 0h4v4"/></symbol>
     <symbol id="health" viewBox="0 0 24 24"><path d="M20 5c-2-2-5-1-8 2-3-3-6-4-8-2-4 4 0 9 8 15 8-6 12-11 8-15Z"/><path d="M4 12h4l2-4 3 8 2-4h5"/></symbol>
     <symbol id="med-icon-brain" viewBox="0 0 24 24"><path d="M12 18V6a3 3 0 0 0-5.8-1.1A3.5 3.5 0 0 0 4 10.5a3.7 3.7 0 0 0 1.3 6.4 3.5 3.5 0 0 0 6.7 1.1Zm0 0V6a3 3 0 0 1 5.8-1.1 3.5 3.5 0 0 1 2.2 5.6 3.7 3.7 0 0 1-1.3 6.4A3.5 3.5 0 0 1 12 18ZM7 8c.2 1.4 1 2 2 2m8-2c-.2 1.4-1 2-2 2m-9 4c1.7-.2 2.8.4 3.1 1.8m8.9-1.8c-1.7-.2-2.8.4-3.1 1.8"/></symbol>
@@ -64,19 +65,18 @@
     <div class="intro">
       <span>NIGHTFALL / PERSONAL TERMINAL</span>
       <div class="home-actions">
-        <button id="addiction-launch" class="command-launch" type="button" aria-haspopup="dialog">Addiction Helper</button>
         <button id="command-launch" class="command-launch" type="button" aria-haspopup="dialog">Find anything <kbd>Ctrl K</kbd></button>
         <button id="account-launch" class="account-launch" type="button" title="Account &amp; sync" aria-haspopup="dialog" aria-controls="account-dialog">Private access</button>
       </div>
     </div>
     <div class="workspace">
       <svg class="connections" viewBox="0 0 1200 570" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M270 175h54l84 35h48M270 285h160M270 395h54l84-35h48M930 175h-54l-84 35h-48M930 285h-160M930 395h-54l-84-35h-48"/>
-        <path class="signal" d="M270 175h54l84 35h48M270 285h160M270 395h54l84-35h48M930 175h-54l-84 35h-48M930 285h-160M930 395h-54l-84-35h-48"/>
-        <g fill="#91dcf5" stroke="none"><circle cx="456" cy="210" r="2"/><circle cx="430" cy="285" r="2"/><circle cx="456" cy="360" r="2"/><circle cx="744" cy="210" r="2"/><circle cx="770" cy="285" r="2"/><circle cx="744" cy="360" r="2"/></g>
+        <path d="M270 120h42l96 90h48M270 230h65l65 25h35M270 340h65l65-25h35M270 450h42l96-90h48M930 120h-42l-96 90h-48M930 230h-65l-65 25h-35M930 340h-65l-65-25h-35M930 450h-42l-96-90h-48"/>
+        <path class="signal" d="M270 120h42l96 90h48M270 230h65l65 25h35M270 340h65l65-25h35M270 450h42l96-90h48M930 120h-42l-96 90h-48M930 230h-65l-65 25h-35M930 340h-65l-65-25h-35M930 450h-42l-96-90h-48"/>
+        <g fill="#91dcf5" stroke="none"><circle cx="456" cy="210" r="2"/><circle cx="435" cy="255" r="2"/><circle cx="435" cy="315" r="2"/><circle cx="456" cy="360" r="2"/><circle cx="744" cy="210" r="2"/><circle cx="765" cy="255" r="2"/><circle cx="765" cy="315" r="2"/><circle cx="744" cy="360" r="2"/></g>
       </svg>
       <div class="core">
-        <div class="core-reticle" aria-hidden="true"><span>MODULE / 01</span><span>PERSONAL SYSTEM</span></div>
+        <div class="core-reticle" aria-hidden="true"><span>01 / NIGHTFALL</span><span>PERSONAL SYSTEM</span></div>
         <div class="gyro" aria-hidden="true"></div><div class="gyro gyro-secondary" aria-hidden="true"></div>
         <svg class="core-art" viewBox="0 0 600 600" fill="none" aria-hidden="true">
           <defs>
@@ -197,16 +197,17 @@
         </svg>
         <div class="core-label">FIELD INTERFACE / THE HUB</div>
         <h1>THE HUB</h1>
-        <button id="routines-launch" class="core-launch" type="button" aria-haspopup="dialog" aria-controls="routines-dialog" aria-describedby="core-summary">GOALS <span aria-hidden="true">↗</span></button>
         <div id="core-summary" class="core-summary">YOUR PERSONAL OPERATIONS</div>
       </div>
       <nav class="apps" aria-label="Apps">
+      <button id="routines-launch" class="app" type="button" data-icon="goals" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#goals"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">01</span></span><span class="app-name">Goals</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       <button class="app" type="button" data-icon="health" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#health"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">02</span></span><span class="app-name">Health</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="notes" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#notes"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">03</span></span><span class="app-name">Notes</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="settings" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#settings"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">04</span></span><span class="app-name">Settings</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="finance" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#finance"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">05</span></span><span class="app-name">Finance</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="calendar" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#calendar"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">06</span></span><span class="app-name">Calendar</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="people" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#people"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">07</span></span><span class="app-name">Relationships</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button id="addiction-launch" class="app" type="button" data-icon="habits" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#habits"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">03</span></span><span class="app-name">Habits</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="notes" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#notes"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">04</span></span><span class="app-name">Notes</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="settings" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#settings"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">05</span></span><span class="app-name">Settings</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="finance" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#finance"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">06</span></span><span class="app-name">Finance</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="calendar" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#calendar"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">07</span></span><span class="app-name">Calendar</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="people" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#people"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">08</span></span><span class="app-name">Relationships</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       </nav>
       <details id="future-spaces" class="future-spaces" hidden>
         <summary>More spaces <span>3 coming soon</span></summary>
@@ -219,18 +220,18 @@
       <ol id="core-signal-list"></ol>
     </section>
   </main>
-  <footer><span><span class="footer-mark">◇</span> &nbsp; PERSONAL TERMINAL</span><button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>07 MODULES &nbsp; / &nbsp; THE HUB</span></footer>
+  <footer><span><span class="footer-mark">◇</span> &nbsp; PERSONAL TERMINAL</span><button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>08 MODULES &nbsp; / &nbsp; THE HUB</span></footer>
   <nav class="phone-actions" aria-label="Quick actions">
     <button id="phone-routines" type="button" aria-haspopup="dialog" aria-controls="routines-dialog"><svg aria-hidden="true"><use href="#goals"/></svg><span>Goals</span></button>
     <button id="phone-notes" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#notes"/></svg><span>Notes</span></button>
     <button id="phone-health" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#health"/></svg><span>Health</span></button>
-    <button id="phone-addiction" type="button" aria-label="Addiction Helper" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 13h2l2-4 2 6 2-2h1"/></svg><span>Helper</span></button>
+    <button id="phone-addiction" type="button" aria-label="Habits" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 13h2l2-4 2 6 2-2h1"/></svg><span>Habits</span></button>
     <button id="phone-settings" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#settings"/></svg><span>Settings</span></button>
   </nav>
   <dialog id="addiction-dialog" aria-labelledby="addiction-title">
     <header class="addiction-header">
-      <h2 id="addiction-title">Addiction Helper</h2>
-      <form method="dialog"><button class="routine-exit" aria-label="Close Addiction Helper">×</button></form>
+      <h2 id="addiction-title">Habits</h2>
+      <form method="dialog"><button class="routine-exit" aria-label="Close Habits">×</button></form>
     </header>
     <div class="addiction-date"><time id="addiction-date"></time><span>Lisbon time</span></div>
     <section class="addiction-card addiction-quit" id="addiction-quit" aria-labelledby="addiction-quit-title">
@@ -298,7 +299,7 @@
       <p id="addiction-savings"></p>
     </section>
     <details class="addiction-card addiction-settings" id="addiction-settings">
-      <summary>Helper settings</summary>
+      <summary>Habits settings</summary>
       <form id="addiction-settings-form" novalidate>
         <label>Tobacco price per pouch (€)<input id="addiction-price" type="number" min="0.01" max="1000" step="0.01" inputmode="decimal" placeholder="Not set"></label>
         <label>Cigarettes per pouch<input id="addiction-per-pouch" type="number" min="1" max="1000" step="1" inputmode="numeric" placeholder="Not set"></label>
@@ -368,7 +369,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.17.6</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.18.1</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -532,9 +533,9 @@
   <script defer src="checklist-picker.js?v=review-1"></script>
   <script defer src="health.js?v=drag-focus-1"></script>
   <script defer src="addiction.js?v=7"></script>
-  <script defer src="interface.js?v=goals-1"></script>
+  <script defer src="interface.js?v=modules-1"></script>
   <script defer src="interface-sound.js?v=intro-autoplay-2"></script>
-  <script defer src="pointer-effects.js?v=goals-1"></script>
+  <script defer src="pointer-effects.js?v=modules-1"></script>
   <script defer src="experience.js?v=startup-scan-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
   <script defer src="install.js?v=flow-5"></script>
 </body>

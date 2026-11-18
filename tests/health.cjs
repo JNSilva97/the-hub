@@ -449,7 +449,7 @@ test('Account Health', { timeout: 150000 }, async t => {
     } finally { await first.context.close(); await second?.context.close(); }
   });
 
-  await t.test('Addiction Helper counts daily habits and shares lozenge records with Health', async () => {
+  await t.test('Habits counts daily habits and shares lozenge records with Health', async () => {
     const records = seededHealth();
     const entries = JSON.parse(records[firstId].payload);
     Object.assign(entries[0], { name: 'Nicotine Lozenges', time: 'as-needed', quantity: null, link: null, adjustment: 2 });
@@ -490,7 +490,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(savedHabits.smokes.length, 1);
       assert.equal(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith('thehub:addiction-helper:v1:2026'))), false);
       await page.clock.setFixedTime(new Date('2026-07-10T23:01:00Z'));
-      await page.getByRole('button', { name: 'Close Addiction Helper' }).tap();
+      await page.getByRole('button', { name: 'Close Habits' }).tap();
       await page.locator('#phone-addiction').tap();
       assert.equal(await page.locator('#addiction-coffees').textContent(), '0 / 3 coffees today');
       assert.equal(await page.locator('#addiction-cigarettes').textContent(), '0 cigarettes today');
@@ -498,7 +498,7 @@ test('Account Health', { timeout: 150000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('Addiction Helper syncs habits, keeps streaks, history, savings, cut-off, craving timer and low lozenge alerts', async () => {
+  await t.test('Habits syncs habits, keeps streaks, history, savings, cut-off, craving timer and low lozenge alerts', async () => {
     const records = seededHealth();
     const entries = JSON.parse(records[firstId].payload);
     Object.assign(entries[0], { name: 'Nicotine Lozenges', time: 'as-needed', quantity: null, link: null, adjustment: 4 });
@@ -559,7 +559,7 @@ test('Account Health', { timeout: 150000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('Addiction Helper warns at 17:00 without blocking coffee and restores the smoke-free timer', async () => {
+  await t.test('Habits warns at 17:00 without blocking coffee and restores the smoke-free timer', async () => {
     const { context, page, errors } = await fixture(browser, { width: 390, mobile: true, motion: 'reduce' });
     try {
       await page.clock.setFixedTime(new Date('2026-11-16T16:59:00Z'));
@@ -638,7 +638,7 @@ test('Account Health', { timeout: 150000 }, async t => {
     } finally { await first.context.close(); await second.context.close(); }
   });
 
-  await t.test('Addiction Helper keeps counts on the device until account habit sync is enabled', async () => {
+  await t.test('Habits keeps counts on the device until account habit sync is enabled', async () => {
     const { context, page, errors } = await accountFixture(browser, { width: 1440, motion: 'reduce' });
     try {
       await context.addInitScript(() => { window.__hubFirebase.habitsDenied = true; });

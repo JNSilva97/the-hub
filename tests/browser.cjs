@@ -274,7 +274,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.17.6');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.1');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -298,6 +298,12 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await showFutureSpaces(page);
       await page.locator('[data-icon="finance"]').focus();
       assert.notEqual(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), '');
+      await openRoutines(page);
+      await page.mouse.move(200, 300); await page.waitForTimeout(50);
+      const goalsGaze = await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform);
+      await page.mouse.move(1000, 300); await page.waitForTimeout(50);
+      assert.notEqual(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), goalsGaze);
+      await page.keyboard.press('Escape');
       await page.locator('.motion-toggle').click();
       assert.equal(await page.locator('.core-art .eye-gaze').evaluate(el => el.style.transform), '');
       assert.equal(await page.locator('.core-art .eye-focus').evaluate(el => el.getAnimations().length), 0);
@@ -753,10 +759,11 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         await showFutureSpaces(page);
         for (const app of await page.locator('.app').all()) {
           await app.click();
-          const notes = await app.getAttribute('data-icon') === 'notes';
-          assert.equal(await page.locator(notes ? '#notes-title' : '#app-title').textContent(), notes ? 'NOTES' : await app.locator('.app-name').textContent());
+          const icon = await app.getAttribute('data-icon');
+          const module = { notes: ['notes-dialog', 'notes-title', 'NOTES'], goals: ['routines-dialog', 'routines-title', 'GOALS'], habits: ['addiction-dialog', 'addiction-title', 'Habits'] }[icon];
+          assert.equal(await page.locator(module ? '#' + module[1] : '#app-title').textContent(), module ? module[2] : await app.locator('.app-name').textContent());
           await page.keyboard.press('Escape');
-          await page.waitForFunction(id => !document.getElementById(id).open, notes ? 'notes-dialog' : 'app-dialog');
+          await page.waitForFunction(id => !document.getElementById(id).open, module ? module[0] : 'app-dialog');
         }
         await page.addScriptTag({ path: path.join(root, 'smoke-test.js') });
         assert.equal((await page.evaluate(() => testHub())).passed, true);

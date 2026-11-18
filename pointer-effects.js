@@ -3,9 +3,8 @@
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const eye = document.querySelector('.core-art .eye-art');
   const gaze = eye.querySelector('.eye-gaze');
-  const goals = document.getElementById('routines-dialog');
   let frame, point, activeApp;
-  const motionAllowed = () => !document.hidden && !goals.open && !reducedMotion.matches && !document.body.classList.contains('motion-paused');
+  const motionAllowed = () => !document.hidden && !reducedMotion.matches && !document.body.classList.contains('motion-paused');
 
   function clearLight(app) {
     app?.style.removeProperty('--spot-x');

@@ -153,7 +153,7 @@ main {
   position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0px, 1fr));
-  grid-template-rows: repeat(3, 88px);
+  grid-template-rows: repeat(4, 88px);
   grid-auto-flow: column;
   gap: 20px clamp(350px, 37vw, 500px);
   pointer-events: none;
@@ -206,6 +206,9 @@ main {
 .app:nth-child(6) {
   animation-delay: 625ms;
 }
+
+.app:nth-child(7) { animation-delay: 670ms; }
+.app:nth-child(8) { animation-delay: 715ms; }
 
 .app:hover::before {
   width: 58px;
@@ -758,7 +761,6 @@ footer {
   }
 
   .phone-actions button:hover { background: #103655; }
-  #addiction-launch { display: none; }
   .phone-actions svg { width: 20px; height: 20px; fill: none; stroke: #83d7ff; stroke-width: 1.6; }
   body:has(dialog[open]) .phone-actions { display: none; }
 
