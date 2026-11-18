@@ -28,6 +28,22 @@ test('Wind Down reorders existing tasks without changing their keys or optional 
   assert.deepEqual(cleanRoutines(updated), updated);
 });
 
+test('Office Preparation keeps Shirt in Clothing, adds an optional Sweatshirt and renames Padel items', () => {
+  const base = { id: 'workday', name: 'Office Preparation', description: 'Office.', groups: [
+    { id: 'clothing', title: 'Clothing', optional: false, items: ['Underwear', 'Socks', 'Pants', 'T-shirt / Shirt', 'Sneakers', 'Jacket'].map((label, i) => ({ id: `c-${i}`, label })) },
+    { id: 'padel', title: 'Padel', optional: true, items: ['Shorts', 'Running shoes (wear them on the way)', 'Spare top', 'Water'].map((label, i) => ({ id: `p-${i}`, label })) }
+  ] };
+  const [updated] = cleanRoutines([base]);
+  assert.deepEqual(updated.groups.map(group => [group.title, group.optional]), [['Clothing', false], ['Optional clothing', true], ['Padel', true]]);
+  assert.deepEqual(updated.groups[0].items.map(item => item.label), ['Underwear', 'Socks', 'Pants', 'Shirt', 'Sneakers', 'Jacket']);
+  assert.equal(updated.groups[0].items[3].id, 'c-3');
+  assert.deepEqual(updated.groups[1].items, [{ id: 'sweatshirt', label: 'Sweatshirt' }]);
+  assert.deepEqual(updated.groups[2].items, ['Shorts', 'Running shoes', 'Spare shirt', 'Water'].map((label, i) => ({ id: `p-${i}`, label })));
+  assert.deepEqual(cleanRoutines([updated]), [updated]);
+  const saved = { checks: { 'workday/clothing/c-3': true, 'workday/padel/p-2': true }, optional: { 'workday/padel': true } };
+  assert.deepEqual(keepProgress([updated], saved), saved);
+});
+
 test('Wind Down expands the old outfit shortcut and replaces all Prepare clothing labels', () => {
   const base = { id: 'wind', name: 'Wind Down', description: 'Evening.', groups: [
     { id: 'outfit', title: "Tomorrow's outfit", optional: true, items: [{ id: 'item-1', label: "Prepare tomorrow's outfit", linkedChecklist: 'getting-ready' }] },

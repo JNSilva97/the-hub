@@ -138,9 +138,39 @@ function updateWindDown(routine) {
   })).sort((a, b) => groupRank(a) - groupRank(b)) };
 }
 
+function updateOfficePreparation(routine) {
+  const groups = routine.groups.map(group => ({ ...group, items: [...group.items] }));
+  const padelNames = [['Shorts', /^shorts$/i], ['Running shoes', /^running shoes(?: |$)/i], ['Spare shirt', /^spare (?:top|shirt|t-shirt)$/i], ['Water', /^water(?: bottle)?$/i]];
+  for (const group of groups.filter(group => /^padel$/i.test(group.title.trim()))) {
+    group.items = group.items.map(item => ({ ...item, label: padelNames.find(([, pattern]) => pattern.test(item.label.trim()))?.[0] ?? item.label }));
+  }
+  const clothing = groups.find(group => /^clothing$/i.test(group.title.trim()));
+  // Runs once: the old combined label marks a list that has not been split yet.
+  if (!clothing?.items.some(item => /^t-shirt \/ shirt$/i.test(item.label.trim()))) return { ...routine, groups };
+  const sweatshirts = clothing.items.filter(item => /^sweatshirt(?: \/ jumper)?$/i.test(item.label.trim()));
+  clothing.items = clothing.items.filter(item => !sweatshirts.includes(item))
+    .map(item => /^t-shirt \/ shirt$/i.test(item.label.trim()) ? { ...item, label: 'Shirt' } : item);
+  let optional = groups.find(group => /^optional clothing$/i.test(group.title.trim()));
+  if (!optional) {
+    const groupIds = new Set(groups.map(group => group.id));
+    let id = 'optional-clothing';
+    for (let suffix = 2; groupIds.has(id); suffix++) id = `optional-clothing-${suffix}`;
+    optional = { id, title: 'Optional clothing', optional: true, items: [] };
+    groups.splice(groups.indexOf(clothing) + 1, 0, optional);
+  }
+  if (!optional.items.some(item => /^sweatshirt/i.test(item.label.trim()))) {
+    const itemIds = new Set(optional.items.map(item => item.id));
+    let id = sweatshirts[0]?.id ?? 'sweatshirt';
+    for (let suffix = 2; itemIds.has(id); suffix++) id = `sweatshirt-${suffix}`;
+    optional.items.push({ id, label: 'Sweatshirt' });
+  }
+  return { ...routine, groups };
+}
+
 // Refresh the built-in sections without replacing retained task IDs.
 export function updateRoutineSections(routine) {
   if (routine.name.trim().toLowerCase() === 'wind down') return updateWindDown(routine);
+  if (routine.name.trim().toLowerCase() === 'office preparation') return updateOfficePreparation(routine);
   if (routine.name.trim().toLowerCase() !== 'getting ready') return routine;
   return { ...routine, groups: routine.groups.map(group => {
     const title = group.title.replace(/\s*\(if needed\)/gi, '').trim();
