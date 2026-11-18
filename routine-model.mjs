@@ -36,14 +36,31 @@ export const itemKey = (routine, group, item) => `${groupKey(routine, group)}/${
 
 export const skinCareOptions = { m: 'Moisturiser', s: 'Sunscreen', t: 'Self-tanner' };
 export function skinCareOptionsFor(label) {
-  const match = /^(?:apply|put(?: on)?) (?:moisturi[sz]er or (sunscreen|self-tanner)|(sunscreen|self-tanner) or moisturi[sz]er)(?:,.*)?[.!]?$/i.exec(label.trim());
+  const match = /^(?:(?:apply|put(?: on)?) )?(?:moisturi[sz]er or (sunscreen|self-tanner)|(sunscreen|self-tanner) or moisturi[sz]er)(?:,.*)?[.!]?$/i.exec(label.trim());
   if (!match) return [];
   return ['m', (match[1] || match[2]).toLowerCase() === 'self-tanner' ? 't' : 's'];
 }
 export const isSkinCareChoice = label => skinCareOptionsFor(label).length > 0;
 const lisbonDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Lisbon', dateStyle: 'short' });
 export const lisbonDay = (date = new Date()) => lisbonDate.format(date);
-export const isMinoxidilItem = label => /^apply minoxidil[.!]?$/i.test(label.trim());
+export const isMinoxidilItem = label => /^(?:apply )?minoxidil[.!]?$/i.test(label.trim());
+
+// Keep saved item IDs and daily markers intact while shortening familiar labels.
+export function routineItemLabel(routine, item) {
+  if (!['morning routine', 'getting ready'].includes(routine.name.trim().toLowerCase())) return item.label;
+  if (skinCareOptionsFor(item.label).includes('t')) return 'Moisturiser or Self-tanner';
+  const labels = {
+    'eat breakfast': 'Breakfast',
+    'floss': 'Floss teeth',
+    'take a shower': 'Shower',
+    'apply minoxidil': 'Minoxidil',
+    'apply deodorant': 'Deodorant',
+    'apply perfume': 'Perfume',
+    'put in contact lenses': 'Contact lense',
+    'apply intimate-care cream': 'Care cream'
+  };
+  return labels[item.label.trim().toLowerCase()] ?? item.label;
+}
 export const minoxidilCheckKey = day => `@daily/minoxidil/${day}`;
 export const isMinoxidilCheckKey = key => /^@daily\/minoxidil\/\d{4}-\d{2}-\d{2}$/.test(key);
 

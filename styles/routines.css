@@ -358,9 +358,13 @@
 
 .skin-care-row {
   display: grid;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 16px;
   cursor: default;
 }
+
+.skin-care-copy { display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
 
 .skin-care-row[data-skipped="true"] { border-style: dashed; color: #9cb9d2; }
 .skin-care-actions [data-skin-care-disposition] { background: transparent; color: #a8c5dc; }
@@ -370,7 +374,15 @@
 .skin-care-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  justify-self: end;
   gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .skin-care-row { grid-template-columns: minmax(0, 1fr) minmax(100px, 46%); gap: 8px; }
+  .skin-care-actions { width: 100%; }
+  .skin-care-actions button { flex: 1 1 100px; padding-inline: 6px; }
 }
 
 .skin-care-actions button,

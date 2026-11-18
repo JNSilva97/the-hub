@@ -17,6 +17,42 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   t.after(() => browser.close());
 
+  await t.test('short routine labels preserve ticks and skincare actions sit to the right on phone and desktop', async () => {
+    const data = { version: 1, routines: [{ id: 'morning', name: 'Morning Routine', description: 'Morning.',
+      groups: [{ id: 'care', title: 'Care', optional: false, items: [
+        { id: 'breakfast', label: 'Eat breakfast' }, { id: 'floss', label: 'Floss' },
+        { id: 'skin', label: 'Put moisturiser or self-tanner' }
+      ] }] }, { id: 'getting-ready', name: 'Getting Ready', description: 'Before heading out.',
+      groups: [{ id: 'care', title: 'Care', optional: false, items: [
+        { id: 'shower', label: 'Take a shower' }, { id: 'minoxidil', label: 'Apply minoxidil' },
+        { id: 'deodorant', label: 'Apply deodorant' }, { id: 'perfume', label: 'Apply perfume' },
+        { id: 'lenses', label: 'Put in contact lenses' }, { id: 'cream', label: 'Apply intimate-care cream' }
+      ] }] }] };
+    for (const width of [320, 390, 1440]) {
+      const { context, page, errors } = await fixture(browser, { width, mobile: width < 700, motion: 'reduce', firebase: true,
+        cloudDocuments: { 'account-a': { routines: data, progress: { checks: { 'morning/care/breakfast': true }, optional: {} } } } });
+      try {
+        await ready(page); await openRoutines(page);
+        assert.equal(await page.getByRole('checkbox', { name: 'Breakfast', exact: true }).isChecked(), true);
+        assert.equal(await page.getByRole('checkbox', { name: 'Floss teeth', exact: true }).count(), 1);
+        assert.equal(await page.locator('.skin-care-copy > span:first-child').textContent(), 'Moisturiser or Self-tanner');
+        const positions = await page.locator('.skin-care-row').evaluate(row => {
+          const copy = row.querySelector('.skin-care-copy').getBoundingClientRect();
+          const actions = row.querySelector('.skin-care-actions').getBoundingClientRect();
+          return { right: actions.left >= copy.right, overflow: row.scrollWidth > row.clientWidth };
+        });
+        assert.deepEqual(positions, { right: true, overflow: false });
+        await page.getByRole('button', { name: 'Self-tanner', exact: true }).click();
+        await page.locator('.skin-care-status').filter({ hasText: 'Self-tanner applied today' }).waitFor();
+        await chooseRoutine(page, 'getting-ready');
+        for (const name of ['Shower', 'Minoxidil', 'Deodorant', 'Perfume', 'Contact lense', 'Care cream']) {
+          assert.equal(await page.getByRole('checkbox', { name, exact: true }).count(), 1);
+        }
+        assert.deepEqual(errors, []);
+      } finally { await context.close(); }
+    }
+  });
+
   await t.test('a skincare choice syncs between checklists and devices at mobile width', async () => {
     const routines = JSON.parse(demo);
     for (const [index, label] of ['Put moisturiser or self-tanner', 'Apply moisturizer OR self-tanner', 'Apply moisturiser or self-tanner, according to your usual routine'].entries()) {
@@ -147,7 +183,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
     });
     try {
       await ready(page); await openRoutines(page);
-      const check = page.getByRole('checkbox', { name: 'Apply minoxidil', exact: true });
+      const check = page.locator('input[data-minoxidil]');
       await check.check();
       const checks = await page.evaluate(() => window.__hubFirebase.docs['account-a'].progress.checks);
       assert.equal(Object.keys(checks).length, 1);
@@ -317,7 +353,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.2');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.3');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);

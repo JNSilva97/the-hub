@@ -1,13 +1,13 @@
 import {
-  validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay,
+  validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=checklist-flow-1';
-import { cloudWorkspace } from './cloud.js?v=checklist-flow-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=checklist-flow-1';
-import { createRoutineTools } from './routine-tools.js?v=checklist-flow-1';
+} from './routine-model.mjs?v=checklist-labels-1';
+import { cloudWorkspace } from './cloud.js?v=checklist-labels-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=checklist-labels-1';
+import { createRoutineTools } from './routine-tools.js?v=checklist-labels-1';
 
-export { createHealthAccount } from './cloud-health.js?v=checklist-flow-1';
+export { createHealthAccount } from './cloud-health.js?v=checklist-labels-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -220,7 +220,9 @@ function createSkinCareRow(key, title, options) {
   undo.setAttribute('aria-label', 'Undo skincare choice');
   undo.addEventListener('click', () => choose(undo, skinCareProgress(state.checks).selected.get(key), false));
   buttons.append(undo);
-  row.append(make('span', '', title), status, buttons, error);
+  const copy = make('div', 'skin-care-copy');
+  copy.append(make('span', '', title), status, error);
+  row.append(copy, buttons);
   return row;
 }
 
@@ -250,7 +252,7 @@ function selectRoutine(routine, remember = true) {
       }
       const options = skinCareOptionsFor(item.label);
       if (options.length) {
-        body.append(createSkinCareRow(key, item.label, options));
+        body.append(createSkinCareRow(key, routineItemLabel(routine, item), options));
         continue;
       }
       const label = make('label', 'check-row');
@@ -265,7 +267,7 @@ function selectRoutine(routine, remember = true) {
         save();
         updateProgress();
       });
-      label.append(input, make('span', '', item.label));
+      label.append(input, make('span', '', routineItemLabel(routine, item)));
       if (group.optional) label.append(make('small', 'optional-task', 'Optional'));
       body.append(label);
     }

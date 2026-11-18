@@ -81,7 +81,7 @@ test('shared skincare choices follow the Lisbon day and survive a checklist back
   const first = setSkinCareChoice(routines, initial, morning, 'm', true, day);
   assert.throws(() => setSkinCareChoice(routines, first, goingOut, 'm', true, day), /changed on another device/);
   const sunscreen = setSkinCareChoice(routines, first, goingOut, 's', true, day);
-  routines[1].groups[0].items[0].label = 'Apply moisturizer or self-tanner';
+  routines[1].groups[0].items[0].label = 'Moisturiser or Self-tanner';
   assert.equal(getProgress(routines[1], sunscreen, skinCareProgress(sunscreen.checks, day)).done, 0);
   assert.throws(() => setSkinCareChoice(routines, first, goingOut, 's', true, day), /item changed/);
   const both = setSkinCareChoice(routines, sunscreen, goingOut, 't', true, day);
@@ -164,6 +164,7 @@ test('minoxidil is one Lisbon-day check across routines and survives backup and 
     id, name: id, description: 'Checklist',
     groups: [{ id: 'care', title: 'Care', optional: false, items: [{ id: 'minoxidil', label: 'Apply minoxidil' }] }]
   }));
+  routines[1].groups[0].items[0].label = 'Minoxidil';
   const state = parseProgress(null);
   const day = lisbonDay(new Date('2026-07-01T22:59:59Z'));
   const nextDay = lisbonDay(new Date('2026-07-01T23:00:00Z'));

@@ -1,6 +1,6 @@
 import { firebaseConfig } from './firebase-config.mjs?v=control-1';
-import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=checklist-flow-1';
-import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=checklist-flow-1';
+import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=checklist-labels-1';
+import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=checklist-labels-1';
 
 const panel = document.getElementById('account-dialog');
 const loginButton = document.getElementById('account-login');
