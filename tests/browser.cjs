@@ -143,6 +143,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await chooseRoutine(page, 'getting-ready');
       assert.match(await page.locator('.skin-care-status').textContent(), /^Later/);
       await chooseRoutine(page, 'wind-down');
+      assert.equal(await choice(page, 'Later').isVisible(), false, 'Later is gone once Getting Ready used it');
       await choice(page, 'Moisturiser').tap();
       await choice(page, 'Undo skincare choice').waitFor();
       await sync(page, other);
@@ -369,7 +370,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.8');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.9');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);

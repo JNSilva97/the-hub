@@ -2,12 +2,12 @@ import {
   validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections, linkedDoseReplaces,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=health-buttons-1';
-import { cloudWorkspace } from './cloud.js?v=health-buttons-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=health-buttons-1';
-import { createRoutineTools } from './routine-tools.js?v=health-buttons-1';
+} from './routine-model.mjs?v=skincare-later-1';
+import { cloudWorkspace } from './cloud.js?v=skincare-later-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=skincare-later-1';
+import { createRoutineTools } from './routine-tools.js?v=skincare-later-1';
 
-export { createHealthAccount } from './cloud-health.js?v=health-buttons-1';
+export { createHealthAccount } from './cloud-health.js?v=skincare-later-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -117,6 +117,8 @@ function updateProgress() {
     const disposition = ['l', 'n'].includes(selectedOption) ? selectedOption : undefined;
     const legacy = state.checks[row.dataset.skinCare] === true;
     const bothUsed = choices.every(button => skinCare.used.has(button.dataset.skinCareOption));
+    // Later is offered once a day: after one checklist postpones skincare, the next one has to settle it.
+    const laterUsed = [...skinCare.selected].some(([key, value]) => value === 'l' && key !== row.dataset.skinCare);
     const status = row.querySelector('.skin-care-status');
     const elsewhere = choices.filter(button => skinCare.used.has(button.dataset.skinCareOption)).map(button => {
       const option = button.dataset.skinCareOption;
@@ -133,7 +135,7 @@ function updateProgress() {
       const option = button.dataset.skinCareOption;
       const skip = button.dataset.skinCareDisposition;
       button.hidden = option ? Boolean(choice || disposition) || skinCare.used.has(option)
-        : skip ? Boolean(choice || disposition) || bothUsed : !(choice || disposition);
+        : skip ? Boolean(choice || disposition) || bothUsed || (skip === 'l' && laterUsed) : !(choice || disposition);
       button.disabled = Boolean(pendingSkinCare);
     }
   }
