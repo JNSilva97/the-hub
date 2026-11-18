@@ -369,7 +369,7 @@
 .skin-care-row[data-skipped="true"] { border-style: dashed; color: #9cb9d2; }
 .skin-care-actions [data-skin-care-disposition] { background: transparent; color: #a8c5dc; }
 .optional-task { margin-left: auto; color: #9abbd0; font-size: 11px; text-decoration: none !important; }
-.check-section[data-optional] .check-section-title::after { content: ' · Optional'; color: #7ea3be; letter-spacing: .04em; }
+.check-section[data-optional]:not([data-optional-named]) .check-section-title::after { content: ' · Optional'; color: #7ea3be; letter-spacing: .04em; }
 
 .skin-care-actions {
   display: flex;

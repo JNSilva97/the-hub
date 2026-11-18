@@ -56,10 +56,58 @@ export function routineItemLabel(routine, item) {
     'apply minoxidil': 'Minoxidil',
     'apply deodorant': 'Deodorant',
     'apply perfume': 'Perfume',
-    'put in contact lenses': 'Contact lense',
-    'apply intimate-care cream': 'Care cream'
+    'put in contact lenses': 'Contact lenses',
+    'contact lense': 'Contact lenses',
+    'apply intimate-care cream': 'Care cream',
+    'shave / trim beard': 'Shave beard',
+    'remove unwanted body hair': 'Shave body hair',
+    'remove hair between eyebrows': 'Clean eyebrows',
+    'put on underwear': 'Underwear',
+    'put on socks': 'Socks',
+    'put on pants / shorts': 'Pants',
+    'put on a t-shirt / shirt': 'Shirt',
+    'put on shoes / sneakers': 'Shoes',
+    'put on a sweatshirt / jumper': 'Sweatshirt',
+    'put on a jacket': 'Jacket'
   };
-  return labels[item.label.trim().toLowerCase()] ?? item.label;
+  const label = item.label.trim().replace(/\s*\(if needed\)$/i, '');
+  return labels[label.toLowerCase()] ?? label;
+}
+
+// Upgrade the original Getting Ready sections without replacing retained task IDs.
+export function updateRoutineSections(routine) {
+  if (routine.name.trim().toLowerCase() !== 'getting ready') return routine;
+  return { ...routine, groups: routine.groups.map(group => {
+    const title = group.title.replace(/\s*\(if needed\)/gi, '').trim();
+    if (!/^belt bag(?: contents)?$/i.test(title)) {
+      if (/^optional clothing$/i.test(title) && group.items.some(item => /^put on /i.test(item.label))) {
+        const rank = item => ['Sweatshirt', 'Jacket'].indexOf(routineItemLabel(routine, item));
+        return { ...group, title, items: [...group.items].sort((a, b) => (rank(a) < 0 ? 2 : rank(a)) - (rank(b) < 0 ? 2 : rank(b))) };
+      }
+      return { ...group, title };
+    }
+    const legacy = group.items.some(item => /grinder|rolling papers|tobacco filters|mortalhas|filtros de tabaco/i.test(item.label));
+    if (!legacy) return { ...group, title };
+    const names = [
+      ['Tobacco', /^(?:rolling )?tobacco$|^tabaco$/i],
+      ['Small papers', /^small (?:rolling )?papers$|^mortalhas pequenas?$/i],
+      ['Filters', /^(?:tobacco )?filters$|^filtros(?: de tabaco)?$/i],
+      ['W', /^w$/i],
+      ['Large papers', /^large (?:rolling )?papers$|^mortalhas grandes$/i],
+      ['W filters', /^w filters$/i]
+    ];
+    const occupied = new Set(group.items.map(item => item.id));
+    const items = names.map(([label, pattern]) => {
+      const existing = group.items.find(item => pattern.test(item.label.trim()));
+      if (existing) return { ...existing, label };
+      const base = label.toLowerCase().replaceAll(' ', '-');
+      let id = base;
+      for (let suffix = 2; occupied.has(id); suffix++) id = `${base}-${suffix}`;
+      occupied.add(id);
+      return { id, label };
+    });
+    return { ...group, title, items };
+  }) };
 }
 export const minoxidilCheckKey = day => `@daily/minoxidil/${day}`;
 export const isMinoxidilCheckKey = key => /^@daily\/minoxidil\/\d{4}-\d{2}-\d{2}$/.test(key);

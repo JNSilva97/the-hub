@@ -370,7 +370,7 @@ function createAddictionHelper(panel, health) {
   import('./habits-model.mjs?v=5').then(module => {
     model = module;
     render();
-    return import('./cloud-habits.js?v=7');
+    return import('./cloud-habits.js?v=8');
   }).then(module => {
     account = module.createHabitsAccount(() => {
       migrate();

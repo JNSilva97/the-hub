@@ -1,13 +1,13 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey, isMinoxidilItem, isMinoxidilCheckKey } from './routine-model.mjs?v=checklist-labels-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey, isMinoxidilItem, isMinoxidilCheckKey, updateRoutineSections, routineItemLabel } from './routine-model.mjs?v=ready-labels-1';
 
 export const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 
 export function cleanRoutines(routines) {
   validateRoutines({ version: 1, routines });
-  const cleaned = routines.map(routine => ({ id: routine.id, name: routine.name.trim(), description: routine.description.trim(),
+  const cleaned = routines.map(updateRoutineSections).map(routine => ({ id: routine.id, name: routine.name.trim(), description: routine.description.trim(),
     groups: routine.groups.map(group => ({ id: group.id, title: group.title.trim(), optional: group.optional,
       items: group.items.map(item => ({
-        id: item.id, label: item.label.trim(),
+        id: item.id, label: routineItemLabel(routine, item).trim(),
         ...(item.linkedChecklist && { linkedChecklist: item.linkedChecklist })
       })) })) }));
   if (new TextEncoder().encode(JSON.stringify(cleaned)).length > 750000) throw new Error('Checklists are too large. Shorten some text before saving.');

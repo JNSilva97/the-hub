@@ -1,13 +1,13 @@
 import {
-  validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel,
+  validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=checklist-labels-1';
-import { cloudWorkspace } from './cloud.js?v=checklist-labels-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=checklist-labels-1';
-import { createRoutineTools } from './routine-tools.js?v=checklist-labels-1';
+} from './routine-model.mjs?v=ready-labels-1';
+import { cloudWorkspace } from './cloud.js?v=ready-labels-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=ready-labels-1';
+import { createRoutineTools } from './routine-tools.js?v=ready-labels-1';
 
-export { createHealthAccount } from './cloud-health.js?v=checklist-labels-1';
+export { createHealthAccount } from './cloud-health.js?v=ready-labels-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -243,6 +243,7 @@ function selectRoutine(routine, remember = true) {
     const body = make('div', 'check-items');
     section.append(make('h4', 'check-section-title', group.title));
     if (group.optional) section.dataset.optional = 'true';
+    if (group.optional && /^optional\b/i.test(group.title)) section.dataset.optionalNamed = 'true';
     for (const item of group.items) {
       const key = itemKey(routine, group, item);
       const target = routines.find(candidate => candidate.id === item.linkedChecklist);
@@ -372,7 +373,7 @@ export async function initialiseRoutines() {
   }
   if (!loadedRoutines.length) loadedRoutines = await readData('./routines.demo.json');
   if (current !== loadGeneration) return;
-  routines = loadedRoutines;
+  routines = loadedRoutines.map(updateRoutineSections);
   storageKey = `thehub:routines:${source}:v1`;
   workspaceKey = `thehub:workspace:${source}:v1`;
   dialog.dataset.source = source;

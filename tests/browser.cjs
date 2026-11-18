@@ -27,6 +27,10 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         { id: 'shower', label: 'Take a shower' }, { id: 'minoxidil', label: 'Apply minoxidil' },
         { id: 'deodorant', label: 'Apply deodorant' }, { id: 'perfume', label: 'Apply perfume' },
         { id: 'lenses', label: 'Put in contact lenses' }, { id: 'cream', label: 'Apply intimate-care cream' }
+      ] }, { id: 'bag', title: 'Belt bag', optional: true, items: [
+        { id: 'filters', label: 'Tobacco filters' }, { id: 'small', label: 'Small rolling papers' },
+        { id: 'tobacco', label: 'Tobacco' }, { id: 'w', label: 'W' },
+        { id: 'grinder', label: 'Grinder' }, { id: 'large', label: 'Large rolling papers' }
       ] }] }] };
     for (const width of [320, 390, 1440]) {
       const { context, page, errors } = await fixture(browser, { width, mobile: width < 700, motion: 'reduce', firebase: true,
@@ -45,9 +49,15 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         await page.getByRole('button', { name: 'Self-tanner', exact: true }).click();
         await page.locator('.skin-care-status').filter({ hasText: 'Self-tanner applied today' }).waitFor();
         await chooseRoutine(page, 'getting-ready');
-        for (const name of ['Shower', 'Minoxidil', 'Deodorant', 'Perfume', 'Contact lense', 'Care cream']) {
+        for (const name of ['Shower', 'Minoxidil', 'Deodorant', 'Perfume', 'Contact lenses', 'Care cream']) {
           assert.equal(await page.getByRole('checkbox', { name, exact: true }).count(), 1);
         }
+        const bag = page.locator('.check-section').filter({ has: page.getByRole('heading', { name: /Belt bag/i }) });
+        assert.deepEqual(await bag.locator('.check-row > span').allTextContents(), ['Tobacco', 'Small papers', 'Filters', 'W', 'Large papers', 'W filters']);
+        const filters = page.locator('input[data-check="getting-ready/bag/w-filters"]');
+        await filters.check();
+        await chooseRoutine(page, 'morning'); await chooseRoutine(page, 'getting-ready');
+        assert.equal(await filters.isChecked(), true);
         assert.deepEqual(errors, []);
       } finally { await context.close(); }
     }
@@ -353,7 +363,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.3');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.18.4');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
