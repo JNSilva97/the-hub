@@ -796,8 +796,12 @@ function createHealth(panel) {
     const check = node('input', ''); check.type = 'checkbox'; check.dataset.dose = medication.id;
     check.addEventListener('change', () => recordDose(medication, check.checked));
     const copy = node('span', ''); copy.append(node('strong', ''), node('small', ''));
-    row.append(check, copy); if (!isNew) document.getElementById('medication-checks').append(row);
-    Object.assign(view, { card, row, linkText, openLinked, linkedName, unlinked, linkField, linkSelect, linkPicker, title, iconUse, handle, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, logLozenge, undoLozenge, doseState, restock, restockToggle, cancelStock, quantity, restockLabel: label, add, check });
+    row.append(check, copy);
+    const line = node('div', 'medication-line');
+    const openHealth = node('button', 'routine-linked-button medication-open-health', 'Open Health'); openHealth.type = 'button';
+    openHealth.addEventListener('click', () => document.querySelector('.app[data-icon="health"]').click());
+    line.append(row, openHealth); if (!isNew) document.getElementById('medication-checks').append(line);
+    Object.assign(view, { card, row: line, linkText, openLinked, linkedName, unlinked, linkField, linkSelect, linkPicker, title, iconUse, handle, schedule, copy, editor, fields, edit, save, cancel, count, packSize, estimate, warning, dose, undo, logLozenge, undoLozenge, doseState, restock, restockToggle, cancelStock, quantity, restockLabel: label, add, check });
     if (isNew) { card.hidden = true; edit.hidden = true; } else cards.set(medication.id, view);
     return view;
   }
@@ -987,7 +991,6 @@ function createHealth(panel) {
     });
   }
   document.getElementById('health-open-care').addEventListener('click', () => { const card = currentRoutineCard(); if (card) openRoutine(card.dataset.routine); });
-  document.getElementById('medication-open-health').addEventListener('click', () => document.querySelector('.app[data-icon="health"]').click());
   document.addEventListener('hub:progress', () => { document.getElementById('health-open-care').disabled = !currentRoutineCard(); });
   document.addEventListener('hub:checklistview', event => {
     workspace = event.detail || { scope: '', routines: [], selected: null };

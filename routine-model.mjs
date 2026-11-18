@@ -107,20 +107,20 @@ function updateWindDown(routine) {
   const outfit = clothingGroups.find(group => group !== outerwear);
   const groupIds = new Set(groups.map(group => group.id));
   const uniqueId = (base, occupied) => { let id = base; for (let suffix = 2; occupied.has(id); suffix++) id = `${base}-${suffix}`; occupied.add(id); return id; };
-  const completeClothing = (existing, title, names, base) => {
-    const group = existing ?? { id: uniqueId(base, groupIds), title, optional: true, items: [] };
+  const completeClothing = (existing, title, names, base, optional) => {
+    const group = existing ?? { id: uniqueId(base, groupIds), title, optional, items: [] };
     const itemIds = new Set(group.items.map(item => item.id));
     const items = names.map(label => {
       const item = group.items.find(item => !item.linkedChecklist && routineItemLabel(routine, item) === label);
       return item ? { id: item.id, label } : { id: uniqueId(label.toLowerCase(), itemIds), label };
     });
-    const updated = { ...group, title, optional: true, items };
+    const updated = { ...group, title, optional, items };
     if (existing) groups[groups.indexOf(existing)] = updated;
     else groups.push(updated);
   };
   // The former outfit shortcut is a clothing checklist, not a dependency on Getting Ready.
-  completeClothing(outfit, 'Prepare outfit', ['Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes'], 'outfit');
-  completeClothing(outerwear, 'Optional clothing', ['Jacket', 'Sweatshirt'], 'optional-clothing');
+  completeClothing(outfit, 'Prepare outfit', ['Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes'], 'outfit', false);
+  completeClothing(outerwear, 'Optional clothing', ['Jacket', 'Sweatshirt'], 'optional-clothing', true);
   const order = ['Wash face', 'Moisturizer or Self-tanner', 'Brush teeth', 'Floss teeth', 'Retainer', 'Minoxidil',
     'Alarm', 'Charge phone', 'Charge watch', 'Take ValdispertNoite', 'Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes', 'Jacket', 'Sweatshirt'];
   const rank = item => { const index = order.indexOf(routineItemLabel(routine, item)); return index < 0 ? order.length : index; };

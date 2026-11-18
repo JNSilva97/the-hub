@@ -186,7 +186,13 @@
 #health-status[data-warning="true"], #medication-status[data-warning="true"] { color: #ffd294; }
 .routine-medications, #medication-checks { display: contents; }
 #medication-status:empty { display: none; }
-.routine-medications #medication-open-health { margin: 8px 0 0; font-size: 13px; }
+.medication-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border: 1px solid #17334b; background: #060e1a; }
+.medication-line > .medication-row { border: 0; min-width: 0; overflow-wrap: anywhere; }
+.medication-line > .medication-open-health { justify-self: end; margin: 0 13px 0 0; max-width: 160px; }
+@media (max-width: 700px) { .medication-line > .medication-open-health { max-width: 120px; padding-inline: 8px; } }
+.medication-line + .medication-line { border-top: 0; }
+.medication-line:has(input:checked) { background: #0b3046; }
+.medication-line .medication-open-health { font-size: 13px; }
 .health-import-card { display: grid; gap: 10px; padding: clamp(12px, 3vw, 20px); border: 1px solid var(--health-edge); border-radius: 7px; background: var(--panel-raised); }
 #health-import label { font-size: 14px; color: #cae0f1; }
 #health-import-file { width: 100%; min-height: 44px; color: #c0d4e6; font: inherit; font-size: 14px; }
@@ -250,7 +256,7 @@
 .medication-checklist-arrow { color: var(--health-light); font-size: 17px; }
 .medication-link-field { margin: 12px 0 18px; color: #b1cde0; font-size: 13px; }
 .medication-link-field > span { display: block; margin-bottom: 6px; }
-.medication-row[hidden] { display: none; }
+.medication-line[hidden] { display: none; }
 #health-new-medication:has(.medication-card:not([hidden])) { margin-bottom: 12px; }
 
 @media (prefers-reduced-motion: no-preference) {

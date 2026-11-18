@@ -52,9 +52,9 @@ test('Account Health', { timeout: 150000 }, async t => {
       const dose = page.locator(`[data-dose="${firstId}"]`);
       await dose.waitFor();
       assert.deepEqual(await page.locator('#routine-content .check-section:not([data-optional]) .check-row:visible > span').evaluateAll(spans => spans.map(span => span.querySelector('strong')?.textContent ?? span.textContent)), [
-        'Wash face', 'Minoxidil', 'Alarm', 'Charge phone', 'Charge watch', 'Take ValdispertNoite'
+        'Wash face', 'Minoxidil', 'Alarm', 'Charge phone', 'Charge watch', 'Take ValdispertNoite', 'Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes'
       ]);
-      assert.equal(await page.locator('#routine-progress-label').textContent(), '0 of 6 ready');
+      assert.equal(await page.locator('#routine-progress-label').textContent(), '0 of 11 ready');
       const outfit = page.locator('.check-section').filter({ has: page.getByRole('heading', { name: /^Prepare outfit/ }) });
       const outerwear = page.locator('.check-section').filter({ has: page.getByRole('heading', { name: /^Optional clothing/ }) });
       assert.deepEqual(await outfit.locator('.check-row > span').allTextContents(), ['Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes']);
@@ -62,11 +62,11 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await outfit.locator('.linked-check-row').count(), 0);
       const underwear = outfit.locator('input').first();
       await underwear.check();
-      assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 7 ready');
+      assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 11 ready');
       await underwear.uncheck();
       await dose.check(); await waitStock(page, firstId, 27);
-      assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 6 ready');
-      await page.locator('#medication-open-health').click();
+      assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 11 ready');
+      await page.locator('.medication-open-health:visible').first().click();
       await page.getByRole('button', { name: 'Undo ValdispertNoite dose', exact: true }).click();
       await waitStock(page, firstId, 28); await closeHealth(page);
       assert.equal(await dose.isChecked(), false);
@@ -90,7 +90,12 @@ test('Account Health', { timeout: 150000 }, async t => {
       await openRoutines(page);
       await page.locator('#medication-checks .medication-row').first().waitFor();
       assert.deepEqual(await page.locator('#medication-checks .medication-row strong').allTextContents(), ['Take Omega-3 example', 'Take Memory example']);
-      await page.locator('#medication-open-health').click();
+      const lines = await page.locator('#medication-checks .medication-line').evaluateAll(rows => rows.map(row => {
+        const label = row.querySelector('.medication-row').getBoundingClientRect(), button = row.querySelector('.medication-open-health').getBoundingClientRect();
+        return { text: row.querySelector('.medication-open-health').textContent, right: button.left >= label.right - 1, middle: Math.abs((button.top + button.bottom) / 2 - (label.top + label.bottom) / 2) < 2 };
+      }));
+      assert.deepEqual(lines, [{ text: 'Open Health', right: true, middle: true }, { text: 'Open Health', right: true, middle: true }], 'every pill has Open Health on its right');
+      await page.locator('.medication-open-health:visible').first().click();
       assert.deepEqual(await page.locator('#health-medications [data-medication]').evaluateAll(cards => cards.map(card => card.dataset.medication)), [firstId, secondId]);
     } finally { await context.close(); }
   });
@@ -104,7 +109,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await page.locator('#routine-progress-label').textContent(), '0 of 5 ready');
       await check.check(); await waitStock(page, firstId, 27);
       assert.equal(await page.locator('#routine-progress-label').textContent(), '1 of 5 ready');
-      await page.locator('#medication-open-health').click();
+      await page.locator('.medication-open-health:visible').first().click();
       assert.equal(await page.locator('#app-title').textContent(), 'Health');
       assert.equal(await page.locator('#health-data-badge').textContent(), 'PRIVATE / YOUR ACCOUNT');
       assert.equal(await stock(page, firstId), '27 tablets left');
@@ -121,7 +126,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await page.locator('.check-row input').first().isChecked(), false);
       assert.equal(await check.isChecked(), true);
       assert.equal(await page.locator(`[data-dose="${secondId}"]`).isChecked(), true);
-      await page.locator('#medication-open-health').click();
+      await page.locator('.medication-open-health:visible').first().click();
       await page.getByRole('button', { name: 'Undo Sample A dose', exact: true }).click(); await waitStock(page, firstId, 28);
       await closeHealth(page); assert.equal(await check.isChecked(), false);
       await chooseRoutine(page, 'training'); assert.equal(await page.locator('#personal-care-medications').isVisible(), false);
@@ -290,7 +295,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       assert.equal(await page.locator(`[data-dose="${id}"]`).isVisible(), true);
       assert.equal(await page.locator(`[data-dose="${firstId}"]`).isVisible(), false);
       await page.locator(`[data-dose="${id}"]`).check(); await waitStock(page, id, 10);
-      await page.locator('#medication-open-health').click();
+      await page.locator('.medication-open-health:visible').first().click();
       await card.getByRole('button', { name: 'Edit Evening example', exact: true }).click();
       await chooseLink(page, id, 'Workday');
       await card.locator('.medication-editor .medication-dose-actions > button').first().click();
@@ -318,7 +323,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       const card = page.locator(`[data-medication="${id}"]`);
       assert.match(await card.locator('.medication-link-info').textContent(), /No linked checklist/);
       await page.locator('#health-open-care').click(); assert.equal(await page.locator(`[data-dose="${id}"]`).isVisible(), false);
-      await page.locator('#medication-open-health').click(); await page.locator('#health-add-medication').click();
+      await page.locator('.medication-open-health:visible').first().click(); await page.locator('#health-add-medication').click();
       await page.locator('#medication-new-medication-name').fill('Failed sample');
       await page.evaluate(() => { window.__hubFirebase.rejectWrites = true; });
       await page.getByRole('button', { name: 'Save new medication', exact: true }).click();
@@ -337,7 +342,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       await card.getByRole('button', { name: 'Open Workday for Linked example', exact: true }).click();
       await page.locator('#control-launch').click(); await page.getByLabel('Checklist name', { exact: true }).fill('Renamed work');
       await page.locator('#editor-save').click(); await page.waitForFunction(() => document.getElementById('control-status').textContent.startsWith('Saved.'));
-      await page.locator('#control-close').click(); await page.locator('#medication-open-health').click();
+      await page.locator('#control-close').click(); await page.locator('.medication-open-health:visible').first().click();
       assert.equal(await card.locator('.medication-checklist-link .medication-checklist-name').textContent(), 'Renamed work');
       await card.getByRole('button', { name: 'Edit Linked example', exact: true }).click();
       const toggle = page.locator(`#medication-${id}-checklist-menu .checklist-picker-toggle`);
@@ -434,7 +439,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       await page.evaluate(() => window.dispatchEvent(new Event('focus')));
       assert.equal(await page.locator(`[data-dose="${firstId}"]`).isChecked(), false);
       await page.locator(`[data-dose="${firstId}"]`).check(); await waitStock(page, firstId, 26);
-      await page.locator('#medication-open-health').click();
+      await page.locator('.medication-open-health:visible').first().click();
       const today = page.getByRole('tab', { name: 'Today' });
       assert.equal(await today.getAttribute('aria-selected'), 'true');
       assert.equal(await page.getByRole('heading', { name: 'Recent activity' }).isVisible(), false);
@@ -847,7 +852,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       await page.waitForFunction(() => document.getElementById('medication-status').textContent.includes('could not be saved'));
       assert.equal(await check.isChecked(), false);
       assert.equal(await page.evaluate(() => JSON.stringify(window.__hubFirebase.docs['account-a'].health)), before);
-      await page.locator('#medication-open-health').click();
+      await page.locator('.medication-open-health:visible').first().click();
       assert.equal(await stock(page, firstId), '28 tablets left');
       await page.evaluate(id => {
         const service = window.__hubFirebase;

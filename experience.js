@@ -35,7 +35,7 @@
     if (soundEnabled) interfaceSound?.prepare().catch(() => {});
     else interfaceSound?.silence();
   });
-  const openControls = '[aria-haspopup="dialog"], #routine-restart, #backup-launch, #account-launch, #control-launch, #backup-restore, #note-delete, #notes-import, #notes-account, #medication-open-health, #health-open-care, #health-sign-in';
+  const openControls = '[aria-haspopup="dialog"], #routine-restart, #backup-launch, #account-launch, #control-launch, #backup-restore, #note-delete, #notes-import, #notes-account, .medication-open-health, #health-open-care, #health-sign-in';
   const closeControls = '.routine-exit, .close, .restart-keep';
   document.addEventListener('click', event => {
     if (!event.isTrusted || startupDialog.contains(event.target)) return;

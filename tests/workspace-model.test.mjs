@@ -38,7 +38,7 @@ test('Wind Down expands the old outfit shortcut and replaces all Prepare clothin
   assert.deepEqual(updated.groups[0].items.map(item => item.label), ['Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes']);
   assert.equal(updated.groups[0].items.some(item => item.linkedChecklist), false);
   assert.deepEqual(updated.groups[1].items, [{ id: 'jacket', label: 'Jacket' }, { id: 'sweat', label: 'Sweatshirt' }]);
-  assert.equal(updated.groups.every(group => group.optional), true);
+  assert.deepEqual(updated.groups.map(group => group.optional), [false, true], 'Prepare outfit is required; extra clothing stays optional');
   assert.deepEqual(cleanRoutines([updated]), [updated]);
   const separateItems = structuredClone(base);
   separateItems.groups[0].items = ['Prepare underwear', 'Prepare socks', 'Prepare pants / shorts', 'Prepare a T-shirt / shirt', 'Prepare shoes / sneakers'].map((label, i) => ({ id: `old-${i}`, label }));
