@@ -138,6 +138,24 @@ function updateWindDown(routine) {
   })).sort((a, b) => groupRank(a) - groupRank(b)) };
 }
 
+function updateMuayThai(routine) {
+  const rename = (items, names) => items.map(item => ({ ...item, label: names.find(([, pattern]) => pattern.test(item.label.trim()))?.[0] ?? item.label }));
+  const clothes = [['T-shirt', /^training t-shirt$/i], ['Shorts', /^training shorts$/i], ['Shoes', /^trainers(?: for the journey)?$/i], ['Sweatshirt', /^sweatshirt for after training$/i]];
+  const bag = [['Locker', /^locker padlock$/i], ['Gym pass', /^gym pass \/ membership card$/i], ['Water', /^water bottle$/i]];
+  return { ...routine, groups: routine.groups.map(group => {
+    if (/^training clothes$/i.test(group.title.trim())) return { ...group, items: rename(group.items, clothes) };
+    if (!/^bag and essentials$/i.test(group.title.trim())) return group;
+    const combined = group.items.find(item => /^phone, wallet and keys$/i.test(item.label.trim()));
+    // Runs once: the combined item marks the old list, which also drops the towel.
+    if (!combined) return { ...group, items: rename(group.items, bag) };
+    const ids = new Set(group.items.map(item => item.id));
+    const newItem = label => { let id = label.toLowerCase(); for (let suffix = 2; ids.has(id); suffix++) id = `${label.toLowerCase()}-${suffix}`; ids.add(id); return { id, label }; };
+    const items = rename(group.items, bag).filter(item => !/^training towel$/i.test(item.label.trim()))
+      .flatMap(item => item.id === combined.id ? [{ ...item, label: 'Phone' }, newItem('Wallet'), newItem('Keys')] : [item]);
+    return { ...group, items };
+  }) };
+}
+
 function updateOfficePreparation(routine) {
   const groups = routine.groups.map(group => ({ ...group, items: [...group.items] }));
   const padelNames = [['Shorts', /^shorts$/i], ['Running shoes', /^running shoes(?: |$)/i], ['Spare shirt', /^spare (?:top|shirt|t-shirt)$/i], ['Water', /^water(?: bottle)?$/i]];
@@ -171,6 +189,7 @@ function updateOfficePreparation(routine) {
 export function updateRoutineSections(routine) {
   if (routine.name.trim().toLowerCase() === 'wind down') return updateWindDown(routine);
   if (routine.name.trim().toLowerCase() === 'office preparation') return updateOfficePreparation(routine);
+  if (routine.name.trim().toLowerCase() === 'muay thai') return updateMuayThai(routine);
   if (routine.name.trim().toLowerCase() !== 'getting ready') return routine;
   return { ...routine, groups: routine.groups.map(group => {
     const title = group.title.replace(/\s*\(if needed\)/gi, '').trim();
