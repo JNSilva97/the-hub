@@ -1,4 +1,4 @@
-import { cloudWorkspace } from './cloud.js?v=wifi-icon-3';
+import { cloudWorkspace } from './cloud.js?v=wifi-icon-4';
 import { readDay, readSettings, readSmokes, smokeEntry, validDay, validSmokeTime } from './habits-model.mjs?v=5';
 
 // One document per Lisbon day. Increments merge across devices and queue offline.
