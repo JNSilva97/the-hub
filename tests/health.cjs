@@ -646,6 +646,54 @@ test('Account Health', { timeout: 150000 }, async t => {
     } finally { await context.close(); }
   });
 
+  await t.test('an active timer can be corrected to 10:00, syncs without changing counts, and survives log/undo and denied edits', async () => {
+    const at = hour => Date.parse(`2026-11-19T${hour}:00:00Z`);
+    const habits = { quit: { version: 1, startedAt: at('09') }, '2026-11-19': { version: 1, cigarettes: 1, coffees: 2,
+      smokes: [`${String(at('11')).padStart(16, '0')}:00000000-0000-4000-8000-000000000001`] } };
+    const options = { width: 390, mobile: true, motion: 'reduce', firebase: true, cloudDocuments: { 'account-a': { ...makeAccount(), habits } } };
+    const first = await fixture(browser, options); const second = await fixture(browser, options);
+    const sync = async (from, to) => {
+      const habits = await from.evaluate(() => structuredClone(window.__hubFirebase.docs['account-a'].habits));
+      await to.evaluate(habits => { window.__hubFirebase.docs['account-a'].habits = habits; window.__hubFirebase.publish(); }, habits);
+    };
+    try {
+      for (const { page } of [first, second]) {
+        await page.clock.setFixedTime(new Date(at('12'))); await ready(page); await page.locator('#phone-addiction').tap();
+        await page.locator('#addiction-quit-note').filter({ hasText: 'Synced to your account' }).waitFor();
+      }
+      const page = first.page; const timer = tab => tab.locator('#addiction-elapsed');
+      assert.equal(await timer(page).textContent(), '0d  01:00:00');
+      await page.getByText('Edit start time', { exact: true }).tap();
+      await page.locator('#addiction-quit-input').fill('2026-11-19T10:00');
+      await page.getByRole('button', { name: 'Set start time', exact: true }).tap();
+      await page.locator('#addiction-status').filter({ hasText: 'Timer updated' }).waitFor();
+      assert.equal(await page.evaluate(() => window.__hubFirebase.docs['account-a'].habits.quit.startedAt), at('10'));
+      await sync(page, second.page);
+      assert.equal(await second.page.evaluate(() => window.__hubFirebase.docs['account-a'].habits.quit.startedAt), at('10'));
+      await second.page.waitForFunction(() => document.getElementById('addiction-elapsed').textContent === '0d  02:00:00');
+      assert.equal(await timer(second.page).textContent(), '0d  02:00:00');
+      assert.equal(await second.page.locator('#addiction-cigarettes').textContent(), '1 cigarette today');
+      assert.equal(await second.page.locator('#addiction-coffees').textContent(), '2 / 3 coffees today');
+      await second.page.getByRole('button', { name: 'Log cigarette', exact: true }).tap(); await sync(second.page, page);
+      await page.waitForFunction(() => document.getElementById('addiction-elapsed').textContent === '0d  00:00:00');
+      assert.equal(await timer(page).textContent(), '0d  00:00:00');
+      await page.getByRole('button', { name: 'Undo last cigarette' }).tap(); await sync(page, second.page);
+      await second.page.waitForFunction(() => document.getElementById('addiction-elapsed').textContent === '0d  02:00:00');
+      assert.equal(await timer(second.page).textContent(), '0d  02:00:00');
+      await page.getByText('Edit start time', { exact: true }).tap();
+      await page.locator('#addiction-quit-input').fill('2026-11-20T10:00');
+      await page.getByRole('button', { name: 'Set start time', exact: true }).tap();
+      assert.equal(await page.locator('#addiction-quit-input').evaluate(input => input.checkValidity()), false);
+      await page.locator('#addiction-quit-input').fill('2026-11-19T09:00');
+      await page.evaluate(() => { window.__hubFirebase.habitsDenied = true; });
+      await page.getByRole('button', { name: 'Set start time', exact: true }).tap();
+      await page.locator('#addiction-status').filter({ hasText: 'previous start is unchanged' }).waitFor();
+      assert.equal(await timer(page).textContent(), '0d  02:00:00');
+      assert.equal(await page.locator('#addiction-quit-date').evaluate(details => details.open), true);
+      assert.deepEqual(first.errors.concat(second.errors), []);
+    } finally { await first.context.close(); await second.context.close(); }
+  });
+
   await t.test('the smoke-free timer migrates and updates on two signed-in devices after log and undo', async () => {
     const first = await fixture(browser, { width: 390, mobile: true, motion: 'reduce', firebase: true,
       cloudDocuments: { 'account-a': { ...makeAccount(), habits: { '2026-11-16': { version: 1, cigarettes: 1 } } } } });

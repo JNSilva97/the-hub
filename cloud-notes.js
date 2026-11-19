@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=wifi-icon-4';
-import { validateCloudNote, visibleNotes } from './notes-model.mjs?v=notes-sync-1';
+import { cloudWorkspace } from './cloud.js?v=quit-timer-edit-1';
+import { validateCloudNote, visibleNotes } from './notes-model.mjs?v=quit-timer-edit-1';
 
 // Each submitted version is immutable. Concurrent offline edits create separate versions, never overwrite text.
 export function createCloudNotes(changed) {

@@ -74,7 +74,7 @@ After publication, sign in on two devices with the same account. Add a medicatio
 
 ## Addiction Helper activation
 
-Publish the full current `firestore.rules` in **Firebase Console → Firestore Database → Rules**. Habit documents under `users/<UID>/habits` are accessible only by that UID. Day documents store the counts and optional cigarette timestamps. An immutable `quit` document stores the timer's start when one was set manually. Deletion is denied.
+Publish the full current `firestore.rules` in **Firebase Console → Firestore Database → Rules**. Habit documents under `users/<UID>/habits` are accessible only by that UID. Day documents store the counts and optional cigarette timestamps. The `quit` document stores the timer start and an optional `adjustedAt` correction boundary. Its owner can correct the timer without editing cigarette counts or timestamps; cigarettes logged after that boundary reset it normally. Deploying these updated rules requires explicit user confirmation. Deletion is denied.
 
 Counts use Firestore increments, so changes from several devices, including offline ones, add up instead of overwriting each other. Until the rules are published the Helper keeps counts on the device. A signed-in import saves the count and a private receipt in one transaction at `users/<UID>/habitImports/<UUID>`. This prevents an interrupted import from counting the same entries twice. The device copy is cleared after confirmation. Publish the current rules to enable import receipts.
 

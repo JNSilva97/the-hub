@@ -13,6 +13,16 @@ export function readSmokes(data) {
   return entries.filter(entry => typeof entry === 'string' && /^\d{16}:[a-f0-9-]{36}$/.test(entry)
     && validSmokeTime(Number(entry.slice(0, 16)))).sort();
 }
+
+// A correction changes the timer anchor, while later cigarettes still reset it.
+export function smokeFreeSince(start, days, adjustedAt = 0) {
+  let since = validSmokeTime(start) ? start : null;
+  for (const data of days.values()) for (const entry of readSmokes(data)) {
+    const at = Number(entry.slice(0, 16));
+    if (at > adjustedAt) since = Math.max(since ?? 0, at);
+  }
+  return since;
+}
 export const defaultSettings = Object.freeze({ coffeeCutoff: '17:00', pouchPrice: null, pouchCigarettes: null, baseline: null });
 
 export function addDays(day, amount) {

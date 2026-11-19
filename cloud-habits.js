@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=wifi-icon-4';
-import { readDay, readSettings, readSmokes, smokeEntry, validDay, validSmokeTime } from './habits-model.mjs?v=5';
+import { cloudWorkspace } from './cloud.js?v=quit-timer-edit-1';
+import { readDay, readSettings, readSmokes, smokeEntry, validDay, validSmokeTime, smokeFreeSince } from './habits-model.mjs?v=quit-timer-edit-1';
 
 // One document per Lisbon day. Increments merge across devices and queue offline.
 export function createHabitsAccount(onChange) {
@@ -11,7 +11,7 @@ export function createHabitsAccount(onChange) {
   let days = new Map();
   let settings = null;
   let start = null;
-  let latest = null;
+  let adjustedAt = 0;
   let pending = false;
 
   function watch() {
@@ -23,7 +23,8 @@ export function createHabitsAccount(onChange) {
     error = '';
     days = new Map();
     settings = null;
-    start = latest = null;
+    start = null;
+    adjustedAt = 0;
     pending = false;
     onChange();
     if (!uid) return;
@@ -35,21 +36,23 @@ export function createHabitsAccount(onChange) {
         const nextDays = new Map();
         let nextSettings = null;
         let nextStart = null;
-        let nextLatest = null;
+        let nextAdjustedAt = 0;
         for (const doc of snapshot.docs) {
           if (doc.id === 'settings') nextSettings = readSettings(doc.data());
-          else if (doc.id === 'quit' && validSmokeTime(doc.data().startedAt)) nextStart = doc.data().startedAt;
+          else if (doc.id === 'quit' && validSmokeTime(doc.data().startedAt)) {
+            nextStart = doc.data().startedAt;
+            nextAdjustedAt = validSmokeTime(doc.data().adjustedAt) ? doc.data().adjustedAt : 0;
+          }
           else if (validDay(doc.id)) {
             const data = doc.data();
             const smokes = readSmokes(data);
             nextDays.set(doc.id, { ...readDay(data), smokes });
-            if (smokes.length) nextLatest = Math.max(nextLatest ?? 0, Number(smokes.at(-1).slice(0, 16)));
           }
         }
         days = nextDays;
         settings = nextSettings;
         start = nextStart;
-        latest = nextLatest;
+        adjustedAt = nextAdjustedAt;
         pending = Boolean(snapshot.metadata.hasPendingWrites);
         ready = true;
         error = '';
@@ -80,8 +83,13 @@ export function createHabitsAccount(onChange) {
     get error() { return error; },
     get days() { return days; },
     get settings() { return settings; },
-    get quitSince() { return start === null && latest === null ? null : Math.max(start ?? 0, latest ?? 0); },
+    get quitSince() { return smokeFreeSince(start, days, adjustedAt); },
     get pending() { return pending; },
+    setQuitStart(at, correctedAt = Date.now()) {
+      if (!ready || pending || !navigator.onLine || !validSmokeTime(at) || at > correctedAt) throw new Error('Connect and wait for Habits to sync before changing the timer.');
+      for (const data of days.values()) for (const entry of readSmokes(data)) correctedAt = Math.max(correctedAt, Number(entry.slice(0, 16)));
+      return cloudWorkspace.connection.sdk.setDoc(reference('quit'), { version: 1, startedAt: at, adjustedAt: correctedAt });
+    },
     // Resolves when the server confirms; the snapshot shows the change immediately.
     add(day, counts) {
       const { sdk } = cloudWorkspace.connection;
@@ -91,14 +99,14 @@ export function createHabitsAccount(onChange) {
     },
     recordSmoke(day, delta, at) {
       const { sdk } = cloudWorkspace.connection;
-      const entry = delta > 0 ? smokeEntry(at, crypto.randomUUID()) : days.get(day)?.smokes.at(-1);
+      const entry = delta > 0 ? smokeEntry(Math.max(at, adjustedAt + 1), crypto.randomUUID()) : days.get(day)?.smokes.at(-1);
       if (!entry) return sdk.setDoc(reference(day), { version: 1, cigarettes: sdk.increment(delta) }, { merge: true });
       const smokes = delta > 0 ? sdk.arrayUnion(entry) : sdk.arrayRemove(entry);
       return sdk.setDoc(reference(day), {
         version: 1, cigarettes: sdk.increment(delta), smokes, smokeOperation: crypto.randomUUID()
       }, { merge: true });
     },
-    importQuit(base, logs, id, day) {
+    importQuit(base, logs, id, day, correctedAt = 0) {
       const { sdk, database } = cloudWorkspace.connection;
       const anchor = reference('quit');
       const dayRef = logs.length ? reference(logs[0].day) : null;
@@ -122,7 +130,10 @@ export function createHabitsAccount(onChange) {
           }
           if (tracked.size !== smokes.length) transaction.set(dayRef, { smokes: [...tracked] }, { merge: true });
         } else if (logs.length) startedAt = Math.max(startedAt ?? 0, logs.at(-1).at);
-        if (!current.exists() && validSmokeTime(startedAt)) transaction.set(anchor, { version: 1, startedAt });
+        if (!current.exists() && validSmokeTime(startedAt)) transaction.set(anchor, {
+          version: 1, startedAt: validSmokeTime(correctedAt) && validSmokeTime(base) ? base : startedAt,
+          ...(validSmokeTime(correctedAt) ? { adjustedAt: correctedAt } : {})
+        });
         transaction.set(receipt, { day, cigarettes: 0, coffees: 0 });
       });
     },

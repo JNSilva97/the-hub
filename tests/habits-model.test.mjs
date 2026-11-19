@@ -1,8 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDays, validDay, readDay, readSettings, firstDay, smokeFreeStreak, recentDays, savings, coffeeWindow, defaultSettings } from '../habits-model.mjs';
+import { addDays, validDay, readDay, readSettings, firstDay, smokeFreeStreak, recentDays, savings, coffeeWindow, defaultSettings, smokeFreeSince, smokeEntry } from '../habits-model.mjs';
 
 const days = entries => new Map(entries.map(([day, cigarettes, coffees = 0]) => [day, { cigarettes, coffees }]));
+
+test('correcting the timer excludes old timestamps, preserves counts and restores the correction after undo', () => {
+  const at = hour => Date.parse(`2026-11-19T${hour}:00:00Z`);
+  const id = '00000000-0000-4000-8000-000000000001';
+  const record = { cigarettes: 1, coffees: 2, smokes: [smokeEntry(at('11'), id)] };
+  const history = new Map([['2026-11-19', record]]);
+  assert.equal(smokeFreeSince(at('09'), history), at('11'));
+  assert.equal(smokeFreeSince(at('10'), history, at('12')), at('10'));
+  record.smokes.push(smokeEntry(at('13'), id)); record.cigarettes++;
+  assert.equal(smokeFreeSince(at('10'), history, at('12')), at('13'));
+  record.smokes.pop(); record.cigarettes--;
+  assert.equal(smokeFreeSince(at('10'), history, at('12')), at('10'));
+  assert.equal(record.cigarettes, 1); assert.equal(record.coffees, 2);
+});
 
 test('calendar days cross month and year boundaries and reject impossible dates', () => {
   assert.equal(addDays('2026-12-31', 1), '2027-01-01');

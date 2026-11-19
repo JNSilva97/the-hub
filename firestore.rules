@@ -85,9 +85,11 @@ service cloud.firestore {
       }
       function validQuitStart() {
         let data = request.resource.data;
-        return id == 'quit' && data.keys().hasOnly(['version', 'startedAt'])
+        return id == 'quit' && data.keys().hasOnly(['version', 'startedAt', 'adjustedAt'])
           && data.version == 1 && data.startedAt is int && data.startedAt > 0
-          && data.startedAt <= 8640000000000000;
+          && data.startedAt <= 8640000000000000
+          && (!('adjustedAt' in data) || data.adjustedAt is int
+            && data.adjustedAt >= data.startedAt && data.adjustedAt <= 8640000000000000);
       }
       // Settings always carry all four fields; null means not set yet.
       function validSettings() {
@@ -102,7 +104,7 @@ service cloud.firestore {
       }
       allow read: if owner(uid);
       allow create: if owner(uid) && (validDay() || validSettings() || validQuitStart());
-      allow update: if owner(uid) && (validDay() && validSmokeChange() || validSettings());
+      allow update: if owner(uid) && (validDay() && validSmokeChange() || validSettings() || validQuitStart());
     }
 
     match /users/{uid}/habitImports/{importId} {

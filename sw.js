@@ -1,6 +1,6 @@
 // Bump this version whenever a public app file changes; install the complete release atomically.
 const prefix = `the-hub:${new URL(self.registration.scope).pathname}:`;
-const cacheName = `${prefix}wifi-icon-4`;
+const cacheName = `${prefix}quit-timer-edit-1`;
 const files = [
   './', 'index.html', 'manifest.webmanifest', 'health.js', 'styles/health.css', 'addiction.js', 'styles/addiction.css', 'habits-model.mjs', 'cloud-habits.js', 'checklist-picker.js',
   'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css',

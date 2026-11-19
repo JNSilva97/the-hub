@@ -1,6 +1,6 @@
-import { firebaseConfig } from './firebase-config.mjs?v=control-1';
-import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=wifi-icon-4';
-import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=wifi-icon-4';
+import { firebaseConfig } from './firebase-config.mjs?v=quit-timer-edit-1';
+import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=quit-timer-edit-1';
+import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=quit-timer-edit-1';
 
 const panel = document.getElementById('account-dialog');
 const loginButton = document.getElementById('account-login');
