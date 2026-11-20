@@ -13,9 +13,9 @@ test('Phone workflows', { timeout: 90000 }, async t => {
       const { context, page, errors } = await fixture(browser, { width, height: 640, motion: 'reduce' });
       try {
         await ready(page);
-        assert.equal(await page.locator('.apps > .app').count(), 6);
+        assert.equal(await page.locator('.apps > .app').count(), 7);
         assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), false);
-        assert.equal(await page.locator('.future-grid .app').count(), 2);
+        assert.equal(await page.locator('.future-grid .app').count(), 1);
         assert.equal(await page.locator('[data-icon="projects"]').count(), 0);
         assert.equal(await page.locator('.phone-actions').isVisible(), true);
         assert.equal(await page.locator('.phone-actions button').first().textContent(), 'Goals');

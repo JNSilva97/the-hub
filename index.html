@@ -11,18 +11,19 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/shell.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/core.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/access.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/panels.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/routines.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/notes.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/health.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/addiction.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/calendar.css?v=calendar-spacing-2">
-  <link rel="stylesheet" href="styles/motion.css?v=calendar-spacing-2">
+  <link rel="stylesheet" href="styles/base.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/shell.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/core.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/access.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/panels.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/routines.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/notes.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/health.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/motion.css?v=fitness-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -53,6 +54,7 @@
     <symbol id="med-icon-checklist" viewBox="0 0 24 24"><path d="m4 7 2 2 3-4m-5 9 2 2 3-4m4-5h7m-7 7h7m-7 5h7"/></symbol>
     <symbol id="finance" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18m-4 5h4M7 5V3h11"/><circle cx="16" cy="14" r=".5"/></symbol>
     <symbol id="calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 10h16m-12 4h2m4 0h2m-8 3h2m4 0h2"/></symbol>
+    <symbol id="fitness" viewBox="0 0 24 24"><path d="M6 8v8m-3-6v4m15-6v8m3-6v4M6 12h12M3 8h3M3 16h3m12-8h3m-3 8h3"/></symbol>
     <symbol id="people" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3"/><path d="M4 20v-2a6 6 0 0 1 12 0v2m0-15a3 3 0 0 1 0 6m3 9v-2a6 6 0 0 0-2-4"/></symbol>
     <symbol id="notes" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Zm0 0v6h6M8 13h8m-8 4h5"/></symbol>
     <symbol id="settings" viewBox="0 0 24 24"><path d="m9 3-.7 3-2 .9-2.7-.8-2 3.4 2.1 2.1v2.3l-2.1 2.1 2 3.5 2.8-.8 1.9 1 .7 2.8h4l.7-2.8 2-1 2.7.8 2-3.5-2.1-2.1v-2.3l2.1-2.1-2-3.4-2.8.8-1.9-.9L13 3Z"/><circle cx="11" cy="12.5" r="3"/></symbol>
@@ -70,10 +72,6 @@
         <button id="account-launch" class="account-launch" type="button" title="Account &amp; sync" aria-haspopup="dialog" aria-controls="account-dialog">Private access</button>
       </div>
     </div>
-    <section class="today-plans" aria-labelledby="today-plans-title">
-      <div><span class="panel-eyebrow" id="today-plans-title">TODAY’S PLANS</span><p id="today-plans-summary">Open Calendar to plan your week.</p></div>
-      <button id="today-plans-open" type="button" aria-haspopup="dialog" aria-controls="calendar-dialog"><svg aria-hidden="true"><use href="#calendar"/></svg><span>Plan today</span></button>
-    </section>
     <div class="workspace">
       <svg class="connections" viewBox="0 0 1200 570" preserveAspectRatio="none" aria-hidden="true">
         <path d="M270 120h42l96 90h48M270 230h65l65 25h35M270 340h65l65-25h35M270 450h42l96-90h48M930 120h-42l-96 90h-48M930 230h-65l-65 25h-35M930 340h-65l-65-25h-35M930 450h-42l-96-90h-48"/>
@@ -212,10 +210,10 @@
       <button class="app" type="button" data-icon="notes" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#notes"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">05</span></span><span class="app-name">Notes</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       <button class="app" type="button" data-icon="settings" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#settings"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">06</span></span><span class="app-name">Settings</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       <button class="app" type="button" data-icon="finance" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#finance"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">07</span></span><span class="app-name">Finance</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
-      <button class="app" type="button" data-icon="people" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#people"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">08</span></span><span class="app-name">Relationships</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="fitness" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#fitness"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">08</span></span><span class="app-name">Fitness</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       </nav>
       <details id="future-spaces" class="future-spaces" hidden>
-        <summary>More spaces <span>3 coming soon</span></summary>
+        <summary>More spaces <span>1 coming soon</span></summary>
         <div class="future-grid"></div>
       </details>
     </div>
@@ -233,6 +231,13 @@
     <button id="phone-addiction" type="button" aria-label="Habits" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 13h2l2-4 2 6 2-2h1"/></svg><span>Habits</span></button>
     <button id="phone-settings" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#settings"/></svg><span>Settings</span></button>
   </nav>
+  <dialog id="fitness-dialog" class="fitness-dialog" aria-labelledby="fitness-title">
+    <div class="fitness-header"><div><div class="panel-eyebrow">THE HUB / MODULE 08</div><h2 id="fitness-title">Fitness</h2></div><form method="dialog"><button id="fitness-close" type="button" aria-label="Close Fitness">×</button></form></div>
+    <div class="fitness-content"><div class="fitness-intro"><div><h3 id="fitness-date">Today</h3><p id="fitness-summary" role="status" aria-live="polite">0 of 2 daily goals complete</p></div><button id="fitness-signin" type="button">Sign in</button></div>
+      <div class="fitness-exercises"><section class="fitness-exercise" data-exercise="pushups" aria-labelledby="fitness-pushups-title"><h3 id="fitness-pushups-title">Push-ups</h3><p class="fitness-count"><output aria-label="Push-ups reps">0</output> / 50</p><progress max="50" value="0" aria-label="Push-ups daily goal"></progress><p class="fitness-result">50 reps to go</p><div class="fitness-controls" role="group" aria-label="Record push-ups"><button type="button" data-delta="-1" aria-label="Remove 1 push-ups reps" disabled>-1</button><button type="button" data-delta="1" aria-label="Add 1 push-ups reps" disabled>+1</button><button type="button" data-delta="5" aria-label="Add 5 push-ups reps" disabled>+5</button><button type="button" data-delta="10" aria-label="Add 10 push-ups reps" disabled>+10</button></div></section><section class="fitness-exercise" data-exercise="abs" aria-labelledby="fitness-abs-title"><h3 id="fitness-abs-title">Abs</h3><p class="fitness-count"><output aria-label="Abs reps">0</output> / 50</p><progress max="50" value="0" aria-label="Abs daily goal"></progress><p class="fitness-result">50 reps to go</p><div class="fitness-controls" role="group" aria-label="Record abs"><button type="button" data-delta="-1" aria-label="Remove 1 abs reps" disabled>-1</button><button type="button" data-delta="1" aria-label="Add 1 abs reps" disabled>+1</button><button type="button" data-delta="5" aria-label="Add 5 abs reps" disabled>+5</button><button type="button" data-delta="10" aria-label="Add 10 abs reps" disabled>+10</button></div></section></div>
+      <div class="fitness-feedback"><p id="fitness-status" role="status">Connecting to Fitness…</p><button id="fitness-retry" type="button" hidden>Retry</button></div>
+    </div>
+  </dialog>
   <dialog id="calendar-dialog" class="calendar-dialog" aria-labelledby="calendar-title">
     <div class="calendar-header"><div class="calendar-identity"><svg aria-hidden="true"><use href="#calendar"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 04</div><h2 id="calendar-title">Calendar</h2></div></div><form method="dialog"><button id="calendar-close" class="routine-exit" type="button" aria-label="Close Calendar">×</button></form></div>
     <div class="calendar-content">
@@ -392,7 +397,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.20.6</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.20.7</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -551,16 +556,17 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=calendar-spacing-2"></script>
-  <script defer src="notes.js?v=calendar-spacing-2"></script>
-  <script defer src="checklist-picker.js?v=calendar-spacing-2"></script>
-  <script defer src="health.js?v=calendar-spacing-2"></script>
-  <script defer src="addiction.js?v=calendar-spacing-2"></script>
-  <script defer src="calendar.js?v=calendar-spacing-2"></script>
-  <script defer src="interface.js?v=calendar-spacing-2"></script>
-  <script defer src="interface-sound.js?v=calendar-spacing-2"></script>
-  <script defer src="pointer-effects.js?v=calendar-spacing-2"></script>
-  <script defer src="experience.js?v=calendar-spacing-2" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=calendar-spacing-2"></script>
+  <script defer src="core-progress.js?v=fitness-1"></script>
+  <script defer src="notes.js?v=fitness-1"></script>
+  <script defer src="checklist-picker.js?v=fitness-1"></script>
+  <script defer src="health.js?v=fitness-1"></script>
+  <script defer src="addiction.js?v=fitness-1"></script>
+  <script defer src="calendar.js?v=fitness-1"></script>
+  <script defer src="fitness.js?v=fitness-1"></script>
+  <script defer src="interface.js?v=fitness-1"></script>
+  <script defer src="interface-sound.js?v=fitness-1"></script>
+  <script defer src="pointer-effects.js?v=fitness-1"></script>
+  <script defer src="experience.js?v=fitness-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=fitness-1"></script>
 </body>
 </html>

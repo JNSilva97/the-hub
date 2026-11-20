@@ -1,10 +1,5 @@
 /* The week planner shares the terminal's glass surfaces and touch targets. */
-.today-plans { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: min(100%, 760px); margin: 48px auto 18px; padding: 12px 16px; border: 1px solid #254b65; border-radius: 4px; background: #07121ec9; text-align: left; }
-.today-plans > div { min-width: 0; }
-.today-plans p { margin: 5px 0 0; color: #cae3f2; font: 600 17px var(--font-interface); }
-.today-plans button, .calendar-dialog button, .routine-plan-context button { min-height: 44px; padding: 8px 13px; border: 1px solid #366a92; border-radius: 4px; color: #d9f1ff; background: #0a1e30; font: 600 15px var(--font-interface); cursor: pointer; }
-.today-plans button { display: flex; flex-shrink: 0; align-items: center; gap: 8px; }
-.today-plans svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.calendar-dialog button, .routine-plan-context button { min-height: 44px; padding: 8px 13px; border: 1px solid #366a92; border-radius: 4px; color: #d9f1ff; background: #0a1e30; font: 600 15px var(--font-interface); cursor: pointer; }
 .calendar-dialog { width: min(1060px, calc(100% - 24px)); max-height: calc(100dvh - 24px); padding: 0; text-align: left; overflow: auto; background: linear-gradient(#030a12a6, #030a12a6), var(--panel-glass); }
 .calendar-dialog[hidden], .calendar-dialog [hidden], .routine-plan-context[hidden] { display: none; }
 .calendar-header { position: sticky; top: 0; z-index: 3; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 24px; border-bottom: 1px solid #284e6a; background: #081521f5; }
@@ -50,7 +45,7 @@
 #calendar-status { margin: 0; color: #a9c6d9; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 #calendar-status[data-error="true"] { color: #ffd3a2; }
 .calendar-dialog button:disabled { opacity: .45; cursor: default; }
-.calendar-dialog :is(button, input):focus-visible, .today-plans button:focus-visible { outline: 2px solid #a7eaff; outline-offset: 3px; }
+.calendar-dialog :is(button, input):focus-visible { outline: 2px solid #a7eaff; outline-offset: 3px; }
 .routine-plan-context { display: flex; gap: 10px; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid #274459; background: #0817249e; }
 .routine-plan-context p { margin: 3px 0; color: #b5d4e8; font-size: 13px; }
 .routine-plan-context > div:last-child { display: flex; gap: 8px; }
@@ -65,9 +60,6 @@
   #calendar-today { grid-column: 1 / -1; justify-self: center; min-width: 90px; }
   .routine-plan-context { padding: 10px 14px; flex-direction: column; align-items: stretch; }
   .routine-plan-context > div:last-child { flex-wrap: wrap; }
-  .today-plans { margin: 28px auto 16px; padding: 10px 12px; gap: 8px; }
-  .today-plans p { font-size: 15px; }
-  .today-plans button { padding-inline: 8px; font-size: 13px; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .calendar-dialog[open] { animation: calendar-arrive 180ms ease-out; }

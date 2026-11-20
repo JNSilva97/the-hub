@@ -48,12 +48,8 @@ function createCalendar(panel) {
     el('status').textContent = status;
     el('status').dataset.error = String(Boolean(failed || loadError || account?.error));
     if (!model) return;
-    const today = model.lisbonDay();
-    const todayPlan = model.plansForDay(records(), today);
-    document.getElementById('today-plans-summary').textContent = !account?.uid ? 'Sign in to plan your week.'
-      : !ready ? account.error ? 'Calendar unavailable. Open to retry.' : 'Loading today’s plans…'
-      : model.planNames(todayPlan.plans) || 'No plans for today';
     if (!selected) return;
+    const today = model.lisbonDay();
     const dates = model.weekDates(anchor);
     el('week-title').textContent = `${format(dates[0], { day: 'numeric', month: 'short' })} – ${format(dates[6], { day: 'numeric', month: 'short', year: 'numeric' })}`;
     const focusDay = el('week').contains(document.activeElement) ? document.activeElement.dataset.day : undefined;
@@ -126,7 +122,6 @@ function createCalendar(panel) {
   el('cancel').addEventListener('click', () => { notice = ''; failed = false; loadDraft(); render(); });
   el('retry').addEventListener('click', () => { if (account) account.retry(); else location.reload(); });
   el('signin').addEventListener('click', () => { if (!canNavigate()) return; panel.close(); document.getElementById('account-launch').click(); });
-  document.getElementById('today-plans-open').addEventListener('click', () => open(model?.lisbonDay()));
   document.addEventListener('hub:opencalendar', event => open(event.detail?.day));
   document.addEventListener('hub:calendarrequest', emit);
   window.addEventListener('beforeunload', event => { if (busy || dirty()) { event.preventDefault(); event.returnValue = ''; } });
@@ -137,7 +132,7 @@ function createCalendar(panel) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-spacing-2').then(module => {
+  import('./calendar-model.mjs?v=fitness-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -149,7 +144,7 @@ function createCalendar(panel) {
       label.append(check, icon, copy); return label;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-spacing-2');
+    return import('./cloud-calendar.js?v=fitness-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; baseline = '[]'; busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }

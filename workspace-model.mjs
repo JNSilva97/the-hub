@@ -1,4 +1,4 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey, isMinoxidilItem, isMinoxidilCheckKey, updateRoutineSections, routineItemLabel } from './routine-model.mjs?v=calendar-spacing-2';
+import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey, isMinoxidilItem, isMinoxidilCheckKey, updateRoutineSections, routineItemLabel } from './routine-model.mjs?v=fitness-1';
 
 export const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 

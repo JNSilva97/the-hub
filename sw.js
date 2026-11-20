@@ -1,7 +1,8 @@
 // Bump this version whenever a public app file changes; install the complete release atomically.
 const prefix = `the-hub:${new URL(self.registration.scope).pathname}:`;
-const cacheName = `${prefix}calendar-spacing-2`;
+const cacheName = `${prefix}fitness-1`;
 const files = [
+  'fitness.js', 'fitness-model.mjs', 'cloud-fitness.js', 'styles/fitness.css',
   'calendar.js', 'calendar-model.mjs', 'cloud-calendar.js', 'styles/calendar.css',
   './', 'index.html', 'manifest.webmanifest', 'health.js', 'styles/health.css', 'addiction.js', 'styles/addiction.css', 'habits-model.mjs', 'cloud-habits.js', 'checklist-picker.js',
   'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css',

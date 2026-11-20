@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=calendar-spacing-2';
-import { readCalendarRecord } from './calendar-model.mjs?v=calendar-spacing-2';
+import { cloudWorkspace } from './cloud.js?v=fitness-1';
+import { readCalendarRecord } from './calendar-model.mjs?v=fitness-1';
 
 export function createCalendarAccount(onChange) {
   let uid, unsubscribe, generation = 0, ready = false, fromCache = true, pending = false, error = '';

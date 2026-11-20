@@ -6,8 +6,8 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
   const { readFileSync } = require('node:fs');
   const path = require('node:path');
   const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-  const { doc, getDoc, setDoc, deleteDoc } = require('firebase/firestore');
-  test('Calendar rules isolate owners and validate weekly patterns, date overrides and revisions', { timeout: 60000 }, async t => {
+  const { doc, getDoc, setDoc, deleteDoc, runTransaction } = require('firebase/firestore');
+  test('Calendar and Fitness rules isolate owners and validate revisions and counters', { timeout: 60000 }, async t => {
     const [host, port] = process.env.FIRESTORE_EMULATOR_HOST.split(':');
     const env = await initializeTestEnvironment({ projectId: 'demo-the-hub-calendar', firestore: {
       host, port: Number(port), rules: readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8')
@@ -39,5 +39,34 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
     await assertSucceeds(setDoc(ref(a, '2026-11-20'), record([], 3, 'weekly')));
     await assertSucceeds(setDoc(ref(a, '2026-11-21'), record([])));
     await assertFails(deleteDoc(ref(a, '2026-11-20')));
+    const fitness = (db, uid = 'account-a', day = '2026-11-20') => doc(db, 'users', uid, 'fitness', day);
+    const reps = { version: 1, revision: 1, pushups: 50, abs: 10 };
+    await assertSucceeds(setDoc(fitness(a), reps));
+    await assertSucceeds(getDoc(fitness(a)));
+    await assertFails(getDoc(fitness(b)));
+    await assertFails(getDoc(fitness(guest)));
+    await assertFails(setDoc(fitness(a, 'account-b'), reps));
+    await assertFails(setDoc(fitness(guest), reps));
+    await assertFails(setDoc(fitness(a), reps));
+    await assertSucceeds(setDoc(fitness(a), { ...reps, revision: 2, abs: 50 }));
+    for (const patch of [{ pushups: -1 }, { abs: 1.5 }, { abs: 5001 }, { extra: true }, { version: 2 }]) {
+      await assertFails(setDoc(fitness(a), { ...reps, revision: 3, ...patch }));
+    }
+    await assertFails(setDoc(fitness(a, 'account-a', 'bad-day'), reps));
+    await assertFails(deleteDoc(fitness(a)));
+    const secondDevice = env.authenticatedContext('account-a').firestore();
+    await Promise.all([a, secondDevice].map(async db => {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await runTransaction(db, async tx => {
+            const saved = (await tx.get(fitness(db))).data();
+            tx.set(fitness(db), { ...saved, revision: saved.revision + 1, pushups: saved.pushups + 5 });
+          });
+          return;
+        } catch (error) { if (error.code !== 'permission-denied' || attempt >= 2) throw error; }
+      }
+    }));
+    const concurrent = (await getDoc(fitness(a))).data();
+    if (concurrent.pushups !== 60 || concurrent.revision !== 4) throw new Error('Concurrent Fitness sets were lost.');
   });
 }

@@ -1,7 +1,7 @@
-import { addDays, validDay } from './habits-model.mjs?v=calendar-spacing-2';
+import { addDays, validDay } from './habits-model.mjs?v=fitness-1';
 export { addDays, validDay };
-export { lisbonDay } from './routine-model.mjs?v=calendar-spacing-2';
-export { routinePlan, routineRelevant } from './routine-model.mjs?v=calendar-spacing-2';
+export { lisbonDay } from './routine-model.mjs?v=fitness-1';
+export { routinePlan, routineRelevant } from './routine-model.mjs?v=fitness-1';
 
 export const planTypes = [
   { id: 'office', name: 'Office', icon: 'notes', description: 'Work and office preparation' },

@@ -4,11 +4,13 @@ A personal space with a near-black, neon-blue and ice-cyan interface.
 
 ## Current version
 
-**Nightfall edition.** A staged mechanical opening, an optical core, a distant neon skyline and eight module launchers. **Goals** supports reusable checklists with saved ticks and optional sections. **Calendar** plans your week. **Health** tracks medication and stock. **Notes** captures text with automatic saving and search. **Settings** controls motion and optional sound. Two module launchers are placeholders.
+**Nightfall edition.** A staged mechanical opening, an optical core, a distant neon skyline and eight module launchers. **Goals** supports reusable checklists with saved ticks and optional sections. **Calendar** plans your week. **Health** tracks medication and stock. **Notes** captures text with automatic saving and search. **Settings** controls motion and optional sound. **Fitness** tracks daily push-ups and abs. Finance is the remaining placeholder.
 
-**Calendar** is a private weekly planner for **Office**, **Training** (Gym / Muay Thai) and **Going out**. Combine plans on a date, or edit **Every [weekday]** to repeat them weekly. A custom date overrides its weekly pattern; unchecking every plan and saving keeps that date free. **Follow weekly plan** restores inheritance. Save and Cancel protect edits; stale saves keep the draft instead of replacing another device's changes. Account plans sync between devices, and cached plans remain readable offline. Connect before saving.
+**Fitness** replaces Relationships with daily goals of **50 push-ups** and **50 abs**. Add sets of 1, 5 or 10 reps; subtract 1 to correct a mistake. Counts use the Lisbon day and reset for the next day without deleting previous records. Sign-in is required, with transactional updates per account and day; cached progress is read-only offline. Enable the owner-only Fitness rules before publishing this feature.
 
-**Today’s plans** summarizes the current Lisbon day. Goals prioritizes the relevant checklists; **All checklists** keeps everything accessible. Morning Routine, Wind Down, required outfit tasks and Health remain available. Wind Down shows the optional Office/Training preparation links appropriate for tomorrow. Planning never marks tasks or doses as done, and the schedule is separate from checklist definitions and backups.
+**Calendar** is a private weekly planner for **Office**, **Gym/Muay Thai** and **Going out**. Combine plans on a date, or edit **Every [weekday]** to repeat them weekly. A custom date overrides its weekly pattern; unchecking every plan and saving keeps that date free. **Follow weekly plan** restores inheritance. Save and Cancel protect edits; stale saves keep the draft instead of replacing another device's changes. Account plans sync between devices, and cached plans remain readable offline. Connect before saving.
+
+Open the **Calendar** module to review and edit plans. Goals prioritizes the relevant checklists; **All checklists** keeps everything accessible. Morning Routine, Wind Down, required outfit tasks and Health remain available. Wind Down shows the optional Office/Training preparation links appropriate for tomorrow. Planning never marks tasks or doses as done, and the schedule is separate from checklist definitions and backups.
 
 The intro is visual only and does not authenticate users. Any click or keypress skips it. Use **Pause motion** to stop interface animations; the system's reduced-motion preference is also respected.
 
@@ -157,13 +159,13 @@ The check covers intro dismissal, pause/resume, reduced motion, all nine launche
 Run the data-model tests with Node.js:
 
 ```sh
-node --test tests/routine-model.test.mjs tests/workspace-model.test.mjs tests/habits-model.test.mjs tests/calendar-model.test.mjs
+node --test tests/routine-model.test.mjs tests/workspace-model.test.mjs tests/habits-model.test.mjs tests/calendar-model.test.mjs tests/fitness-model.test.mjs
 ```
 
 For the browser regression suite, make the installed `playwright` package available to Node.js and use a system Chrome installation:
 
 ```sh
-node --test tests/browser.cjs tests/phone.cjs tests/health.cjs tests/calendar.cjs
+node --test tests/browser.cjs tests/phone.cjs tests/health.cjs tests/calendar.cjs tests/fitness.cjs
 node --test tests/offline.cjs
 node --test tests/notes-model.test.mjs tests/notes-sync.cjs
 ```
