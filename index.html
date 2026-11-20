@@ -11,17 +11,18 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=accessories-joined-1">
-  <link rel="stylesheet" href="styles/shell.css?v=accessories-joined-1">
-  <link rel="stylesheet" href="styles/core.css?v=accessories-joined-1">
-  <link rel="stylesheet" href="styles/access.css?v=accessories-joined-1">
-  <link rel="stylesheet" href="styles/panels.css?v=accessories-joined-1">
-  <link rel="stylesheet" href="styles/routines.css?v=accessories-joined-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=accessories-joined-1">
-  <link rel="stylesheet" href="styles/notes.css?v=accessories-joined-1">
-  <link rel="stylesheet" href="styles/health.css?v=accessories-joined-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=accessories-joined-1">
-  <link rel="stylesheet" href="styles/motion.css?v=accessories-joined-1">
+  <link rel="stylesheet" href="styles/base.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/shell.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/core.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/access.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/panels.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/routines.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/notes.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/health.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=calendar-week-1">
+  <link rel="stylesheet" href="styles/motion.css?v=calendar-week-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -69,6 +70,10 @@
         <button id="account-launch" class="account-launch" type="button" title="Account &amp; sync" aria-haspopup="dialog" aria-controls="account-dialog">Private access</button>
       </div>
     </div>
+    <section class="today-plans" aria-labelledby="today-plans-title">
+      <div><span class="panel-eyebrow" id="today-plans-title">TODAY’S PLANS</span><p id="today-plans-summary">Open Calendar to plan your week.</p></div>
+      <button id="today-plans-open" type="button" aria-haspopup="dialog" aria-controls="calendar-dialog"><svg aria-hidden="true"><use href="#calendar"/></svg><span>Plan today</span></button>
+    </section>
     <div class="workspace">
       <svg class="connections" viewBox="0 0 1200 570" preserveAspectRatio="none" aria-hidden="true">
         <path d="M270 120h42l96 90h48M270 230h65l65 25h35M270 340h65l65-25h35M270 450h42l96-90h48M930 120h-42l-96 90h-48M930 230h-65l-65 25h-35M930 340h-65l-65-25h-35M930 450h-42l-96-90h-48"/>
@@ -228,6 +233,23 @@
     <button id="phone-addiction" type="button" aria-label="Habits" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 13h2l2-4 2 6 2-2h1"/></svg><span>Habits</span></button>
     <button id="phone-settings" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#settings"/></svg><span>Settings</span></button>
   </nav>
+  <dialog id="calendar-dialog" class="calendar-dialog" aria-labelledby="calendar-title">
+    <div class="calendar-header"><div class="calendar-identity"><svg aria-hidden="true"><use href="#calendar"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 07</div><h2 id="calendar-title">Calendar</h2></div></div><form method="dialog"><button id="calendar-close" class="routine-exit" type="button" aria-label="Close Calendar">×</button></form></div>
+    <div class="calendar-content">
+      <div class="calendar-intro"><div><h3>Plan your week</h3><p>Office, training or going out. Combine the plans you need.</p></div><button id="calendar-signin" type="button">Sign in to plan</button></div>
+      <div class="calendar-navigation"><button id="calendar-previous" type="button" aria-label="Previous week">←</button><h3 id="calendar-week-title">This week</h3><button id="calendar-next" type="button" aria-label="Next week">→</button><button id="calendar-today" type="button">Today</button></div>
+      <div id="calendar-week" class="calendar-week" role="group" aria-label="Week days"></div>
+      <div class="calendar-editor">
+        <section aria-labelledby="calendar-day-title"><h3 id="calendar-day-title">Choose a day</h3><div class="calendar-mode" role="group" aria-label="Plan applies to"><button id="calendar-mode-day" type="button" aria-pressed="true">This date</button><button id="calendar-mode-weekly" type="button" aria-pressed="false">Weekly pattern</button></div>
+          <p id="calendar-source" class="calendar-note"></p>
+          <fieldset id="calendar-fields" disabled><legend class="calendar-note">Plans</legend><div id="calendar-plan-options" class="calendar-plan-options"></div></fieldset>
+          <div class="calendar-actions"><button id="calendar-save" type="button" disabled>Save plans</button><button id="calendar-cancel" type="button" disabled>Cancel</button><button id="calendar-follow" type="button" hidden>Follow weekly plan</button></div>
+        </section>
+        <aside class="calendar-preview" aria-labelledby="calendar-checklists-title"><h4 id="calendar-checklists-title">Your checklists</h4><p class="calendar-note">Morning Routine, Wind Down and Health stay available every day.</p><ul id="calendar-checklists"></ul><p class="calendar-note" id="calendar-weekly-note">A date can have its own plan, or follow the weekly pattern.</p></aside>
+      </div>
+      <div class="calendar-feedback"><p id="calendar-status" role="status">Connecting to Calendar…</p><button id="calendar-retry" type="button" hidden>Retry</button></div>
+    </div>
+  </dialog>
   <dialog id="addiction-dialog" aria-labelledby="addiction-title">
     <header class="addiction-header">
       <h2 id="addiction-title">Habits</h2>
@@ -370,7 +392,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.20.2</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.20.3</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -456,6 +478,7 @@
       </div>
     </div>
     <div class="routines-meta"><span id="routine-source" class="routine-source">LOADING</span><p id="routine-data-note">Loading your checklists…</p></div>
+    <div id="routine-plan-context" class="routine-plan-context" hidden><div><p id="routine-today-plans"></p><p id="routine-tomorrow-plans"></p></div><div><button id="routine-all-checklists" type="button" aria-pressed="false">All checklists</button><button id="routine-plan-tomorrow" type="button">Plan tomorrow</button></div></div>
     <div class="routine-layout">
       <nav id="routine-list" class="routine-list" aria-label="Checklists"></nav>
       <section class="routine-detail" aria-labelledby="routine-name">
@@ -528,15 +551,16 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=accessories-joined-1"></script>
-  <script defer src="notes.js?v=accessories-joined-1"></script>
-  <script defer src="checklist-picker.js?v=accessories-joined-1"></script>
-  <script defer src="health.js?v=accessories-joined-1"></script>
-  <script defer src="addiction.js?v=accessories-joined-1"></script>
-  <script defer src="interface.js?v=accessories-joined-1"></script>
-  <script defer src="interface-sound.js?v=accessories-joined-1"></script>
-  <script defer src="pointer-effects.js?v=accessories-joined-1"></script>
-  <script defer src="experience.js?v=accessories-joined-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=accessories-joined-1"></script>
+  <script defer src="core-progress.js?v=calendar-week-1"></script>
+  <script defer src="notes.js?v=calendar-week-1"></script>
+  <script defer src="checklist-picker.js?v=calendar-week-1"></script>
+  <script defer src="health.js?v=calendar-week-1"></script>
+  <script defer src="addiction.js?v=calendar-week-1"></script>
+  <script defer src="calendar.js?v=calendar-week-1"></script>
+  <script defer src="interface.js?v=calendar-week-1"></script>
+  <script defer src="interface-sound.js?v=calendar-week-1"></script>
+  <script defer src="pointer-effects.js?v=calendar-week-1"></script>
+  <script defer src="experience.js?v=calendar-week-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=calendar-week-1"></script>
 </body>
 </html>

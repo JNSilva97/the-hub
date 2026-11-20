@@ -383,7 +383,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.20.2');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.20.3');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);
@@ -869,7 +869,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         for (const app of await page.locator('.app').all()) {
           await app.click();
           const icon = await app.getAttribute('data-icon');
-          const module = { notes: ['notes-dialog', 'notes-title', 'NOTES'], goals: ['routines-dialog', 'routines-title', 'GOALS'], habits: ['addiction-dialog', 'addiction-title', 'Habits'] }[icon];
+          const module = { notes: ['notes-dialog', 'notes-title', 'NOTES'], goals: ['routines-dialog', 'routines-title', 'GOALS'], habits: ['addiction-dialog', 'addiction-title', 'Habits'], calendar: ['calendar-dialog', 'calendar-title', 'Calendar'] }[icon];
           assert.equal(await page.locator(module ? '#' + module[1] : '#app-title').textContent(), module ? module[2] : await app.locator('.app-name').textContent());
           await page.keyboard.press('Escape');
           await page.waitForFunction(id => !document.getElementById(id).open, module ? module[0] : 'app-dialog');

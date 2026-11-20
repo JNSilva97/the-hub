@@ -1,0 +1,31 @@
+import { addDays, validDay } from './habits-model.mjs?v=calendar-week-1';
+export { addDays, validDay };
+export { lisbonDay } from './routine-model.mjs?v=calendar-week-1';
+export { routinePlan, routineRelevant } from './routine-model.mjs?v=calendar-week-1';
+
+export const planTypes = [
+  { id: 'office', name: 'Office', icon: 'notes', description: 'Work and office preparation' },
+  { id: 'training', name: 'Training', icon: 'habits', description: 'Gym / Muay Thai preparation' },
+  { id: 'going-out', name: 'Going out', icon: 'people', description: 'Getting ready to head out' }
+];
+export const planNames = plans => plans.map(id => planTypes.find(plan => plan.id === id)?.name).filter(Boolean).join(' + ');
+export const weekday = day => new Date(`${day}T12:00:00Z`).getUTCDay() || 7;
+export const weekDates = day => Array.from({ length: 7 }, (_, index) => addDays(day, index + 1 - weekday(day)));
+export const validCalendarId = id => validDay(id) || /^repeat-[1-7]$/.test(id);
+
+export function readCalendarRecord(id, value) {
+  if (!validCalendarId(id) || value?.version !== 1 || !Number.isSafeInteger(value.revision) || value.revision < 1 || value.revision > 1000000000
+    || !['custom', 'weekly'].includes(value.mode) || !Array.isArray(value.plans) || value.plans.length > 3
+    || new Set(value.plans).size !== value.plans.length || value.plans.some(id => !planTypes.some(plan => plan.id === id))
+    || value.mode === 'weekly' && (id.startsWith('repeat-') || value.plans.length)) throw new Error('Invalid Calendar plan.');
+  return { version: 1, revision: value.revision, mode: value.mode, plans: planTypes.map(plan => plan.id).filter(id => value.plans.includes(id)) };
+}
+
+export function plansForDay(records, day) {
+  if (!validDay(day)) throw new Error('Choose a valid date.');
+  const custom = records.get(day);
+  const repeated = records.get(`repeat-${weekday(day)}`);
+  return { day, plans: [...(custom?.mode === 'custom' ? custom.plans : repeated?.plans ?? [])],
+    source: custom?.mode === 'custom' ? 'custom' : repeated ? 'weekly' : 'empty' };
+}
+

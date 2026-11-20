@@ -6,6 +6,8 @@ The app has three parts: HTML puts things on the screen, CSS makes them look and
 
 Open the homepage and choose the **Goals** module. Pick a checklist and tick its items. **Find anything** opens a search box that can take you straight to a checklist. **Settings** controls animation and optional sound.
 
+Open **Calendar** or **Plan today** to choose Office, Training (Gym / Muay Thai) and Going out. Use **This date** for one day or **Every [weekday]** for a weekly pattern, then **Save**. Uncheck all plans and save to keep a specific day free. **Follow weekly plan** returns that date to its recurring pattern. Plans sync with your account. Goals highlights today's checklists and Wind Down shows tomorrow's optional preparations; **All checklists** always gives access to the full list. Plans never tick tasks for you.
+
 Optional tasks are always visible and can be ticked individually. Unticked optional tasks do not block completion. Linked daily medication appears inside the checklist and shares its progress counter. For skincare, **Later** excludes only the current checklist item for today; **Undo** restores it. The remaining skincare choice stays available in other checklists.
 
 Goals shows the full checklist as soon as you open it. Tick things off in whichever order suits you. Checked rows stay where they are, and tapping one again clears its tick. Optional section switches are right in the list. Progress saves automatically.

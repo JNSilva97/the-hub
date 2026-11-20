@@ -34,6 +34,11 @@ export async function getDoc(reference) {
 }
 export function onSnapshot(reference, options, next, failed) {
   const listener = { uid: reference.path[1], next, failed };
+  if (reference.path[2] === 'calendar') {
+    service.calendarListeners.add(listener);
+    queueMicrotask(() => { if (service.calendarListeners.has(listener)) service.publish(); });
+    return () => service.calendarListeners.delete(listener);
+  }
   if (reference.path[2] === 'health') {
     service.healthListeners.add(listener);
     queueMicrotask(() => { if (service.healthListeners.has(listener)) service.publish(); });
@@ -123,13 +128,15 @@ export async function runTransaction(database, update) {
     set(reference, data, options) { writes.push({ path: reference.path, data: structuredClone(data), merge: options?.merge }); }
   };
   const result = await update(transaction);
+  if (service.rejectCalendar && writes.some(write => write.path[2] === 'calendar')) throw Object.assign(new Error('Calendar denied.'), { code: 'permission-denied' });
   for (const write of writes) {
     const [, uid, collection, id] = write.path;
     const account = service.docs[uid] ??= {};
     if (collection === 'health') {
       (account.health ??= {})[id] = write.data;
       service.healthWrites.push(write);
-    } else if (collection === 'hub') account[id] = write.data;
+    } else if (collection === 'calendar') { (account.calendar ??= {})[id] = write.data; service.calendarWrites.push(write); }
+    else if (collection === 'hub') account[id] = write.data;
     else {
       const documents = account[collection] ??= {};
       documents[id] = write.merge ? { ...documents[id], ...write.data } : write.data;

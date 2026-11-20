@@ -1,13 +1,13 @@
 import {
-  validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections, linkedDoseReplaces,
+  validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections, linkedDoseReplaces, routinePlan, routineRelevant,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=accessories-joined-1';
-import { cloudWorkspace } from './cloud.js?v=accessories-joined-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=accessories-joined-1';
-import { createRoutineTools } from './routine-tools.js?v=accessories-joined-1';
+} from './routine-model.mjs?v=calendar-week-1';
+import { cloudWorkspace } from './cloud.js?v=calendar-week-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=calendar-week-1';
+import { createRoutineTools } from './routine-tools.js?v=calendar-week-1';
 
-export { createHealthAccount } from './cloud-health.js?v=accessories-joined-1';
+export { createHealthAccount } from './cloud-health.js?v=calendar-week-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -35,6 +35,52 @@ let loadGeneration = 0;
 let progressDay;
 let pendingSkinCare;
 let medicationProgress = new Map();
+let calendarState;
+let showAllChecklists = false;
+
+function applyCalendarContext() {
+  const context = document.getElementById('routine-plan-context');
+  const available = Boolean(calendarState?.ready && calendarState.scope === workspaceIdentity());
+  context.hidden = !available;
+  const today = available ? calendarState.today.plans : [];
+  const focus = available && today.length > 0 && !showAllChecklists;
+  if (available) {
+    document.getElementById('routine-today-plans').textContent = `Today: ${calendarState.today.label || 'No plans'}`;
+    document.getElementById('routine-tomorrow-plans').textContent = `Tomorrow: ${calendarState.tomorrow.label || 'No plans'}`;
+    const toggle = document.getElementById('routine-all-checklists');
+    toggle.hidden = !today.length;
+    toggle.textContent = showAllChecklists ? 'Today’s checklists' : 'All checklists';
+    toggle.setAttribute('aria-pressed', String(showAllChecklists));
+  }
+  const order = focus ? [...routines].sort((a, b) => Number(routineRelevant(b.name, today)) - Number(routineRelevant(a.name, today))) : routines;
+  for (const routine of order) {
+    const card = list.querySelector(`[data-routine="${routine.id}"]`);
+    const option = [...picker.options].find(option => option.value === routine.id);
+    const hidden = focus && !routineRelevant(routine.name, today) && routine.id !== selected?.id;
+    if (card) { card.hidden = hidden; list.append(card); }
+    if (option) { option.hidden = hidden; picker.append(option); }
+  }
+  if (selected) picker.value = selected.id;
+  routinePicker.refresh();
+  const tomorrow = available && calendarState.active && selected?.name.trim().toLowerCase() === 'wind down' ? calendarState.tomorrow.plans : undefined;
+  for (const row of content.querySelectorAll('.linked-check-row')) {
+    const target = routines.find(routine => routine.id === row.querySelector('input').dataset.linked);
+    const plan = target && routinePlan(target.name);
+    row.hidden = Boolean(tomorrow && plan && row.closest('.check-section').dataset.optional && !tomorrow.includes(plan));
+  }
+  for (const section of content.querySelectorAll('.check-section[data-optional]')) {
+    if (section.querySelector('.linked-check-row')) section.hidden = [...section.querySelector('.check-items').children].every(child => child.hidden);
+  }
+}
+
+document.getElementById('routine-all-checklists').addEventListener('click', () => { showAllChecklists = !showAllChecklists; applyCalendarContext(); });
+document.getElementById('routine-plan-tomorrow').addEventListener('click', () => document.dispatchEvent(new CustomEvent('hub:opencalendar', { detail: { day: calendarState?.tomorrow.day } })));
+document.addEventListener('hub:calendarchange', event => {
+  if (calendarState?.scope !== event.detail.scope) showAllChecklists = false;
+  calendarState = event.detail;
+  applyCalendarContext();
+});
+document.dispatchEvent(new Event('hub:calendarrequest'));
 
 const inAccount = () => dialog.dataset.source === 'account';
 function workspaceIdentity() {
@@ -297,6 +343,7 @@ function selectRoutine(routine, remember = true) {
   const lastRequired = [...content.querySelectorAll('.check-section:not([data-optional]) .check-items')].at(-1);
   (content.querySelector('[data-medication-target] .check-items') ?? lastRequired ?? content).append(medicationSection);
   updateProgress();
+  applyCalendarContext();
   document.dispatchEvent(new CustomEvent('hub:checklistview', { detail: { scope: workspaceIdentity(), routines: routines.map(({ id, name }) => ({ id, name })), selected: { id: routine.id, name: routine.name } } }));
 }
 
@@ -440,7 +487,9 @@ export async function initialiseRoutines() {
   picker.disabled = list.inert;
   let remembered;
   try { remembered = localStorage.getItem(selectionKey); } catch { /* A blocked preference store does not affect progress. */ }
-  selectRoutine(routines.find(routine => routine.id === remembered) || routines[0], false);
+  const preferred = routines.find(routine => routine.id === remembered) || routines[0];
+  const plans = calendarState?.ready && calendarState.scope === workspaceIdentity() ? calendarState.today.plans : [];
+  selectRoutine(plans.length && !routineRelevant(preferred.name, plans) ? routines.find(routine => routineRelevant(routine.name, plans)) || preferred : preferred, false);
   dialog.dataset.ready = 'true';
 }
 

@@ -32,7 +32,7 @@ function createChecklistPicker(select) {
     trigger.textContent = select.selectedOptions[0]?.textContent || 'Choose checklist';
     trigger.setAttribute('aria-label', label + ': ' + trigger.textContent);
     trigger.disabled = disabled();
-    const buttons = [...select.options].map(option => {
+    const buttons = [...select.options].filter(option => !option.hidden).map(option => {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'checklist-choice';

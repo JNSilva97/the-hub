@@ -34,6 +34,19 @@ export function parseProgress(raw) {
 export const groupKey = (routine, group) => `${routine.id}/${group.id}`;
 export const itemKey = (routine, group, item) => `${groupKey(routine, group)}/${item.id}`;
 
+export function routinePlan(name) {
+  const normalized = name.trim().toLowerCase();
+  if (['office preparation', 'workday'].includes(normalized)) return 'office';
+  if (['muay thai', 'muay thai preparation', 'training'].includes(normalized)) return 'training';
+  return undefined;
+}
+export function routineRelevant(name, plans) {
+  const normalized = name.trim().toLowerCase();
+  if (['morning routine', 'wind down'].includes(normalized)) return true;
+  if (normalized === 'getting ready') return plans.length > 0;
+  return plans.includes(routinePlan(name));
+}
+
 export const skinCareOptions = { m: 'Moisturiser', s: 'Sunscreen', t: 'Self-tanner' };
 export function skinCareOptionsFor(label) {
   const match = /^(?:(?:apply|put(?: on)?) )?(?:moisturi[sz]er or (sunscreen|self-tanner)|(sunscreen|self-tanner) or moisturi[sz]er)(?:,.*)?[.!]?$/i.exec(label.trim());

@@ -7,6 +7,7 @@ const instantNotes = typeof createInstantNotes === 'function' ? createInstantNot
 const health = typeof createHealth === 'function' && typeof createChecklistPicker === 'function' ? createHealth(dialog) : undefined;
 const addictionDialog = document.getElementById('addiction-dialog');
 const addiction = typeof createAddictionHelper === 'function' ? createAddictionHelper(addictionDialog, health) : undefined;
+const calendar = typeof createCalendar === 'function' ? createCalendar(document.getElementById('calendar-dialog')) : undefined;
 const scriptUrl = new URL(document.currentScript.src);
 const routinesUrl = new URL('./routines.js', scriptUrl);
 routinesUrl.search = scriptUrl.search;
@@ -50,6 +51,7 @@ function openApp(button) {
   const icon = button.dataset.icon;
   if (icon === 'goals' || icon === 'habits') return;
   if (icon === 'notes' && instantNotes) { instantNotes.open(); return; }
+  if (icon === 'calendar' && calendar) { calendar.open(); return; }
   const settings = icon === 'settings';
   const healthOpen = icon === 'health' && Boolean(health);
   dialog.dataset.app = icon;
@@ -71,7 +73,7 @@ const appGrid = document.querySelector('.apps');
 const appButtons = [...appGrid.querySelectorAll('.app')];
 const futureSpaces = document.getElementById('future-spaces');
 const futureGrid = futureSpaces.querySelector('.future-grid');
-const moduleKinds = new Map([['goals', 'Routines and checklists'], ['habits', 'Tobacco and coffee'], ['notes', 'Notebook'], ['settings', 'Interface'], ['health', 'Medication and stock']]);
+const moduleKinds = new Map([['goals', 'Routines and checklists'], ['habits', 'Tobacco and coffee'], ['notes', 'Notebook'], ['settings', 'Interface'], ['health', 'Medication and stock'], ['calendar', 'Weekly plans']]);
 const futureApps = appButtons.filter(button => !moduleKinds.has(button.dataset.icon));
 for (const button of futureApps) {
   const label = button.querySelector('.app-meta');
@@ -177,6 +179,7 @@ loadRoutines();
   }
   function openPalette() {
     if (health && !health.canNavigate()) return;
+    if (calendar && !calendar.canNavigate()) return;
     if (!document.getElementById('checklist-control').hidden || document.getElementById('backup-dialog').open) return;
     if (palette.open) { palette.close(); return; }
     for (const panel of document.querySelectorAll('dialog[open]')) panel.close();

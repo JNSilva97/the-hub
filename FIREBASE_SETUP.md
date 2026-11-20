@@ -6,6 +6,12 @@ To disable the Firebase connection, set `firebaseConfig` to `null` and bump the 
 
 Activation checks on 2026-10-22: all 57 automated tests passed with the real project isolated from test traffic. The published rules were inspected in Console. Rules Playground allowed the owner's read and valid progress creation; it denied anonymous reads/writes, another account's reads/writes, malformed progress, definition updates and deletion. These simulations did not create or delete database records. Real Google login, personal import and synchronization across devices still require the user's verification.
 
+## Calendar activation
+
+Calendar uses a separate owner-only collection at `users/<UID>/calendar`. Date documents (`YYYY-MM-DD`) and weekday patterns (`repeat-1` through `repeat-7`, Monday first) contain `version`, `revision`, `mode` and up to three unique plan IDs: `office`, `training`, `going-out`. A date with `mode: weekly` and an empty plan array follows its weekday pattern; `mode: custom` with an empty array is an explicit free day. Revisions advance by one so stale editor saves cannot overwrite another device. Deletes and cross-account access are denied.
+
+Publish the updated `firestore.rules` only after explicit user confirmation. Without Calendar rules, the app keeps other modules usable and offers Calendar retry. Local emulator coverage is in `tests/calendar-rules.cjs`; it uses the demo project `demo-the-hub-calendar`, not the live project. Browser Calendar tests mock transport and do not publish rules or read personal data.
+
 ## 1. Create the free project
 
 Open [Firebase Console](https://console.firebase.google.com/) with the Google account that will own the project. Create a project on the **Spark** plan. Skip Google Analytics and keep billing disabled. Only Authentication and Firestore are needed. No Firebase CLI, emulator or desktop program is required for this setup.
