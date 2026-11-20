@@ -392,10 +392,10 @@ function createAddictionHelper(panel, health) {
   window.addEventListener('online', () => { migrate(); if (panel.open) render(); });
   window.addEventListener('offline', () => { if (panel.open) render(); });
   document.addEventListener('visibilitychange', () => { if (panel.open && !document.hidden) render(); });
-  import('./habits-model.mjs?v=calendar-week-1').then(module => {
+  import('./habits-model.mjs?v=calendar-layout-1').then(module => {
     model = module;
     render();
-    return import('./cloud-habits.js?v=calendar-week-1');
+    return import('./cloud-habits.js?v=calendar-layout-1');
   }).then(module => {
     account = module.createHabitsAccount(() => {
       migrate();

@@ -33,6 +33,18 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
     try {
       await start(page);
       assert.equal(await page.locator('#calendar-dialog').evaluate(el => el.scrollWidth > el.clientWidth), false);
+      const home = await page.evaluate(() => ({
+        gap: document.querySelector('.today-plans').getBoundingClientRect().top - document.querySelector('.intro').getBoundingClientRect().bottom,
+        width: document.querySelector('.today-plans').getBoundingClientRect().width,
+        order: [...document.querySelectorAll('.app')].map(button => button.dataset.icon),
+        calendar: document.querySelector('.app[data-icon="calendar"] .module-number').textContent,
+        notes: document.querySelector('.app[data-icon="notes"] .module-number').textContent
+      }));
+      assert.ok(home.gap >= (width < 700 ? 16 : 24));
+      assert.ok(home.width <= 760);
+      assert.deepEqual(home.order, ['goals', 'health', 'habits', 'calendar', 'notes', 'settings', 'finance', 'people']);
+      assert.equal(home.calendar, '04'); assert.equal(home.notes, '05');
+      assert.match(await page.locator('.calendar-header .panel-eyebrow').textContent(), /MODULE 04/);
       await page.locator('#calendar-mode-weekly').click();
       await plan(page, 'office').check(); await plan(page, 'training').check();
       await page.locator('#calendar-save').click();
