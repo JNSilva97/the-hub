@@ -1,5 +1,5 @@
 /* The week planner shares the terminal's glass surfaces and touch targets. */
-.today-plans { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: min(100%, 760px); margin: 24px auto 18px; padding: 12px 16px; border: 1px solid #254b65; border-radius: 4px; background: #07121ec9; text-align: left; }
+.today-plans { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: min(100%, 760px); margin: 48px auto 18px; padding: 12px 16px; border: 1px solid #254b65; border-radius: 4px; background: #07121ec9; text-align: left; }
 .today-plans > div { min-width: 0; }
 .today-plans p { margin: 5px 0 0; color: #cae3f2; font: 600 17px var(--font-interface); }
 .today-plans button, .calendar-dialog button, .routine-plan-context button { min-height: 44px; padding: 8px 13px; border: 1px solid #366a92; border-radius: 4px; color: #d9f1ff; background: #0a1e30; font: 600 15px var(--font-interface); cursor: pointer; }
@@ -65,7 +65,7 @@
   #calendar-today { grid-column: 1 / -1; justify-self: center; min-width: 90px; }
   .routine-plan-context { padding: 10px 14px; flex-direction: column; align-items: stretch; }
   .routine-plan-context > div:last-child { flex-wrap: wrap; }
-  .today-plans { margin: 16px auto; padding: 10px 12px; gap: 8px; }
+  .today-plans { margin: 28px auto 16px; padding: 10px 12px; gap: 8px; }
   .today-plans p { font-size: 15px; }
   .today-plans button { padding-inline: 8px; font-size: 13px; }
 }

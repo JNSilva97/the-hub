@@ -1,11 +1,11 @@
-import { addDays, validDay } from './habits-model.mjs?v=calendar-layout-1';
+import { addDays, validDay } from './habits-model.mjs?v=calendar-spacing-2';
 export { addDays, validDay };
-export { lisbonDay } from './routine-model.mjs?v=calendar-layout-1';
-export { routinePlan, routineRelevant } from './routine-model.mjs?v=calendar-layout-1';
+export { lisbonDay } from './routine-model.mjs?v=calendar-spacing-2';
+export { routinePlan, routineRelevant } from './routine-model.mjs?v=calendar-spacing-2';
 
 export const planTypes = [
   { id: 'office', name: 'Office', icon: 'notes', description: 'Work and office preparation' },
-  { id: 'training', name: 'Training', icon: 'habits', description: 'Gym / Muay Thai preparation' },
+  { id: 'training', name: 'Gym/Muay Thai', icon: 'habits', description: 'Training preparation' },
   { id: 'going-out', name: 'Going out', icon: 'people', description: 'Getting ready to head out' }
 ];
 export const planNames = plans => plans.map(id => planTypes.find(plan => plan.id === id)?.name).filter(Boolean).join(' + ');

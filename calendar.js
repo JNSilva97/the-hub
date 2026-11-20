@@ -137,7 +137,7 @@ function createCalendar(panel) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-layout-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-spacing-2').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -149,7 +149,7 @@ function createCalendar(panel) {
       label.append(check, icon, copy); return label;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-layout-1');
+    return import('./cloud-calendar.js?v=calendar-spacing-2');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; baseline = '[]'; busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }

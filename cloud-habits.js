@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=calendar-layout-1';
-import { readDay, readSettings, readSmokes, smokeEntry, validDay, validSmokeTime, smokeFreeSince } from './habits-model.mjs?v=calendar-layout-1';
+import { cloudWorkspace } from './cloud.js?v=calendar-spacing-2';
+import { readDay, readSettings, readSmokes, smokeEntry, validDay, validSmokeTime, smokeFreeSince } from './habits-model.mjs?v=calendar-spacing-2';
 
 // One document per Lisbon day. Increments merge across devices and queue offline.
 export function createHabitsAccount(onChange) {
