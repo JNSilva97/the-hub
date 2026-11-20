@@ -11,19 +11,19 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/shell.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/core.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/access.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/panels.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/routines.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/notes.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/health.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/calendar.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/fitness.css?v=fitness-1">
-  <link rel="stylesheet" href="styles/motion.css?v=fitness-1">
+  <link rel="stylesheet" href="styles/base.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/shell.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/core.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/access.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/panels.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/routines.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/notes.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/health.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/motion.css?v=calendar-options-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -241,7 +241,7 @@
   <dialog id="calendar-dialog" class="calendar-dialog" aria-labelledby="calendar-title">
     <div class="calendar-header"><div class="calendar-identity"><svg aria-hidden="true"><use href="#calendar"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 04</div><h2 id="calendar-title">Calendar</h2></div></div><form method="dialog"><button id="calendar-close" class="routine-exit" type="button" aria-label="Close Calendar">×</button></form></div>
     <div class="calendar-content">
-      <div class="calendar-intro"><div><h3>Plan your week</h3><p>Office, Gym/Muay Thai or going out. Combine the plans you need.</p></div><button id="calendar-signin" type="button">Sign in to plan</button></div>
+      <div class="calendar-intro"><div><h3>Plan your week</h3><p>Office and Gym/Muay Thai. Combine the plans you need.</p></div><button id="calendar-signin" type="button">Sign in to plan</button></div>
       <div class="calendar-navigation"><button id="calendar-previous" type="button" aria-label="Previous week">←</button><h3 id="calendar-week-title">This week</h3><button id="calendar-next" type="button" aria-label="Next week">→</button><button id="calendar-today" type="button">Today</button></div>
       <div id="calendar-week" class="calendar-week" role="group" aria-label="Week days"></div>
       <div class="calendar-editor">
@@ -397,7 +397,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.20.7</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.20.8</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -556,17 +556,17 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=fitness-1"></script>
-  <script defer src="notes.js?v=fitness-1"></script>
-  <script defer src="checklist-picker.js?v=fitness-1"></script>
-  <script defer src="health.js?v=fitness-1"></script>
-  <script defer src="addiction.js?v=fitness-1"></script>
-  <script defer src="calendar.js?v=fitness-1"></script>
-  <script defer src="fitness.js?v=fitness-1"></script>
-  <script defer src="interface.js?v=fitness-1"></script>
-  <script defer src="interface-sound.js?v=fitness-1"></script>
-  <script defer src="pointer-effects.js?v=fitness-1"></script>
-  <script defer src="experience.js?v=fitness-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=fitness-1"></script>
+  <script defer src="core-progress.js?v=calendar-options-1"></script>
+  <script defer src="notes.js?v=calendar-options-1"></script>
+  <script defer src="checklist-picker.js?v=calendar-options-1"></script>
+  <script defer src="health.js?v=calendar-options-1"></script>
+  <script defer src="addiction.js?v=calendar-options-1"></script>
+  <script defer src="calendar.js?v=calendar-options-1"></script>
+  <script defer src="fitness.js?v=calendar-options-1"></script>
+  <script defer src="interface.js?v=calendar-options-1"></script>
+  <script defer src="interface-sound.js?v=calendar-options-1"></script>
+  <script defer src="pointer-effects.js?v=calendar-options-1"></script>
+  <script defer src="experience.js?v=calendar-options-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=calendar-options-1"></script>
 </body>
 </html>

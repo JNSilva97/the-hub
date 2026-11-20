@@ -400,7 +400,7 @@ function createInstantNotes(panel) {
     refreshCloud();
   });
   importDialog.addEventListener('close', () => { copying = undefined; });
-  import('./cloud-notes.js?v=fitness-1').then(module => { cloud = module.createCloudNotes(refreshCloud); refreshCloud(); }).catch(() => {
+  import('./cloud-notes.js?v=calendar-options-1').then(module => { cloud = module.createCloudNotes(refreshCloud); refreshCloud(); }).catch(() => {
     if (panel.open) tell('Account sync could not load. Local notes still work; reopen online to retry.', true);
   });
 

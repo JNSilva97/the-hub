@@ -32,6 +32,7 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
     const { context, page, errors } = await make(browser, { width, mobile: width < 700 });
     try {
       await start(page);
+      assert.equal(await plan(page, 'going-out').count(), 0);
       assert.equal(await page.locator('#calendar-dialog').evaluate(el => el.scrollWidth > el.clientWidth), false);
       const home = await page.evaluate(() => ({
         order: [...document.querySelectorAll('.app')].map(button => button.dataset.icon),
@@ -57,13 +58,13 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       await page.locator('#calendar-next').click();
       assert.equal(await page.locator('#calendar-week [data-day="2026-11-27"]').getAttribute('aria-pressed'), 'true');
       assert.equal(await plan(page, 'training').isChecked(), true);
-      await plan(page, 'office').uncheck(); await plan(page, 'training').uncheck(); await plan(page, 'going-out').check();
+      await plan(page, 'office').uncheck();
       await page.locator('#calendar-save').click();
       await page.locator('#calendar-status').filter({ hasText: 'Plans saved for this date.' }).waitFor();
-      assert.equal(await page.locator('#calendar-week [data-day="2026-11-27"] small').textContent(), 'Going out');
+      assert.equal(await page.locator('#calendar-week [data-day="2026-11-27"] small').textContent(), 'Gym/Muay Thai');
       const saved = await page.evaluate(() => window.__hubFirebase.docs['account-a']);
       assert.deepEqual(saved.calendar['repeat-5'].plans, ['office', 'training']);
-      assert.deepEqual(saved.calendar['2026-11-27'].plans, ['going-out']);
+      assert.deepEqual(saved.calendar['2026-11-27'].plans, ['training']);
       assert.deepEqual(saved.progress.checks, { 'morning/care/task': true });
       assert.deepEqual(errors, []);
     } finally { await context.close(); }

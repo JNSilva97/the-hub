@@ -12,13 +12,23 @@ test('Date overrides, explicit free days and following the weekly pattern remain
   const records = new Map([['repeat-5', record(['office', 'training'])]]);
   assert.deepEqual(plansForDay(records, '2026-11-20'), { day: '2026-11-20', plans: ['office', 'training'], source: 'weekly' });
   assert.deepEqual(plansForDay(records, '2026-11-27').plans, ['office', 'training']);
-  records.set('2026-11-20', record(['going-out']));
-  assert.deepEqual(plansForDay(records, '2026-11-20').plans, ['going-out']);
+  records.set('2026-11-20', record(['training']));
+  assert.deepEqual(plansForDay(records, '2026-11-20').plans, ['training']);
   records.set('2026-11-20', record([]));
   assert.deepEqual(plansForDay(records, '2026-11-20').plans, []);
   records.set('2026-11-20', record([], 'weekly'));
   assert.deepEqual(plansForDay(records, '2026-11-20').plans, ['office', 'training']);
   assert.deepEqual(plansForDay(records, '2026-11-21').plans, []);
+});
+
+test('Retired Going out plans remain readable without appearing or hiding Office and training', () => {
+  const old = readCalendarRecord('repeat-5', record(['office', 'training', 'going-out'], 'custom', 8));
+  assert.deepEqual(old.plans, ['office', 'training']);
+  assert.equal(old.revision, 8);
+  assert.deepEqual(readCalendarRecord('2026-11-20', record(['going-out'])).plans, []);
+  const records = new Map([['repeat-5', record(['office', 'going-out'])], ['2026-11-20', record(['going-out'])]]);
+  assert.deepEqual(plansForDay(records, '2026-11-20').plans, []);
+  assert.deepEqual(plansForDay(records, '2026-11-27').plans, ['office']);
 });
 test('Calendar records reject malformed dates, duplicate or unknown plans, and invalid revisions', () => {
   assert.deepEqual(readCalendarRecord('repeat-5', record(['training', 'office'])).plans, ['office', 'training']);

@@ -1,12 +1,11 @@
-import { addDays, validDay } from './habits-model.mjs?v=fitness-1';
+import { addDays, validDay } from './habits-model.mjs?v=calendar-options-1';
 export { addDays, validDay };
-export { lisbonDay } from './routine-model.mjs?v=fitness-1';
-export { routinePlan, routineRelevant } from './routine-model.mjs?v=fitness-1';
+export { lisbonDay } from './routine-model.mjs?v=calendar-options-1';
+export { routinePlan, routineRelevant } from './routine-model.mjs?v=calendar-options-1';
 
 export const planTypes = [
   { id: 'office', name: 'Office', icon: 'notes', description: 'Work and office preparation' },
-  { id: 'training', name: 'Gym/Muay Thai', icon: 'habits', description: 'Training preparation' },
-  { id: 'going-out', name: 'Going out', icon: 'people', description: 'Getting ready to head out' }
+  { id: 'training', name: 'Gym/Muay Thai', icon: 'habits', description: 'Training preparation' }
 ];
 export const planNames = plans => plans.map(id => planTypes.find(plan => plan.id === id)?.name).filter(Boolean).join(' + ');
 export const weekday = day => new Date(`${day}T12:00:00Z`).getUTCDay() || 7;
@@ -16,7 +15,8 @@ export const validCalendarId = id => validDay(id) || /^repeat-[1-7]$/.test(id);
 export function readCalendarRecord(id, value) {
   if (!validCalendarId(id) || value?.version !== 1 || !Number.isSafeInteger(value.revision) || value.revision < 1 || value.revision > 1000000000
     || !['custom', 'weekly'].includes(value.mode) || !Array.isArray(value.plans) || value.plans.length > 3
-    || new Set(value.plans).size !== value.plans.length || value.plans.some(id => !planTypes.some(plan => plan.id === id))
+    // Read old Going out records without breaking account sync; only active plans are returned.
+    || new Set(value.plans).size !== value.plans.length || value.plans.some(id => id !== 'going-out' && !planTypes.some(plan => plan.id === id))
     || value.mode === 'weekly' && (id.startsWith('repeat-') || value.plans.length)) throw new Error('Invalid Calendar plan.');
   return { version: 1, revision: value.revision, mode: value.mode, plans: planTypes.map(plan => plan.id).filter(id => value.plans.includes(id)) };
 }
@@ -25,7 +25,8 @@ export function plansForDay(records, day) {
   if (!validDay(day)) throw new Error('Choose a valid date.');
   const custom = records.get(day);
   const repeated = records.get(`repeat-${weekday(day)}`);
-  return { day, plans: [...(custom?.mode === 'custom' ? custom.plans : repeated?.plans ?? [])],
+  const selected = custom?.mode === 'custom' ? custom.plans : repeated?.plans ?? [];
+  return { day, plans: selected.filter(id => planTypes.some(plan => plan.id === id)),
     source: custom?.mode === 'custom' ? 'custom' : repeated ? 'weekly' : 'empty' };
 }
 
