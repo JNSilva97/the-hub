@@ -2,12 +2,12 @@ import {
   validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections, linkedDoseReplaces,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=accessories-optional-1';
-import { cloudWorkspace } from './cloud.js?v=accessories-optional-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=accessories-optional-1';
-import { createRoutineTools } from './routine-tools.js?v=accessories-optional-1';
+} from './routine-model.mjs?v=accessories-joined-1';
+import { cloudWorkspace } from './cloud.js?v=accessories-joined-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=accessories-joined-1';
+import { createRoutineTools } from './routine-tools.js?v=accessories-joined-1';
 
-export { createHealthAccount } from './cloud-health.js?v=accessories-optional-1';
+export { createHealthAccount } from './cloud-health.js?v=accessories-joined-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -247,6 +247,7 @@ function selectRoutine(routine, remember = true) {
     section.append(make('h4', 'check-section-title', group.title));
     if (group.optional) section.dataset.optional = 'true';
     if (group.optional && /^optional\b/i.test(group.title)) section.dataset.optionalNamed = 'true';
+    if (routine.name.trim().toLowerCase() === 'getting ready' && /^(?:optional )?accessories$/i.test(group.title.trim())) section.dataset.accessories = '';
     for (const item of group.items) {
       const key = itemKey(routine, group, item);
       const target = routines.find(candidate => candidate.id === item.linkedChecklist);
@@ -281,6 +282,17 @@ function selectRoutine(routine, remember = true) {
     }
     section.append(body);
     content.append(section);
+  }
+  // Show the old split groups together without changing any saved progress keys.
+  const accessorySections = [...content.querySelectorAll('[data-accessories]')];
+  const accessories = accessorySections.find(section => /^accessories$/i.test(section.querySelector('h4').textContent.trim())) ?? accessorySections[0];
+  if (accessories) {
+    accessories.querySelector('h4').textContent = 'Accessories';
+    delete accessories.dataset.optionalNamed;
+    for (const section of accessorySections.filter(section => section !== accessories)) {
+      accessories.querySelector('.check-items').append(...section.querySelector('.check-items').childNodes);
+      section.remove();
+    }
   }
   const lastRequired = [...content.querySelectorAll('.check-section:not([data-optional]) .check-items')].at(-1);
   (content.querySelector('[data-medication-target] .check-items') ?? lastRequired ?? content).append(medicationSection);
