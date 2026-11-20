@@ -192,6 +192,7 @@ export function updateRoutineSections(routine) {
   if (routine.name.trim().toLowerCase() !== 'getting ready') return routine;
   return { ...routine, groups: routine.groups.map(group => {
     const title = group.title.replace(/\s*\(if needed\)/gi, '').trim();
+    if (/^(?:optional )?accessories$/i.test(title)) return { ...group, title, optional: true };
     const occupied = new Set(group.items.map(item => item.id));
     const newItem = label => {
       const base = label.toLowerCase().replaceAll(' ', '-');

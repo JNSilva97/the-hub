@@ -2,8 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { cleanRoutines, keepProgress, createBackup, parseBackup, removedItems, MAX_BACKUP_BYTES } from '../workspace-model.mjs';
+import { getWorkspaceProgress, isComplete } from '../routine-model.mjs';
 const routines = JSON.parse(readFileSync(new URL('../routines.demo.json', import.meta.url))).routines;
 const key = 'personal-care/care/item-1';
+
+test('Getting Ready can complete with no accessories and preserves individual accessory ticks', () => {
+  const data = [{ id: 'getting-ready', name: 'Getting Ready', description: 'Before going out.', groups: [
+    { id: 'essentials', title: 'Essentials', optional: false, items: [{ id: 'phone', label: 'Phone' }] },
+    { id: 'accessories', title: 'Accessories', optional: false, items: [{ id: 'watch', label: 'Watch' }, { id: 'necklace', label: 'Necklace' }, { id: 'ring', label: 'Ring' }] }
+  ] }];
+  const updated = cleanRoutines(data);
+  assert.equal(updated[0].groups[1].optional, true);
+  assert.deepEqual(updated[0].groups[1].items, data[0].groups[1].items);
+  const state = { checks: { 'getting-ready/essentials/phone': true }, optional: {} };
+  const progress = () => getWorkspaceProgress(updated, state).get('getting-ready');
+  assert.deepEqual(progress(), { done: 1, total: 1, percent: 100 });
+  assert.equal(isComplete(progress()), true);
+  state.checks['getting-ready/accessories/watch'] = true;
+  assert.deepEqual(progress(), { done: 2, total: 2, percent: 100 });
+  assert.deepEqual(keepProgress(updated, state), state);
+  assert.deepEqual(cleanRoutines(updated), updated);
+  const other = structuredClone(data); other[0].name = 'Other checklist';
+  assert.equal(cleanRoutines(other)[0].groups[1].optional, false);
+});
 
 test('Wind Down reorders existing tasks without changing their keys or optional checklist links', () => {
   const group = (id, title, labels, optional = false) => ({ id, title, optional, items: labels.map((label, i) => ({ id: `i-${i}`, label })) });
