@@ -11,6 +11,7 @@ const demo = readFileSync(path.join(root, 'routines.demo.json'), 'utf8');
 const publicFiles = ['index.html', 'styles/routine-tools.css', 'routine-tools.js', 'workspace-model.mjs', 'install.js', 'manifest.webmanifest', 'assets/icons/hub-192.png', 'assets/icons/hub-512.png', 'assets/icons/hub-180.png', 'styles/base.css', 'styles/shell.css', 'styles/core.css', 'styles/access.css', 'styles/panels.css', 'styles/routines.css', 'styles/notes.css', 'styles/motion.css', 'core-progress.js', 'interface-sound.js', 'experience.js', 'pointer-effects.js', 'interface.js', 'notes.js', 'routines.js', 'routine-model.mjs', 'cloud.js', 'firebase-config.mjs', 'routines.demo.json', 'assets/fonts/orbitron-latin.woff2', 'assets/fonts/rajdhani-latin-600.woff2'];
 publicFiles.push('cloud-notes.js', 'cloud-health.js', 'notes-model.mjs', 'health.js', 'styles/health.css', 'checklist-picker.js', 'assets/audio/interface-glide.mp3', 'assets/audio/interface-tap.mp3');
 publicFiles.push('addiction.js', 'styles/addiction.css', 'habits-model.mjs', 'cloud-habits.js');
+publicFiles.push('library.js', 'library-model.mjs', 'cloud-library.js', 'styles/library.css');
 publicFiles.push('fitness.js', 'fitness-model.mjs', 'cloud-fitness.js', 'styles/fitness.css');
 publicFiles.push('calendar.js', 'calendar-model.mjs', 'cloud-calendar.js', 'styles/calendar.css');
 
@@ -26,7 +27,7 @@ async function fixture(browser, options = {}) {
     window.__hubFirebase = {
       docs: documents,
       user: signedIn ? { uid: 'account-a', email: 'test@example.invalid' } : null,
-      writes: [], held: [], imports: 0, rejectWrites: false, holdWrites: false, fromCache, noteListeners: new Set(), healthListeners: new Set(), habitListeners: new Set(), fitnessListeners: new Set(), calendarListeners: new Set(), calendarWrites: [], habitWrites: [], healthWrites: [], noteWrites: [], heldNotes: [],
+      writes: [], held: [], imports: 0, rejectWrites: false, holdWrites: false, fromCache, noteListeners: new Set(), healthListeners: new Set(), habitListeners: new Set(), libraryListeners: new Set(), fitnessListeners: new Set(), calendarListeners: new Set(), calendarWrites: [], habitWrites: [], healthWrites: [], noteWrites: [], heldNotes: [],
       publish() {
         if (this.listener) {
           const records = Object.entries(this.docs[this.listener.uid] || {});
@@ -40,6 +41,11 @@ async function fixture(browser, options = {}) {
           if (this.habitsDenied) { listener.failed(new Error('Missing or insufficient permissions.')); continue; }
           const records = Object.entries(this.docs[listener.uid]?.habits || {});
           listener.next({ empty: !records.length, metadata: { fromCache: this.fromCache }, docs: records.map(([id, data]) => ({ id, data: () => structuredClone(data) })) });
+        }
+        for (const listener of this.libraryListeners) {
+          if (this.libraryDenied) { listener.failed(new Error('Library denied.')); continue; }
+          const records = Object.entries(this.docs[listener.uid]?.library || {});
+          listener.next({ empty: !records.length, metadata: { fromCache: this.fromCache, hasPendingWrites: false }, docs: records.map(([id, data]) => ({ id, data: () => structuredClone(data) })) });
         }
         for (const listener of this.fitnessListeners) {
           if (this.fitnessDenied) { listener.failed(new Error('Missing Fitness rules.')); continue; }

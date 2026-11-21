@@ -68,5 +68,19 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
     }));
     const concurrent = (await getDoc(fitness(a))).data();
     if (concurrent.pushups !== 60 || concurrent.revision !== 4) throw new Error('Concurrent Fitness sets were lost.');
+    const library = (db, uid = 'account-a') => doc(db, 'users', uid, 'library', 'entry-' + 'a'.repeat(32));
+    const title = { version: 1, revision: 1, kind: 'series', title: 'Public fixture title', status: 'active', category: '', notes: '', platform: '', rating: 0, progress: 0, season: 1, episode: 2, updatedAt: 100 };
+    await assertSucceeds(setDoc(library(a), title));
+    await assertSucceeds(getDoc(library(a)));
+    await assertFails(getDoc(library(b)));
+    await assertFails(getDoc(library(guest)));
+    await assertFails(setDoc(library(a, 'account-b'), title));
+    await assertFails(setDoc(library(guest), title));
+    await assertFails(setDoc(library(a), title));
+    await assertSucceeds(setDoc(library(a), { ...title, revision: 2, episode: 3 }));
+    for (const patch of [{ title: '' }, { kind: 'bad' }, { status: 'bad' }, { rating: 11 }, { progress: -1 }, { episode: 1.5 }, { notes: 'x'.repeat(3001) }, { extra: true }]) {
+      await assertFails(setDoc(library(a), { ...title, revision: 3, ...patch }));
+    }
+    await assertFails(deleteDoc(library(a)));
   });
 }

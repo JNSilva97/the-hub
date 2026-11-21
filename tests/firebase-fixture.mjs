@@ -34,6 +34,11 @@ export async function getDoc(reference) {
 }
 export function onSnapshot(reference, options, next, failed) {
   const listener = { uid: reference.path[1], next, failed };
+  if (reference.path[2] === 'library') {
+    service.libraryListeners.add(listener);
+    queueMicrotask(() => { if (service.libraryListeners.has(listener)) service.publish(); });
+    return () => service.libraryListeners.delete(listener);
+  }
   if (reference.path[2] === 'fitness') {
     service.fitnessListeners.add(listener);
     queueMicrotask(() => { if (service.fitnessListeners.has(listener)) service.publish(); });
@@ -133,6 +138,7 @@ export async function runTransaction(database, update) {
     set(reference, data, options) { writes.push({ path: reference.path, data: structuredClone(data), merge: options?.merge }); }
   };
   const result = await update(transaction);
+  if (service.rejectLibrary && writes.some(write => write.path[2] === 'library')) throw Object.assign(new Error('Library denied.'), { code: 'permission-denied' });
   if (service.rejectFitness && writes.some(write => write.path[2] === 'fitness')) throw Object.assign(new Error('Fitness denied.'), { code: 'permission-denied' });
   if (service.rejectCalendar && writes.some(write => write.path[2] === 'calendar')) throw Object.assign(new Error('Calendar denied.'), { code: 'permission-denied' });
   for (const write of writes) {

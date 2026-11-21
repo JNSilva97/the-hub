@@ -4,7 +4,9 @@ A personal space with a near-black, neon-blue and ice-cyan interface.
 
 ## Current version
 
-**Nightfall edition.** A staged mechanical opening, an optical core, a distant neon skyline and eight module launchers. **Goals** supports reusable checklists with saved ticks and optional sections. **Calendar** plans your week. **Health** tracks medication and stock. **Notes** captures text with automatic saving and search. **Settings** controls motion and optional sound. **Fitness** tracks daily push-ups and abs. Finance is the remaining placeholder.
+**Nightfall edition.** A staged mechanical opening, an optical core, a distant neon skyline and ten module launchers. **Goals** supports reusable checklists with saved ticks and optional sections. **Calendar** plans your week. **Health** tracks medication and stock. **Notes** captures text with automatic saving and search. **Settings** controls motion and optional sound. **Fitness** tracks daily push-ups and abs. Finance is the remaining placeholder.
+
+**Games** and **Entertainment** are separate account libraries with search, status and collection filters, ratings and notes. Games tracks platform and percentage progress; Entertainment supports movies, series, anime, videos and specials with season/episode tracking. **Pick for me** prioritizes a planned title, falling back to an active or on-hold title without changing its status; **Next episode** records progress. **Import list** previews TXT or version-1 JSON files, skips existing titles and imports both libraries from a combined packet. Personal lists are never bundled in public assets. A completed season stays **On hold** with its original season number, rather than marking the entire series finished. Unclear types are **Unsorted**. Save/Cancel guards editor drafts and conflicting account edits retain the draft. Connect before saving; cached entries remain readable offline.
 
 **Fitness** replaces Relationships with daily goals of **50 push-ups** and **50 abs**. Add sets of 1, 5 or 10 reps; subtract 1 to correct a mistake. Counts use the Lisbon day and reset for the next day without deleting previous records. Sign-in is required, with transactional updates per account and day; cached progress is read-only offline. Enable the owner-only Fitness rules before publishing this feature.
 
@@ -159,13 +161,13 @@ The check covers intro dismissal, pause/resume, reduced motion, all nine launche
 Run the data-model tests with Node.js:
 
 ```sh
-node --test tests/routine-model.test.mjs tests/workspace-model.test.mjs tests/habits-model.test.mjs tests/calendar-model.test.mjs tests/fitness-model.test.mjs
+node --test tests/routine-model.test.mjs tests/workspace-model.test.mjs tests/habits-model.test.mjs tests/calendar-model.test.mjs tests/fitness-model.test.mjs tests/library-model.test.mjs
 ```
 
 For the browser regression suite, make the installed `playwright` package available to Node.js and use a system Chrome installation:
 
 ```sh
-node --test tests/browser.cjs tests/phone.cjs tests/health.cjs tests/calendar.cjs tests/fitness.cjs
+node --test tests/browser.cjs tests/phone.cjs tests/health.cjs tests/calendar.cjs tests/fitness.cjs tests/library.cjs
 node --test tests/offline.cjs
 node --test tests/notes-model.test.mjs tests/notes-sync.cjs
 ```

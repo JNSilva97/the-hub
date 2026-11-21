@@ -33,7 +33,7 @@ async function testHub() {
       if (paused() !== wasPaused) motionToggle.click();
     }
   }
-  assert(apps.length === 8, 'The home screen must show eight modules.');
+  assert(apps.length === 10, 'The home screen must show ten modules.');
   assert(/^\d{2}:\d{2}$/.test(document.getElementById('clock').textContent), 'Clock is missing.');
   assert(document.documentElement.scrollWidth <= innerWidth, 'Horizontal overflow.');
   for (const app of apps) {
@@ -45,7 +45,7 @@ async function testHub() {
     app.focus();
     app.click();
     const notes = app.dataset.icon === 'notes';
-    const special = { notes: 'notes-dialog', goals: 'routines-dialog', habits: 'addiction-dialog', calendar: 'calendar-dialog', fitness: 'fitness-dialog' }[app.dataset.icon];
+    const special = { notes: 'notes-dialog', goals: 'routines-dialog', habits: 'addiction-dialog', calendar: 'calendar-dialog', fitness: 'fitness-dialog', games: 'games-dialog', entertainment: 'entertainment-dialog' }[app.dataset.icon];
     const active = special ? document.getElementById(special) : dialog;
     assert(active.open, 'App did not open.');
     assert(special || document.getElementById('app-title').textContent === app.querySelector('.app-name').textContent, 'Wrong app title.');

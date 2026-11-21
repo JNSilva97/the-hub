@@ -39,7 +39,7 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
         calendar: document.querySelector('.app[data-icon="calendar"] .module-number').textContent,
         notes: document.querySelector('.app[data-icon="notes"] .module-number').textContent
       }));
-      assert.deepEqual(home.order, ['goals', 'health', 'habits', 'calendar', 'notes', 'settings', ...(width < 700 ? ['fitness', 'finance'] : ['finance', 'fitness'])]);
+      assert.deepEqual(home.order, ['goals', 'health', 'habits', 'calendar', 'notes', 'settings', ...(width < 700 ? ['fitness', 'games', 'entertainment', 'finance'] : ['finance', 'fitness', 'games', 'entertainment'])]);
       assert.equal(home.calendar, '04'); assert.equal(home.notes, '05');
       assert.match(await page.locator('.calendar-header .panel-eyebrow').textContent(), /MODULE 04/);
       await page.locator('#calendar-mode-weekly').click();

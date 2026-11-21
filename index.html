@@ -11,19 +11,20 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/shell.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/core.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/access.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/panels.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/routines.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/notes.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/health.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/calendar.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/fitness.css?v=calendar-options-1">
-  <link rel="stylesheet" href="styles/motion.css?v=calendar-options-1">
+  <link rel="stylesheet" href="styles/base.css?v=library-1">
+  <link rel="stylesheet" href="styles/shell.css?v=library-1">
+  <link rel="stylesheet" href="styles/core.css?v=library-1">
+  <link rel="stylesheet" href="styles/access.css?v=library-1">
+  <link rel="stylesheet" href="styles/panels.css?v=library-1">
+  <link rel="stylesheet" href="styles/routines.css?v=library-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=library-1">
+  <link rel="stylesheet" href="styles/notes.css?v=library-1">
+  <link rel="stylesheet" href="styles/health.css?v=library-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=library-1">
+  <link rel="stylesheet" href="styles/library.css?v=library-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=library-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=library-1">
+  <link rel="stylesheet" href="styles/motion.css?v=library-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -54,6 +55,8 @@
     <symbol id="med-icon-checklist" viewBox="0 0 24 24"><path d="m4 7 2 2 3-4m-5 9 2 2 3-4m4-5h7m-7 7h7m-7 5h7"/></symbol>
     <symbol id="finance" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18m-4 5h4M7 5V3h11"/><circle cx="16" cy="14" r=".5"/></symbol>
     <symbol id="calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 10h16m-12 4h2m4 0h2m-8 3h2m4 0h2"/></symbol>
+    <symbol id="games" viewBox="0 0 24 24"><path d="M7 7h10c3 0 5 10 3 11-1 1-4-2-5-3H9c-1 1-4 4-5 3C2 17 4 7 7 7Z"/><path d="M6 11h5m-2.5-2.5v5M16 10h.01M18 12h.01"/></symbol>
+    <symbol id="entertainment" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m10 9 5 3-5 3ZM3 8h18M7 4v4m5-4v4m5-4v4"/></symbol>
     <symbol id="fitness" viewBox="0 0 24 24"><path d="M6 8v8m-3-6v4m15-6v8m3-6v4M6 12h12M3 8h3M3 16h3m12-8h3m-3 8h3"/></symbol>
     <symbol id="people" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3"/><path d="M4 20v-2a6 6 0 0 1 12 0v2m0-15a3 3 0 0 1 0 6m3 9v-2a6 6 0 0 0-2-4"/></symbol>
     <symbol id="notes" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Zm0 0v6h6M8 13h8m-8 4h5"/></symbol>
@@ -211,6 +214,8 @@
       <button class="app" type="button" data-icon="settings" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#settings"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">06</span></span><span class="app-name">Settings</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       <button class="app" type="button" data-icon="finance" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#finance"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">07</span></span><span class="app-name">Finance</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       <button class="app" type="button" data-icon="fitness" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#fitness"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">08</span></span><span class="app-name">Fitness</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="games" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#games"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">09</span></span><span class="app-name">Games</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
+      <button class="app" type="button" data-icon="entertainment" aria-haspopup="dialog"><span class="tile"><svg aria-hidden="true"><use href="#entertainment"/></svg></span><span class="module-scan" aria-hidden="true"></span><span class="app-copy"><span class="app-meta" aria-hidden="true">MODULE / <span class="module-number">10</span></span><span class="app-name">Entertainment</span></span><svg class="app-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13 13 3M4 3h9v9"/></svg></button>
       </nav>
       <details id="future-spaces" class="future-spaces" hidden>
         <summary>More spaces <span>1 coming soon</span></summary>
@@ -223,7 +228,7 @@
       <ol id="core-signal-list"></ol>
     </section>
   </main>
-  <footer><span><span class="footer-mark">◇</span> &nbsp; PERSONAL TERMINAL</span><button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>08 MODULES &nbsp; / &nbsp; THE HUB</span></footer>
+  <footer><span><span class="footer-mark">◇</span> &nbsp; PERSONAL TERMINAL</span><button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>10 MODULES &nbsp; / &nbsp; THE HUB</span></footer>
   <nav class="phone-actions" aria-label="Quick actions">
     <button id="phone-routines" type="button" aria-haspopup="dialog" aria-controls="routines-dialog"><svg aria-hidden="true"><use href="#goals"/></svg><span>Goals</span></button>
     <button id="phone-notes" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#notes"/></svg><span>Notes</span></button>
@@ -231,6 +236,25 @@
     <button id="phone-addiction" type="button" aria-label="Habits" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 13h2l2-4 2 6 2-2h1"/></svg><span>Habits</span></button>
     <button id="phone-settings" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#settings"/></svg><span>Settings</span></button>
   </nav>
+  <dialog id="games-dialog" class="library-dialog" data-library="games" aria-labelledby="games-title">
+    <header class="library-header"><div class="library-identity"><svg aria-hidden="true"><use href="#games"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 09</div><h2 id="games-title">Games</h2></div></div><form method="dialog" class="library-close-form"><button data-part="close" type="button" aria-label="Close Games">×</button></form></header>
+    <div class="library-content"><section class="library-hero"><span class="library-kicker">PRESS PLAY / YOUR WAY</span><h3 data-part="subtitle"></h3><p data-part="stats"></p><div class="library-hero-actions" data-part="hero-actions"><button type="button" class="library-primary" data-part="add" data-write>Add game</button><button type="button" data-part="pick">Pick for me <span aria-hidden="true">↗</span></button><button type="button" data-part="import" data-write>Import list</button><button type="button" data-part="signin">Sign in</button><input data-part="file" type="file" accept=".txt,.json,text/plain,application/json" hidden aria-label="Import Games list"></div></section>
+      <section data-part="collection" aria-label="Games library"><div class="library-toolbar"><label class="library-search"><span>Find a title</span><input type="search" data-part="search" placeholder="Search titles, collections, notes…" autocomplete="off"></label><label hidden>Type<select data-part="type"><option value="all">All types</option><option value="game">Game</option></select></label><label>Collection<select data-part="category"><option value="">All collections</option></select></label></div>
+        <div class="library-filters" role="group" aria-label="Filter by status"><button type="button" data-filter="all" aria-pressed="true">All</button><button type="button" data-filter="planned" aria-pressed="false">Up next</button><button type="button" data-filter="active" aria-pressed="false">In progress</button><button type="button" data-filter="completed" aria-pressed="false">Finished</button><button type="button" data-filter="paused" aria-pressed="false">On hold</button><button type="button" data-filter="dropped" aria-pressed="false">Dropped</button></div><p class="library-count" data-part="count" role="status"></p><div class="library-cards" data-part="cards"></div><div class="library-empty" data-part="empty"><svg aria-hidden="true"><use href="#games"/></svg><h3 data-part="empty-title"></h3><p data-part="empty-copy"></p></div></section>
+      <form data-part="editor" class="library-editor" hidden><h3 data-part="editor-title">Title details</h3><div class="library-fields"><label class="library-field-wide">Title<input name="title" required maxlength="180" autocomplete="off"></label><label>Type<select name="kind"><option value="game">Game</option></select></label><label>Status<select name="status"><option value="planned">Up next</option><option value="active">In progress</option><option value="completed">Finished</option><option value="paused">On hold</option><option value="dropped">Dropped</option></select></label><label>Collection / category<input name="category" maxlength="100" placeholder="Optional"></label><label data-field="game">Platform<input name="platform" maxlength="100" placeholder="PC, PlayStation, Switch…"></label><label>Rating<select name="rating"><option value="0">Not rated</option><option value="1">1 / 10</option><option value="2">2 / 10</option><option value="3">3 / 10</option><option value="4">4 / 10</option><option value="5">5 / 10</option><option value="6">6 / 10</option><option value="7">7 / 10</option><option value="8">8 / 10</option><option value="9">9 / 10</option><option value="10">10 / 10</option></select></label><label data-field="game">Progress (%)<input name="progress" type="number" min="0" max="100" step="1" value="0" required></label><label data-field="serial">Season<input name="season" type="number" min="0" max="50000" step="1" value="0" required></label><label data-field="serial">Last episode watched<input name="episode" type="number" min="0" max="50000" step="1" value="0" required></label><label class="library-field-wide">Notes<textarea name="notes" rows="4" maxlength="3000" placeholder="Where you left off, a recommendation, or what you thought…"></textarea></label></div><div class="library-editor-actions"><button class="library-primary" type="submit" data-write>Save title</button><button type="button" data-part="cancel">Cancel</button></div></form>
+      <div class="library-feedback"><p data-part="status" role="status">Connecting to your library…</p><button type="button" data-part="retry" hidden>Retry</button></div>
+    </div>
+  </dialog>
+  <dialog id="entertainment-dialog" class="library-dialog" data-library="entertainment" aria-labelledby="entertainment-title">
+    <header class="library-header"><div class="library-identity"><svg aria-hidden="true"><use href="#entertainment"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 10</div><h2 id="entertainment-title">Entertainment</h2></div></div><form method="dialog" class="library-close-form"><button data-part="close" type="button" aria-label="Close Entertainment">×</button></form></header>
+    <div class="library-content"><section class="library-hero"><span class="library-kicker">THE EVENING IS YOURS</span><h3 data-part="subtitle"></h3><p data-part="stats"></p><div class="library-hero-actions" data-part="hero-actions"><button type="button" class="library-primary" data-part="add" data-write>Add title</button><button type="button" data-part="pick">Pick for me <span aria-hidden="true">↗</span></button><button type="button" data-part="import" data-write>Import list</button><button type="button" data-part="signin">Sign in</button><input data-part="file" type="file" accept=".txt,.json,text/plain,application/json" hidden aria-label="Import Entertainment list"></div></section>
+      <section data-part="collection" aria-label="Entertainment library"><div class="library-toolbar"><label class="library-search"><span>Find a title</span><input type="search" data-part="search" placeholder="Search titles, collections, notes…" autocomplete="off"></label><label >Type<select data-part="type"><option value="all">All types</option><option value="movie">Movie</option><option value="series">Series</option><option value="anime">Anime</option><option value="video">Video</option><option value="special">Special</option><option value="other">Unsorted</option></select></label><label>Collection<select data-part="category"><option value="">All collections</option></select></label></div>
+        <div class="library-filters" role="group" aria-label="Filter by status"><button type="button" data-filter="all" aria-pressed="true">All</button><button type="button" data-filter="planned" aria-pressed="false">Up next</button><button type="button" data-filter="active" aria-pressed="false">In progress</button><button type="button" data-filter="completed" aria-pressed="false">Finished</button><button type="button" data-filter="paused" aria-pressed="false">On hold</button><button type="button" data-filter="dropped" aria-pressed="false">Dropped</button></div><p class="library-count" data-part="count" role="status"></p><div class="library-cards" data-part="cards"></div><div class="library-empty" data-part="empty"><svg aria-hidden="true"><use href="#entertainment"/></svg><h3 data-part="empty-title"></h3><p data-part="empty-copy"></p></div></section>
+      <form data-part="editor" class="library-editor" hidden><h3 data-part="editor-title">Title details</h3><div class="library-fields"><label class="library-field-wide">Title<input name="title" required maxlength="180" autocomplete="off"></label><label>Type<select name="kind"><option value="movie">Movie</option><option value="series">Series</option><option value="anime">Anime</option><option value="video">Video</option><option value="special">Special</option><option value="other">Unsorted</option></select></label><label>Status<select name="status"><option value="planned">Up next</option><option value="active">In progress</option><option value="completed">Finished</option><option value="paused">On hold</option><option value="dropped">Dropped</option></select></label><label>Collection / category<input name="category" maxlength="100" placeholder="Optional"></label><label data-field="game">Platform<input name="platform" maxlength="100" placeholder="PC, PlayStation, Switch…"></label><label>Rating<select name="rating"><option value="0">Not rated</option><option value="1">1 / 10</option><option value="2">2 / 10</option><option value="3">3 / 10</option><option value="4">4 / 10</option><option value="5">5 / 10</option><option value="6">6 / 10</option><option value="7">7 / 10</option><option value="8">8 / 10</option><option value="9">9 / 10</option><option value="10">10 / 10</option></select></label><label data-field="game">Progress (%)<input name="progress" type="number" min="0" max="100" step="1" value="0" required></label><label data-field="serial">Season<input name="season" type="number" min="0" max="50000" step="1" value="0" required></label><label data-field="serial">Last episode watched<input name="episode" type="number" min="0" max="50000" step="1" value="0" required></label><label class="library-field-wide">Notes<textarea name="notes" rows="4" maxlength="3000" placeholder="Where you left off, a recommendation, or what you thought…"></textarea></label></div><div class="library-editor-actions"><button class="library-primary" type="submit" data-write>Save title</button><button type="button" data-part="cancel">Cancel</button></div></form>
+      <div class="library-feedback"><p data-part="status" role="status">Connecting to your library…</p><button type="button" data-part="retry" hidden>Retry</button></div>
+    </div>
+  </dialog>
+  <dialog id="library-import-dialog" class="library-import-dialog" aria-labelledby="library-import-title"><div class="library-content"><h2 id="library-import-title">Bring your list along</h2><p id="library-import-summary"></p><div id="library-import-list"></div><p id="library-import-status" role="status"></p><div class="library-editor-actions"><button type="button" id="library-import-save" class="library-primary">Import selected</button><button type="button" id="library-import-cancel">Cancel</button></div></div></dialog>
   <dialog id="fitness-dialog" class="fitness-dialog" aria-labelledby="fitness-title">
     <div class="fitness-header"><div><div class="panel-eyebrow">THE HUB / MODULE 08</div><h2 id="fitness-title">Fitness</h2></div><form method="dialog"><button id="fitness-close" type="button" aria-label="Close Fitness">×</button></form></div>
     <div class="fitness-content"><div class="fitness-intro"><div><h3 id="fitness-date">Today</h3><p id="fitness-summary" role="status" aria-live="polite">0 of 2 daily goals complete</p></div><button id="fitness-signin" type="button">Sign in</button></div>
@@ -397,7 +421,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.20.8</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.21.1</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -556,17 +580,18 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=calendar-options-1"></script>
-  <script defer src="notes.js?v=calendar-options-1"></script>
-  <script defer src="checklist-picker.js?v=calendar-options-1"></script>
-  <script defer src="health.js?v=calendar-options-1"></script>
-  <script defer src="addiction.js?v=calendar-options-1"></script>
-  <script defer src="calendar.js?v=calendar-options-1"></script>
-  <script defer src="fitness.js?v=calendar-options-1"></script>
-  <script defer src="interface.js?v=calendar-options-1"></script>
-  <script defer src="interface-sound.js?v=calendar-options-1"></script>
-  <script defer src="pointer-effects.js?v=calendar-options-1"></script>
-  <script defer src="experience.js?v=calendar-options-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=calendar-options-1"></script>
+  <script defer src="core-progress.js?v=library-1"></script>
+  <script defer src="notes.js?v=library-1"></script>
+  <script defer src="checklist-picker.js?v=library-1"></script>
+  <script defer src="health.js?v=library-1"></script>
+  <script defer src="addiction.js?v=library-1"></script>
+  <script defer src="calendar.js?v=library-1"></script>
+  <script defer src="fitness.js?v=library-1"></script>
+  <script defer src="library.js?v=library-1"></script>
+  <script defer src="interface.js?v=library-1"></script>
+  <script defer src="interface-sound.js?v=library-1"></script>
+  <script defer src="pointer-effects.js?v=library-1"></script>
+  <script defer src="experience.js?v=library-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=library-1"></script>
 </body>
 </html>

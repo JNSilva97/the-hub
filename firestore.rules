@@ -53,6 +53,28 @@ service cloud.firestore {
         && request.resource.data.revision == resource.data.revision + 1;
     }
 
+    match /users/{uid}/library/{id} {
+      function validEntry() {
+        let data = request.resource.data;
+        return id.matches('^entry-[a-f0-9]{32}$')
+          && data.keys().hasOnly(['version', 'revision', 'kind', 'title', 'status', 'category', 'notes', 'platform', 'rating', 'progress', 'season', 'episode', 'updatedAt'])
+          && data.version == 1 && data.revision is int && data.revision > 0 && data.revision <= 1000000000
+          && data.kind in ['game', 'movie', 'series', 'anime', 'video', 'special', 'other']
+          && data.status in ['active', 'planned', 'completed', 'paused', 'dropped']
+          && data.title is string && data.title.size() > 0 && data.title.size() <= 180
+          && data.category is string && data.category.size() <= 100
+          && data.platform is string && data.platform.size() <= 100
+          && data.notes is string && data.notes.size() <= 3000
+          && data.rating is int && data.rating >= 0 && data.rating <= 10
+          && data.progress is int && data.progress >= 0 && data.progress <= 100
+          && data.season is int && data.season >= 0 && data.season <= 50000
+          && data.episode is int && data.episode >= 0 && data.episode <= 50000
+          && data.updatedAt is int && data.updatedAt >= 0 && data.updatedAt <= 9007199254740991;
+      }
+      allow read: if owner(uid);
+      allow create: if owner(uid) && validEntry() && request.resource.data.revision == 1;
+      allow update: if owner(uid) && validEntry() && request.resource.data.revision == resource.data.revision + 1;
+    }
     match /users/{uid}/fitness/{id} {
       function validFitness() {
         let data = request.resource.data;

@@ -1,6 +1,6 @@
-import { firebaseConfig } from './firebase-config.mjs?v=calendar-options-1';
-import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=calendar-options-1';
-import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=calendar-options-1';
+import { firebaseConfig } from './firebase-config.mjs?v=library-1';
+import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=library-1';
+import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=library-1';
 
 const panel = document.getElementById('account-dialog');
 const loginButton = document.getElementById('account-login');
@@ -35,6 +35,7 @@ let notesUnsafe = false;
 let healthBusy = false;
 let calendarUnsafe = false;
 let fitnessBusy = false;
+let libraryUnsafe = false;
 
 function syncMessage() {
   if (failure) return failure;
@@ -54,7 +55,7 @@ function render() {
   loginButton.hidden = Boolean(user);
   loginButton.disabled = !auth || setupFailure;
   logoutButton.hidden = !user;
-  logoutButton.disabled = importing || workspaceSaving || skinCareSaving || pending > 0 || edits.size > 0 || queued || notesPending || healthBusy || calendarUnsafe || fitnessBusy;
+  logoutButton.disabled = importing || workspaceSaving || skinCareSaving || pending > 0 || edits.size > 0 || queued || notesPending || healthBusy || calendarUnsafe || fitnessBusy || libraryUnsafe;
   importButton.hidden = !user || !ready || routines !== null || !local || Boolean(failure);
   importButton.disabled = importing;
   retryButton.hidden = !firebaseConfig || (!failure && !edits.size);
@@ -168,7 +169,7 @@ async function connect() {
       queued = false;
       ready = false;
       failure = '';
-      notesPending = notesUnsafe = healthBusy = calendarUnsafe = fitnessBusy = false;
+      notesPending = notesUnsafe = healthBusy = calendarUnsafe = fitnessBusy = libraryUnsafe = false;
       document.dispatchEvent(new Event('hub:accountchange'));
       if (user) watchAccount();
       else notify();
@@ -349,7 +350,7 @@ loginButton.addEventListener('click', () => {
   }).finally(render);
 });
 logoutButton.addEventListener('click', () => {
-  if (!auth || importing || workspaceSaving || skinCareSaving || pending || edits.size || queued || notesPending || healthBusy || calendarUnsafe || fitnessBusy) return;
+  if (!auth || importing || workspaceSaving || skinCareSaving || pending || edits.size || queued || notesPending || healthBusy || calendarUnsafe || fitnessBusy || libraryUnsafe) return;
   sdk.signOut(auth).catch(() => { failure = 'Sign-out did not finish. Try again.'; render(); });
 });
 importButton.addEventListener('click', () => cloudWorkspace.importPC());
@@ -368,9 +369,10 @@ window.addEventListener('online', () => {
 });
 window.addEventListener('offline', render);
 window.addEventListener('beforeunload', event => {
-  if (fitnessBusy || calendarUnsafe || notesUnsafe || importing || workspaceSaving || skinCareSaving || [...edits.values()].some(edit => !edit.durable) || queued && !persistent) { event.preventDefault(); event.returnValue = ''; }
+  if (libraryUnsafe || fitnessBusy || calendarUnsafe || notesUnsafe || importing || workspaceSaving || skinCareSaving || [...edits.values()].some(edit => !edit.durable) || queued && !persistent) { event.preventDefault(); event.returnValue = ''; }
 });
 document.addEventListener('hub:healthsync', event => { healthBusy = event.detail; render(); });
+document.addEventListener('hub:librarysync', event => { libraryUnsafe = Boolean(event.detail); render(); });
 document.addEventListener('hub:fitnesssync', event => { fitnessBusy = Boolean(event.detail); render(); });
 document.addEventListener('hub:calendarsync', event => { calendarUnsafe = Boolean(event.detail); render(); });
 document.addEventListener('hub:notessync', event => { notesPending = event.detail.pending; notesUnsafe = event.detail.unsafe; render(); });

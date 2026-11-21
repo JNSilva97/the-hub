@@ -9,6 +9,7 @@ const addictionDialog = document.getElementById('addiction-dialog');
 const addiction = typeof createAddictionHelper === 'function' ? createAddictionHelper(addictionDialog, health) : undefined;
 const calendar = typeof createCalendar === 'function' ? createCalendar(document.getElementById('calendar-dialog')) : undefined;
 const fitness = typeof createFitness === 'function' ? createFitness(document.getElementById('fitness-dialog')) : undefined;
+const mediaLibrary = typeof createMediaLibrary === 'function' ? createMediaLibrary() : undefined;
 const scriptUrl = new URL(document.currentScript.src);
 const routinesUrl = new URL('./routines.js', scriptUrl);
 routinesUrl.search = scriptUrl.search;
@@ -54,6 +55,7 @@ function openApp(button) {
   if (icon === 'notes' && instantNotes) { instantNotes.open(); return; }
   if (icon === 'calendar' && calendar) { calendar.open(); return; }
   if (icon === 'fitness' && fitness) { fitness.open(); return; }
+  if (['games', 'entertainment'].includes(icon) && mediaLibrary) { mediaLibrary.open(icon); return; }
   const settings = icon === 'settings';
   const healthOpen = icon === 'health' && Boolean(health);
   dialog.dataset.app = icon;
@@ -75,7 +77,7 @@ const appGrid = document.querySelector('.apps');
 const appButtons = [...appGrid.querySelectorAll('.app')];
 const futureSpaces = document.getElementById('future-spaces');
 const futureGrid = futureSpaces.querySelector('.future-grid');
-const moduleKinds = new Map([['goals', 'Routines and checklists'], ['habits', 'Tobacco and coffee'], ['notes', 'Notebook'], ['settings', 'Interface'], ['health', 'Medication and stock'], ['calendar', 'Weekly plans'], ['fitness', 'Daily exercise goals']]);
+const moduleKinds = new Map([['goals', 'Routines and checklists'], ['habits', 'Tobacco and coffee'], ['notes', 'Notebook'], ['settings', 'Interface'], ['health', 'Medication and stock'], ['calendar', 'Weekly plans'], ['fitness', 'Daily exercise goals'], ['games', 'Game library'], ['entertainment', 'Movies, series and anime']]);
 const futureApps = appButtons.filter(button => !moduleKinds.has(button.dataset.icon));
 for (const button of futureApps) {
   const label = button.querySelector('.app-meta');
@@ -183,6 +185,7 @@ loadRoutines();
     if (health && !health.canNavigate()) return;
     if (calendar && !calendar.canNavigate()) return;
     if (fitness && !fitness.canNavigate()) return;
+    if (mediaLibrary && !mediaLibrary.canNavigate()) return;
     if (!document.getElementById('checklist-control').hidden || document.getElementById('backup-dialog').open) return;
     if (palette.open) { palette.close(); return; }
     for (const panel of document.querySelectorAll('dialog[open]')) panel.close();
