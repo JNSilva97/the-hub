@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=library-covers-1';
-import { readFitnessDay, adjustFitnessDay } from './fitness-model.mjs?v=library-covers-1';
+import { cloudWorkspace } from './cloud.js?v=library-covers-2';
+import { readFitnessDay, adjustFitnessDay } from './fitness-model.mjs?v=library-covers-2';
 
 export function createFitnessAccount(onChange) {
   let uid, unsubscribe, generation = 0, ready = false, cached = true, pending = false, error = '';

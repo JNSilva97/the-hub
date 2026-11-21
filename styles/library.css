@@ -35,7 +35,9 @@
 .library-art > img { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: contain; background: #040d17; opacity: 0; }
 .library-kind-icon { position: absolute; top: 18px; right: 18px; width: 30px; height: 30px; fill: none; stroke: #c6e2f6; stroke-width: 1.4; }
 .library-art[data-artwork="loaded"] > img { opacity: 1; }
-.library-art[data-artwork="loaded"] :is(.library-monogram, .library-type, .library-kind-icon), .library-art[data-artwork="loaded"]::after { display: none; }
+.library-art:is([data-artwork="custom"], [data-artwork="fallback"]) > .library-custom-art { opacity: 1; }
+.library-art[data-artwork="loaded"] > .library-custom-art { display: none; }
+.library-art[data-artwork] :is(.library-monogram, .library-type, .library-kind-icon), .library-art[data-artwork]::after { display: none; }
 .library-image-source { display: block; margin-top: 10px; min-height: 18px; color: #a7c7de; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
 .library-dialog .library-image-source[hidden] { display: block; visibility: hidden; }
 .library-image-source:focus-visible { outline: 2px solid #b8eaff; outline-offset: 3px; }

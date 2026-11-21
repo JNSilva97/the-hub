@@ -37,7 +37,7 @@ test('Library artwork loads on demand and failed images keep useful icons', { ti
       await context.route('https://upload.wikimedia.org/**', route => route.fulfill({ status: 404, body: 'Not found' }));
       await ready(page); await page.locator('[data-icon="entertainment"]').click();
       await page.locator('.library-art[data-artwork="fallback"]').waitFor();
-      assert.equal(await page.locator('#entertainment-dialog .library-kind-icon').isVisible(), true);
+      assert.equal(await page.locator('#entertainment-dialog .library-custom-art').isVisible(), true);
       assert.equal(await page.locator('#entertainment-dialog h3').filter({ hasText: 'Broken poster' }).isVisible(), true);
       assert.equal(await page.getByRole('button', { name: 'Watch next', exact: true }).isEnabled(), true);
       assert.equal(await page.locator('#entertainment-dialog .library-image-source').isVisible(), false);
