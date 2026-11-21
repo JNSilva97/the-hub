@@ -74,6 +74,7 @@ function createMediaLibrary() {
           const progress = document.createElement('progress'); progress.max = 100; progress.value = entry.progress; progress.setAttribute('aria-label', `${entry.title}: ${entry.progress}% complete`);
           body.append(progress, node('p', `${entry.progress}% complete`, 'library-position'));
         }
+        if (entry.notes.trim()) body.append(node('p', entry.notes, 'library-card-notes'));
         const actions = node('div', '', 'library-card-actions');
         const action = (text, run, write = true) => { const b = node('button', text); b.type = 'button'; b.disabled = busy || write && !account?.canWrite; b.addEventListener('click', run); return b; };
         if (entry.status === 'planned' || entry.status === 'paused') actions.append(action(domain === 'games' ? 'Play next' : 'Watch next', () => quick(domain, id, e => ({ ...e, status: 'active' }))));
@@ -208,7 +209,7 @@ function createMediaLibrary() {
   document.getElementById('library-import-save').addEventListener('click', commitImport);
   document.getElementById('library-import-cancel').addEventListener('click', () => { if (!busy) { preview = []; previewPanel.close(); } });
   previewPanel.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
-  import('./library-model.mjs?v=health-night-1').then(m => { model = m; render(); return import('./cloud-library.js?v=health-night-1'); }).then(m => {
+  import('./library-model.mjs?v=library-notes-1').then(m => { model = m; render(); return import('./cloud-library.js?v=library-notes-1'); }).then(m => {
     const changed = () => {
       if (owner !== account?.uid) {
         owner = account?.uid; busy = false; notice = failure = ''; preview = []; previewPanel.close();
@@ -226,7 +227,7 @@ function createMediaLibrary() {
     };
     account = m.createLibraryAccount(changed); changed();
   }).catch(() => { failure = 'Your library could not load. Reload to try again.'; render(); });
-  import('./library-artwork.mjs?v=health-night-1').then(module => { artwork = module.createArtworkLoader(); render(); }).catch(() => { /* The library remains fully usable with its icons. */ });
+  import('./library-artwork.mjs?v=library-notes-1').then(module => { artwork = module.createArtworkLoader(); render(); }).catch(() => { /* The library remains fully usable with its icons. */ });
   render();
   return { open(domain) { if (canNavigate()) { render(); panels.get(domain).showModal(); } }, canNavigate };
 }

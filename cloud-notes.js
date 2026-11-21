@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=health-night-1';
-import { validateCloudNote, visibleNotes } from './notes-model.mjs?v=health-night-1';
+import { cloudWorkspace } from './cloud.js?v=library-notes-1';
+import { validateCloudNote, visibleNotes } from './notes-model.mjs?v=library-notes-1';
 
 // Each submitted version is immutable. Concurrent offline edits create separate versions, never overwrite text.
 export function createCloudNotes(changed) {

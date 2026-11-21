@@ -32,12 +32,16 @@ test('Games and Entertainment workflows', { timeout: 120000 }, async t => {
       await page.locator('#games-dialog [data-filter="active"]').click();
       await page.getByRole('button', { name: 'Details', exact: true }).click();
       await part(page, 'games', 'editor').locator('[name="progress"]').fill('35');
+      const note = 'Finish the side quests first.\nBring <supplies> & explore.';
+      await part(page, 'games', 'editor').locator('[name="notes"]').fill(note);
       await page.keyboard.press('Escape');
       assert.equal(await page.locator('#games-dialog').evaluate(el => el.open), true);
       assert.equal(await page.locator('#account-logout').isDisabled(), true);
       await part(page, 'games', 'editor').locator('[type="submit"]').click();
       await part(page, 'games', 'status').filter({ hasText: 'Title saved.' }).waitFor();
       assert.equal(await page.locator('#games-dialog progress').getAttribute('value'), '35');
+      assert.equal(await page.locator('#games-dialog .library-card-notes').textContent(), note);
+      assert.equal(await page.locator('#games-dialog .library-card-notes supplies').count(), 0);
       await part(page, 'games', 'pick').click();
       assert.equal(await page.locator('#games-dialog .library-picked').count(), 1);
       await page.getByRole('button', { name: 'Mark finished', exact: true }).click();
