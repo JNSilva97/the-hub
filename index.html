@@ -11,20 +11,20 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=library-1">
-  <link rel="stylesheet" href="styles/shell.css?v=library-1">
-  <link rel="stylesheet" href="styles/core.css?v=library-1">
-  <link rel="stylesheet" href="styles/access.css?v=library-1">
-  <link rel="stylesheet" href="styles/panels.css?v=library-1">
-  <link rel="stylesheet" href="styles/routines.css?v=library-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=library-1">
-  <link rel="stylesheet" href="styles/notes.css?v=library-1">
-  <link rel="stylesheet" href="styles/health.css?v=library-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=library-1">
-  <link rel="stylesheet" href="styles/library.css?v=library-1">
-  <link rel="stylesheet" href="styles/calendar.css?v=library-1">
-  <link rel="stylesheet" href="styles/fitness.css?v=library-1">
-  <link rel="stylesheet" href="styles/motion.css?v=library-1">
+  <link rel="stylesheet" href="styles/base.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/shell.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/core.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/access.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/panels.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/routines.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/notes.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/health.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/library.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=library-covers-1">
+  <link rel="stylesheet" href="styles/motion.css?v=library-covers-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -55,6 +55,7 @@
     <symbol id="med-icon-checklist" viewBox="0 0 24 24"><path d="m4 7 2 2 3-4m-5 9 2 2 3-4m4-5h7m-7 7h7m-7 5h7"/></symbol>
     <symbol id="finance" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18m-4 5h4M7 5V3h11"/><circle cx="16" cy="14" r=".5"/></symbol>
     <symbol id="calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 10h16m-12 4h2m4 0h2m-8 3h2m4 0h2"/></symbol>
+    <symbol id="library-tv" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="m8 2 4 4 4-4M8 22h8m-4-3v3"/></symbol>
     <symbol id="games" viewBox="0 0 24 24"><path d="M7 7h10c3 0 5 10 3 11-1 1-4-2-5-3H9c-1 1-4 4-5 3C2 17 4 7 7 7Z"/><path d="M6 11h5m-2.5-2.5v5M16 10h.01M18 12h.01"/></symbol>
     <symbol id="entertainment" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m10 9 5 3-5 3ZM3 8h18M7 4v4m5-4v4m5-4v4"/></symbol>
     <symbol id="fitness" viewBox="0 0 24 24"><path d="M6 8v8m-3-6v4m15-6v8m3-6v4M6 12h12M3 8h3M3 16h3m12-8h3m-3 8h3"/></symbol>
@@ -421,7 +422,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.21.1</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.21.2</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -580,18 +581,18 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=library-1"></script>
-  <script defer src="notes.js?v=library-1"></script>
-  <script defer src="checklist-picker.js?v=library-1"></script>
-  <script defer src="health.js?v=library-1"></script>
-  <script defer src="addiction.js?v=library-1"></script>
-  <script defer src="calendar.js?v=library-1"></script>
-  <script defer src="fitness.js?v=library-1"></script>
-  <script defer src="library.js?v=library-1"></script>
-  <script defer src="interface.js?v=library-1"></script>
-  <script defer src="interface-sound.js?v=library-1"></script>
-  <script defer src="pointer-effects.js?v=library-1"></script>
-  <script defer src="experience.js?v=library-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=library-1"></script>
+  <script defer src="core-progress.js?v=library-covers-1"></script>
+  <script defer src="notes.js?v=library-covers-1"></script>
+  <script defer src="checklist-picker.js?v=library-covers-1"></script>
+  <script defer src="health.js?v=library-covers-1"></script>
+  <script defer src="addiction.js?v=library-covers-1"></script>
+  <script defer src="calendar.js?v=library-covers-1"></script>
+  <script defer src="fitness.js?v=library-covers-1"></script>
+  <script defer src="library.js?v=library-covers-1"></script>
+  <script defer src="interface.js?v=library-covers-1"></script>
+  <script defer src="interface-sound.js?v=library-covers-1"></script>
+  <script defer src="pointer-effects.js?v=library-covers-1"></script>
+  <script defer src="experience.js?v=library-covers-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=library-covers-1"></script>
 </body>
 </html>

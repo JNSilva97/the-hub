@@ -4,7 +4,7 @@ function createMediaLibrary() {
   const labels = { active: 'In progress', planned: 'Up next', completed: 'Finished', paused: 'On hold', dropped: 'Dropped' };
   const typeNames = { game: 'Game', movie: 'Movie', series: 'Series', anime: 'Anime', video: 'Video', special: 'Special', other: 'Unsorted' };
   const state = new Map([...panels.keys()].map(domain => [domain, { filter: 'all', query: '', type: 'all', category: '', editing: null, baseline: '', selected: null }]));
-  let model, account, busy = false, owner, notice = '', failure = '', importDomain, importOwner, preview = [];
+  let model, artwork, account, busy = false, owner, notice = '', failure = '', importDomain, importOwner, preview = [];
   const previewPanel = document.getElementById('library-import-dialog');
   const node = (tag, text, className) => { const n = document.createElement(tag); n.textContent = text; if (className) n.className = className; return n; };
   const find = (domain, part) => panels.get(domain).querySelector(`[data-part="${part}"]`);
@@ -41,12 +41,16 @@ function createMediaLibrary() {
       const order = { active: 0, planned: 1, paused: 2, completed: 3, dropped: 4 };
       shown.sort((a, b) => order[a[1].status] - order[b[1].status] || b[1].updatedAt - a[1].updatedAt || a[1].title.localeCompare(b[1].title));
       find(domain, 'count').textContent = `${shown.length} ${shown.length === 1 ? 'title' : 'titles'}`;
+      artwork?.resetView(domain);
       const cards = find(domain, 'cards'); cards.replaceChildren();
       for (const [id, entry] of shown) {
         const card = node('article', '', 'library-card'); card.dataset.entry = id; card.dataset.kind = entry.kind;
         if (id === s.selected) card.classList.add('library-picked');
         const art = node('div', '', 'library-art'); art.setAttribute('aria-hidden', 'true');
         art.style.setProperty('--card-hue', String([...entry.title].reduce((n, c) => n + c.charCodeAt(0), 0) % 360));
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); icon.classList.add('library-kind-icon');
+        const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+        use.setAttribute('href', `#${entry.kind === 'game' ? 'games' : ['series', 'anime', 'video'].includes(entry.kind) ? 'library-tv' : 'entertainment'}`); icon.append(use); art.append(icon);
         art.append(node('span', entry.title.split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase(), 'library-monogram'), node('span', typeNames[entry.kind], 'library-type'));
         const body = node('div', '', 'library-card-body');
         const meta = node('div', '', 'library-card-meta'); meta.append(node('span', labels[entry.status], `library-badge status-${entry.status}`));
@@ -64,7 +68,10 @@ function createMediaLibrary() {
         if (entry.status === 'planned' || entry.status === 'paused') actions.append(action(domain === 'games' ? 'Play next' : 'Watch next', () => quick(domain, id, e => ({ ...e, status: 'active' }))));
         else if (entry.status === 'active' && model.serial(entry)) actions.append(action('Next episode', () => quick(domain, id, e => ({ ...e, episode: Math.min(50000, e.episode + 1) }))));
         else if (entry.status === 'active') actions.append(action('Mark finished', () => quick(domain, id, e => ({ ...e, status: 'completed', progress: e.kind === 'game' ? 100 : e.progress }))));
-        actions.append(action('Details', () => edit(domain, id), false)); body.append(actions); card.append(art, body); cards.append(card);
+        actions.append(action('Details', () => edit(domain, id), false)); body.append(actions);
+        const source = node('a', 'Image · Wikipedia', 'library-image-source'); source.hidden = true; source.target = '_blank'; source.rel = 'noopener noreferrer'; source.referrerPolicy = 'no-referrer'; body.append(source);
+        card.append(art, body); cards.append(card);
+        artwork?.observe(art, source, entry, domain);
       }
       find(domain, 'empty').hidden = shown.length > 0;
       find(domain, 'empty-title').textContent = all.length ? 'No titles match this view.' : domain === 'games' ? 'Make room for your next adventure.' : 'Your watchlist, all in one place.';
@@ -116,7 +123,7 @@ function createMediaLibrary() {
   }
   function close(domain) {
     if (!canNavigate()) { notice = busy ? 'Saving. Please wait.' : 'Save or Cancel your changes before leaving.'; render(); return; }
-    state.get(domain).editing = null; render(); panels.get(domain).close();
+    state.get(domain).editing = null; render(); artwork?.resetView(domain); panels.get(domain).close();
   }
   function cancel(domain) { if (!busy) { state.get(domain).editing = null; failure = ''; render(); find(domain, 'add').focus(); } }
   async function previewFile(domain, file) {
@@ -188,10 +195,11 @@ function createMediaLibrary() {
   document.getElementById('library-import-save').addEventListener('click', commitImport);
   document.getElementById('library-import-cancel').addEventListener('click', () => { if (!busy) { preview = []; previewPanel.close(); } });
   previewPanel.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
-  import('./library-model.mjs?v=library-1').then(m => { model = m; render(); return import('./cloud-library.js?v=library-1'); }).then(m => {
+  import('./library-model.mjs?v=library-covers-1').then(m => { model = m; render(); return import('./cloud-library.js?v=library-covers-1'); }).then(m => {
     const changed = () => {
       if (owner !== account?.uid) {
         owner = account?.uid; busy = false; notice = failure = ''; preview = []; previewPanel.close();
+        artwork?.clear();
         document.getElementById('library-import-list').replaceChildren();
         document.getElementById('library-import-summary').textContent = '';
         document.getElementById('library-import-status').textContent = '';
@@ -204,6 +212,7 @@ function createMediaLibrary() {
     };
     account = m.createLibraryAccount(changed); changed();
   }).catch(() => { failure = 'Your library could not load. Reload to try again.'; render(); });
+  import('./library-artwork.mjs?v=library-covers-1').then(module => { artwork = module.createArtworkLoader(); render(); }).catch(() => { /* The library remains fully usable with its icons. */ });
   render();
   return { open(domain) { if (canNavigate()) { render(); panels.get(domain).showModal(); } }, canNavigate };
 }
