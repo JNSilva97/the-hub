@@ -60,6 +60,8 @@ Display typography uses self-hosted Orbitron and Rajdhani fonts. Their SIL Open 
 
 The mobile **Health** shortcut opens **Today**, with a dose count, **Mark taken**, **Undo** and stock at a glance. **Add medication** asks for a name, schedule, quantity per dose and current stock. Daily entries can use a fixed Lisbon time, **Morning** or **Before bed**. Pack size is optional. **As needed (stock only)** keeps a stock record outside the daily dose count. Add a **Linked checklist** to record the same daily dose directly from Goals. **Edit medication** can change these fields. **Add stock** records a refill. **Recent activity** shows the latest changes.
 
+**Before bed** items and ValdispertNoite track a sleep night, changing at **12:00 noon in Lisbon**. A record at 01:00 belongs to the previous night's window; another at 23:00 belongs to the next one. Each night can be recorded once across Health, linked checklists and devices. Activity retains the actual calendar date and time and identifies the night. Undo restores only that record's stock. Existing records keep their keys and stock deductions. Other daily items continue to follow calendar days.
+
 Linked daily doses appear as rows in the routine's checklist and contribute to its single progress counter. Optional tasks are individually available: unchecked tasks do not block completion, while checked tasks count as done. Skincare **Later** applies only to the current checklist for today and can be undone; it preserves available skincare choices elsewhere.
 
 A medication has one dose per Lisbon calendar day. Recording it from either view deducts stock once. Undo returns the amount that was originally recorded. Editing the dose applies to future records, moving a checklist link preserves the dose, and **Start again** only clears checklist ticks.
@@ -171,7 +173,7 @@ node --test tests/routine-model.test.mjs tests/workspace-model.test.mjs tests/ha
 For the browser regression suite, make the installed `playwright` package available to Node.js and use a system Chrome installation:
 
 ```sh
-node --test tests/browser.cjs tests/phone.cjs tests/health.cjs tests/calendar.cjs tests/fitness.cjs tests/library.cjs tests/library-artwork.cjs
+node --test tests/browser.cjs tests/phone.cjs tests/health.cjs tests/health-bedtime.cjs tests/calendar.cjs tests/fitness.cjs tests/library.cjs tests/library-artwork.cjs
 node --test tests/offline.cjs
 node --test tests/notes-model.test.mjs tests/notes-sync.cjs
 ```

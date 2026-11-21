@@ -25,11 +25,20 @@ function createHealth(panel) {
   const validMedicationId = id => typeof id === 'string' && /^med-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id);
   const dateFormat = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon', year: 'numeric', month: '2-digit', day: '2-digit' });
   const stampFormat = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const today = () => {
-    const parts = Object.fromEntries(dateFormat.formatToParts(new Date()).map(part => [part.type, part.value]));
+  const calendarDay = (at = Date.now()) => {
+    const parts = Object.fromEntries(dateFormat.formatToParts(new Date(at)).map(part => [part.type, part.value]));
     return `${parts.year}-${parts.month}-${parts.day}`;
   };
+  const today = () => calendarDay();
+  const nightClock = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', hourCycle: 'h23' });
+  function nightDay(at = Date.now()) {
+    const date = calendarDay(at);
+    if (Number(nightClock.format(new Date(at))) >= 12) return date;
+    const previous = new Date(`${date}T12:00:00Z`); previous.setUTCDate(previous.getUTCDate() - 1);
+    return previous.toISOString().slice(0, 10);
+  }
   const doseKey = (date, id) => `${prefix}dose:${date}:${id}`;
+  const nightDoseKey = (date, id) => `${prefix}night-dose:${date}:${id}`;
   const status = document.getElementById('health-status');
   const routineStatus = document.getElementById('medication-status');
   const routineSection = document.getElementById('personal-care-medications');
@@ -43,13 +52,14 @@ function createHealth(panel) {
   const validTime = value => typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
   const schedules = new Map([['morning', 'Morning'], ['bedtime', 'Before bed'], ['as-needed', 'As needed']]);
   const asNeeded = medication => medication.time === 'as-needed';
+  const perNight = medication => !asNeeded(medication) && (medication.time === 'bedtime' || /^valdispert[\s-]*noite$/i.test(medication.name.trim()));
   const validPackSize = value => value == null || Number.isSafeInteger(value) && value > 0 && value <= 10000;
   const tabletCount = quantity => `${quantity} tablet${quantity === 1 ? '' : 's'}`;
   const timing = medication => schedules.get(medication.time) || medication.time;
   function scheduleText(medication) {
     if (asNeeded(medication)) return 'As needed · Stock only';
     const schedule = validTime(medication.time) ? `${medication.time} Lisbon` : timing(medication);
-    return `${schedule} · ${tabletCount(medication.quantity)} daily`;
+    return perNight(medication) ? `${schedule} · ${tabletCount(medication.quantity)} per night · Tracking resets at 12:00 Lisbon` : `${schedule} · ${tabletCount(medication.quantity)} daily`;
   }
   const setupKey = id => prefix + 'settings:' + id;
   const setup = (medication, entries) => entries.find(entry => entry.type === 'settings' && entry.medication === medication.id);
@@ -57,6 +67,7 @@ function createHealth(panel) {
   const doseQuantity = entry => entry.quantity;
   let busy = false;
   let day = today();
+  let night = nightDay();
   let message = '';
   let failed = false;
   let pickedUp;
@@ -109,7 +120,9 @@ function createHealth(panel) {
     const id = record?.medication;
     if (!validMedicationId(id) || record.version !== 1 || !Number.isSafeInteger(record.at) || record.at < 0 || record.at > 8640000000000000) throw new Error('Unreadable medication record');
     if (record.type === 'dose') {
-      if (typeof record.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) || key !== doseKey(record.date, id) || typeof record.taken !== 'boolean' || !validQuantity(record.quantity) || record.name !== undefined && !validName(record.name)) throw new Error('Unreadable dose');
+      const validNight = record.night === undefined || typeof record.night === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(record.night);
+      const validKey = key === doseKey(record.date, id) || record.night !== undefined && key === nightDoseKey(record.night, id);
+      if (typeof record.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) || !validNight || !validKey || typeof record.taken !== 'boolean' || !validQuantity(record.quantity) || record.name !== undefined && !validName(record.name)) throw new Error('Unreadable dose');
     } else if (record.type === 'lozenge') {
       if (!key.startsWith(prefix + 'lozenge:') || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) ||
           record.quantity !== 1 || !validName(record.name)) throw new Error('Unreadable lozenge record');
@@ -468,9 +481,18 @@ function createHealth(panel) {
       return { key: refill.key, remove: true };
     }, `${entry.name || medication.name}: stock addition undone.`);
   }
-  function taken(medication, entries, date = today()) {
-    return entries.some(entry => entry.type === 'dose' && entry.medication === medication.id && entry.date === date && entry.taken);
+  function doseNight(entry) {
+    // Existing records keep their original keys and stock deductions. Use their
+    // real timestamp when present; old date-only imports retain their date.
+    return entry.night ?? (calendarDay(entry.at) === entry.date ? nightDay(entry.at) : entry.date);
   }
+  function currentDose(medication, entries, date = today(), at = Date.now()) {
+    const nightly = perNight(configured(medication, entries));
+    const targetNight = nightly ? nightDay(at) : null;
+    return entries.filter(entry => entry.type === 'dose' && entry.medication === medication.id && entry.taken &&
+      (nightly ? doseNight(entry) === targetNight : entry.date === date)).sort((a, b) => b.at - a.at)[0];
+  }
+  const taken = (medication, entries, date = today()) => Boolean(currentDose(medication, entries, date));
   const lozengesToday = (medication, entries, date = today()) => entries
     .filter(entry => entry.type === 'lozenge' && entry.medication === medication?.id && entry.date === date)
     .reverse()
@@ -546,17 +568,19 @@ function createHealth(panel) {
       render();
     }
   }
-  function recordDose(medication, checked, date = today()) {
+  function recordDose(medication, checked, date = today(), specificKey) {
     const name = cards.get(medication.id).title.textContent;
+    const at = Date.now();
     return change(medication.id, entries => {
-      if (taken(medication, entries, date) === checked) return;
       const current = configured(medication, entries);
+      const previous = specificKey ? entries.find(entry => entry.type === 'dose' && entry.key === specificKey) : currentDose(medication, entries, date, at);
+      if (Boolean(previous?.taken) === checked) return;
       if (checked && asNeeded(current)) conflict('This item is set to stock only.');
-      const previous = entries.find(entry => entry.key === doseKey(date, medication.id));
-      const quantity = checked ? current.quantity : doseQuantity(previous);
-      if (checked && stock(medication, entries) < quantity) throw new Error('Not enough stock');
-      const record = { version: 1, type: 'dose', medication: medication.id, date, taken: checked, quantity, name: checked ? current.name : previous.name || medication.name, at: Date.now() };
-      return { ...record, key: doseKey(date, medication.id) };
+      if (!checked) return { ...previous, ...(perNight(current) ? { night: doseNight(previous) } : {}), taken: false, at };
+      const quantity = current.quantity;
+      if (stock(medication, entries) < quantity) throw new Error('Not enough stock');
+      const record = { version: 1, type: 'dose', medication: medication.id, date: calendarDay(at), taken: true, quantity, name: current.name, at };
+      return perNight(current) ? { ...record, night: nightDay(at), key: nightDoseKey(nightDay(at), medication.id) } : { ...record, key: doseKey(record.date, medication.id) };
     }, checked ? `${name}: dose recorded. Stock updated once.` : `${name}: dose undone. Stock restored.`);
   }
 
@@ -808,6 +832,7 @@ function createHealth(panel) {
 
   function render() {
     day = today();
+    night = nightDay();
     const entries = read();
     const medications = orderedSettings(entries).map(fromSetup);
     const signedIn = Boolean(account?.uid);
@@ -884,11 +909,12 @@ function createHealth(panel) {
         view.warning.textContent = count === 0 ? 'Out of lozenges · buy more' : `Only ${count} left · buy more soon`;
         view.warning.hidden = count > lowLozenges;
       }
-      const todayDose = entries.find(entry => entry.key === doseKey(day, medication.id));
+      const todayDose = currentDose(medication, entries, day);
       const recordedQuantity = checked ? doseQuantity(todayDose) : 0;
-      view.doseState.textContent = checked ? `${tabletCount(recordedQuantity)} recorded` : '';
-      if (checked) view.copy.querySelector('small').textContent = `${recordedQuantity} tablet${recordedQuantity === 1 ? '' : 's'} recorded today`;
-      view.dose.textContent = checked ? 'Taken today' : 'Mark taken';
+      const cycleLabel = perNight(current) ? `night of ${night}` : 'today';
+      view.doseState.textContent = checked ? `${tabletCount(recordedQuantity)} recorded${perNight(current) ? ` · ${cycleLabel}` : ''}` : '';
+      if (checked) view.copy.querySelector('small').textContent = `${tabletCount(recordedQuantity)} recorded${perNight(current) ? ' · ' : ' '}${cycleLabel}`;
+      view.dose.textContent = checked ? perNight(current) ? 'Recorded for this night' : 'Taken today' : 'Mark taken';
       view.card.dataset.taken = String(checked && !stockOnly);
       view.dose.hidden = stockOnly;
       view.doseState.hidden = stockOnly || !checked;
@@ -930,7 +956,7 @@ function createHealth(panel) {
     }
     routineSection.hidden = !visible.length;
     const completed = visible.filter(medication => taken(medication, entries, day)).length;
-    document.getElementById('medication-today').textContent = `${completed} of ${visible.length} doses recorded today`;
+    document.getElementById('medication-today').textContent = `${completed} of ${visible.length} doses recorded ${visible.some(medication => perNight(configured(medication, entries))) ? 'for this routine' : 'today'}`;
     addMedication.disabled = locked;
     if (newView) {
       updateLinkChoices(newView, entries);
@@ -949,13 +975,14 @@ function createHealth(panel) {
       const units = asNeeded(configured(medication, entries)) ? 'units' : 'tablets';
       const text = entry.type === 'settings' ? 'Medication setup updated' : entry.type === 'restock' ? `Added ${entry.quantity} ${units}` :
         entry.type === 'lozenge' ? 'Taken · 1 lozenge' : entry.taken ? `Taken · ${tabletCount(quantity)}` : 'Dose undone · stock restored';
-      row.append(node('strong', '', entry.name || medication.name), node('span', '', text), node('small', '', `${stampFormat.format(entry.at)}${entry.type === 'dose' ? ' · Dose for ' + entry.date : ''}`));
+      const doseDate = entry.type === 'dose' && perNight(configured(medication, entries)) ? `night ${doseNight(entry)}` : entry.date;
+      row.append(node('strong', '', entry.name || medication.name), node('span', '', text), node('small', '', `${stampFormat.format(entry.at)}${entry.type === 'dose' ? ' · Dose for ' + doseDate : ''}`));
       if (entry.type === 'restock' || entry.type === 'lozenge' || entry.type === 'dose' && entry.taken) {
         const name = entry.name || medication.name;
         const undo = entry.type === 'restock'
           ? action('Undo', `Undo stock addition for ${name}`, () => undoRestock(medication, entry))
           : entry.type === 'lozenge' ? action('Undo', `Undo ${name} lozenge`, () => undoNicotine(medication, entry))
-            : action('Undo', `Undo ${name} dose for ${entry.date}`, () => recordDose(medication, false, entry.date));
+            : action('Undo', `Undo ${name} dose for ${doseDate}`, () => recordDose(medication, false, entry.date, entry.key));
         undo.disabled = locked; row.append(undo);
       }
       history.append(row);
@@ -1000,7 +1027,7 @@ function createHealth(panel) {
   window.addEventListener('online', render);
   window.addEventListener('offline', render);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
-  setInterval(() => { if (day !== today()) render(); }, 30000);
+  setInterval(() => { if (day !== today() || night !== nightDay()) render(); }, 30000);
   const closingClick = event => {
     if (!hasDraft() && !busy) return;
     const bounds = panel.getBoundingClientRect();
