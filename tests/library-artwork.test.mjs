@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chooseArtwork, artworkSearch, chooseCatalogueArtwork, chooseTvArtwork, customArtwork, resolveArtwork } from '../library-artwork.mjs';
+import { chooseArtwork, artworkSearch, chooseCatalogueArtwork, chooseTvArtwork, customArtwork, resolveArtwork, artworkEntry } from '../library-artwork.mjs';
 const page = (title, description, image = 'https://upload.wikimedia.org/wikipedia/en/a/ab/Example.jpg') => ({ title, description, thumbnail: { source: image }, fullurl: `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}` });
 test('Artwork matches the title and medium instead of a sequel, namesake or actor', () => {
   const pages = [page('Example 2', '2020 film'), page('Example', 'American actor'), page('Example (film)', '2010 film')];
@@ -9,6 +9,24 @@ test('Artwork matches the title and medium instead of a sequel, namesake or acto
   assert.equal(chooseArtwork({ title: 'Example [Movie]', kind: 'movie' }, pages).title, 'Example (film)');
   assert.match(new URL(artworkSearch({ title: 'Example', kind: 'game' })).searchParams.get('gsrsearch'), /video game/);
   assert.ok(chooseArtwork({ title: 'Example', kind: 'series' }, [page('Example', 'Television series', 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Example.png')]));
+});
+test('Known alternate titles find the right film, live-action show and imported long title', () => {
+  assert.equal(artworkEntry({ title: 'Avengers Assemble' }).catalogueId, 'tt0848228');
+  assert.equal(artworkEntry({ title: 'One Piece [Netflix]' }).catalogueId, 'tt11737520');
+  const netflix = artworkEntry({ title: 'One Piece [Netflix]' });
+  const poster = id => ({ id, name: 'One Piece', type: 'series', poster: `https://images.metahub.space/poster/small/${id}/img` });
+  assert.equal(chooseCatalogueArtwork(netflix, [poster('tt0388629'), poster('tt11737520')], 'series').source, 'https://www.imdb.com/title/tt11737520/');
+  assert.equal(artworkEntry({ title: 'Casa de Papel' }).title, 'Money Heist');
+  assert.equal(artworkEntry({ title: 'Pôr do Sol', notes: 'From your list: O Mistério do Colar de São Cajó - Complete' }).catalogueId, 'tt24634274');
+});
+test('A temporary image API limit is retried rather than permanently losing the cover', async () => {
+  let calls = 0;
+  const artwork = await resolveArtwork({ title: 'Example', kind: 'game' }, { fetcher: async () => ++calls === 1 ? { ok: false, status: 429 } : { ok: true, json: async () => ({ query: { pages: [page('Example', 'Video game')] } }) } });
+  assert.equal(calls, 2); assert.equal(artwork.provider, 'Wikipedia');
+});
+test('Abridged series use an explicitly labelled universe icon when there is no show-specific poster', async () => {
+  const found = await resolveArtwork({ title: 'Example Abridged', kind: 'video' }, { fetcher: async url => ({ ok: true, json: async () => url.includes('/catalog/series/') && url.includes('search=Example.json') ? { metas: [{ id: 'tt12345', type: 'series', name: 'Example', poster: 'https://images.metahub.space/poster/small/tt12345/img' }] } : {} }) });
+  assert.equal(found.role, 'Universe icon'); assert.equal(found.title, 'Example');
 });
 test('Movie and TV catalogues cover spelling variants without changing sequel numbers', () => {
   const meta = (name, type = 'movie') => ({ name, type, id: 'tt12345', poster: 'https://images.metahub.space/poster/small/tt12345/img' });

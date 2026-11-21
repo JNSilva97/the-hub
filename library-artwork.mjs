@@ -1,5 +1,5 @@
 const normalise = text => String(text || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
-const cleanTitle = title => title.replace(/\s*\[Movie\]\s*/gi, '').replace(/\s+Remastered$/i, '').trim();
+const cleanTitle = title => title.replace(/\s*\[(?:Movie|Netflix)\]\s*/gi, '').replace(/\s+Remastered$/i, '').trim();
 const medium = kind => kind === 'game' ? 'video game' : kind === 'movie' || kind === 'special' ? 'film' : kind === 'anime' ? 'anime television series' : kind === 'series' ? 'television series' : '';
 export function artworkSearch(entry) {
   const url = new URL('https://en.wikipedia.org/w/api.php');
@@ -9,7 +9,7 @@ export function artworkSearch(entry) {
 export function chooseArtwork(entry, pages) {
   const wanted = normalise(cleanTitle(entry.title));
   const options = [];
-  for (const page of pages || []) {
+  for (const page of Array.isArray(pages) ? pages : []) {
     if (!page?.thumbnail?.source || !page.fullurl) continue;
     let image, source;
     try { image = new URL(page.thumbnail.source); source = new URL(page.fullurl); } catch { continue; }
@@ -18,10 +18,11 @@ export function chooseArtwork(entry, pages) {
     // Never turn a similar sequel, a performer or a franchise page into the cover.
     if (title !== wanted) continue;
     const context = `${page.title} ${page.description || ''}`.toLowerCase();
+    if (entry.catalogueYear && !context.includes(String(entry.catalogueYear))) continue;
     if (/\b(actor|actress|politician|novel|comic book|disambiguation)\b/.test(context) && !/\b(film|series|game|anime)\b/.test(context)) continue;
     const isGame = /video game|computer game/.test(context), isShow = /television|tv series|anime|web series/.test(context), isFilm = /\bfilm\b/.test(context);
-    if (entry.kind === 'game' && !isGame || entry.kind === 'series' && !isShow || entry.kind === 'anime' && !isShow || entry.kind === 'movie' && !isFilm) continue;
-    if (entry.kind === 'other' && !isGame && !isShow && !isFilm) continue;
+    if (!entry.iconOnly && (entry.kind === 'game' && !isGame || entry.kind === 'series' && !isShow || entry.kind === 'anime' && !isShow || entry.kind === 'movie' && !isFilm)) continue;
+    if (entry.kind === 'other' && !isGame && !isShow && !isFilm && !(entry.iconOnly && /franchise|role-playing|fictional|media/.test(context))) continue;
     const score = 100 + (normalise(page.title) === wanted ? 10 : 0) + (entry.kind === 'anime' && /anime/.test(context) ? 5 : 0);
     options.push({ score, url: image.href, source: source.href, title: page.title });
   }
@@ -51,11 +52,24 @@ function aliases(entry) {
   if (parts.length > 1 && normalise(entry.category).replace(/ universe$/, '') === normalise(parts[0])) names.push(parts.slice(1).join(':').trim());
   return names;
 }
+export function artworkEntry(entry) {
+  const name = normalise(entry.title);
+  if (name === 'avengers assemble') return { ...entry, title: 'The Avengers', kind: 'movie', catalogueId: 'tt0848228', catalogueYear: 2012 };
+  if (name === 'one piece netflix') return { ...entry, title: 'One Piece', kind: 'series', catalogueId: 'tt11737520', catalogueYear: 2023 };
+  if (name === 'it s always sunny philadelphia') return { ...entry, title: "It's Always Sunny in Philadelphia", kind: 'series' };
+  if (name === 'casa de papel') return { ...entry, title: 'Money Heist', kind: 'series' };
+  if (name === 'por do sol' && /Mist.rio do Colar/i.test(entry.notes || '')) return { ...entry, title: 'Sunset: The Mystery of the Necklace of São Cajó', kind: 'movie', catalogueId: 'tt24634274', catalogueYear: 2023 };
+  if (entry.kind === 'other') {
+    const hints = { venom: 'movie', 'sonic the hedgehog': 'movie', 'the boys': 'series', castlevania: 'series', 'the boys gen v': 'series', 'the boys diabolical': 'series' };
+    if (hints[name]) return { ...entry, kind: hints[name] };
+  }
+  return entry;
+}
 export function chooseCatalogueArtwork(entry, metas, type) {
   const year = entry.title.match(/\((\d{4})\)/)?.[1];
   const names = aliases(entry).map(title => title.replace(/\s*\(\d{4}\)$/, ''));
-  for (const meta of metas || []) {
-    if (meta.type !== type || !/^tt\d+$/.test(meta.id || '') || !names.some(name => sameTitle(name, meta.name)) || year && !String(meta.releaseInfo || meta.year || '').startsWith(year)) continue;
+  for (const meta of Array.isArray(metas) ? metas : []) {
+    if (meta.type !== type || !/^tt\d+$/.test(meta.id || '') || entry.catalogueId && meta.id !== entry.catalogueId || !names.some(name => sameTitle(name, meta.name)) || year && !String(meta.releaseInfo || meta.year || '').startsWith(year)) continue;
     try {
       const url = new URL(meta.poster);
       if (url.protocol !== 'https:' || !['images.metahub.space', 'image.tmdb.org', 'm.media-amazon.com'].includes(url.hostname)) continue;
@@ -65,9 +79,9 @@ export function chooseCatalogueArtwork(entry, metas, type) {
   return null;
 }
 export function chooseTvArtwork(entry, results) {
-  for (const result of results || []) {
+  for (const result of Array.isArray(results) ? results : []) {
     const show = result.show;
-    if (!show || !aliases(entry).some(title => sameTitle(title, show.name))) continue;
+    if (!show || entry.catalogueId && show.externals?.imdb !== entry.catalogueId || !aliases(entry).some(title => sameTitle(title, show.name))) continue;
     try {
       const url = new URL(show.image?.medium || show.image?.original), source = new URL(show.url);
       if (url.protocol !== 'https:' || url.hostname !== 'static.tvmaze.com' || source.protocol !== 'https:' || source.hostname !== 'www.tvmaze.com') continue;
@@ -76,32 +90,75 @@ export function chooseTvArtwork(entry, results) {
   }
   return null;
 }
-export async function resolveArtwork(entry, { fetcher = fetch, signal, skip = [] } = {}) {
-  const get = async url => {
-    try { const response = await fetcher(url, { signal, credentials: 'omit', referrerPolicy: 'no-referrer' }); return response.ok ? await response.json() : null; }
-    catch { return null; }
+export async function resolveArtwork(original, { fetcher = fetch, signal, skip = [], related = false } = {}) {
+  const entry = artworkEntry(original);
+  if (normalise(entry.title) === 'split fiction' && entry.kind === 'game' && !skip.includes('Steam')) return {
+    url: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2001120/5a3209f496e911ff2fa6dccd58c682c89632d09b/capsule_616x353.jpg',
+    source: 'https://store.steampowered.com/app/2001120/', title: 'Split Fiction', provider: 'Steam'
   };
+  if (normalise(entry.title).replace(/\s/g, '') === 'labynight' && !skip.includes('World of Darkness')) return {
+    url: 'https://images.ctfassets.net/u73tyf0fa8v1/1hCovFlBB754nWRCYVfiY7/c5799941aafc9ec3498e4fb8059e2b1f/worldofdarkness-streaming-la_by_night.jpg?w=500&fm=webp&q=80',
+    source: 'https://www.paradoxinteractive.com/games/world-of-darkness/products/entertainment#night-falls-over-the-city-of-angels', title: 'L.A. by Night', provider: 'World of Darkness'
+  };
+  const get = async url => {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (signal?.aborted) return null;
+      try {
+        const response = await fetcher(url, { signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
+        if (response.ok) return await response.json();
+        if (attempt === 0 && [429, 503].includes(response.status)) { await new Promise(resolve => setTimeout(resolve, 1500)); continue; }
+        return null;
+      } catch { return null; }
+    }
+    return null;
+  };
+  const relatedIcon = async () => {
+    if (related || signal?.aborted) return null;
+    let parent;
+    if (/\s+Abridged$/i.test(entry.title)) parent = { ...entry, title: entry.title.replace(/\s+Abridged$/i, ''), kind: 'anime' };
+    else if (/^pok.mon\b/i.test(entry.title) && entry.kind === 'game') parent = { ...entry, title: 'Pokémon', kind: 'other', iconOnly: true };
+    else if (/[:\s]+Part\s+\d+$/i.test(entry.title)) parent = { ...entry, title: entry.title.replace(/[:\s]+Part\s+\d+$/i, ''), catalogueId: undefined };
+    else if (/World of Darkness/i.test(entry.category)) parent = { ...entry, title: 'World of Darkness', kind: 'other', iconOnly: true };
+    if (!parent) return null;
+    const found = await resolveArtwork(parent, { fetcher, signal, skip, related: true });
+    return found ? { ...found, role: 'Universe icon' } : null;
+  };
+  if (entry.iconOnly) {
+    if (signal?.aborted || skip.includes('Wikipedia')) return null;
+    const data = await get(artworkSearch(entry));
+    return chooseArtwork(entry, data?.query?.pages);
+  }
   if (entry.kind !== 'game' && !skip.includes('Cinemeta')) {
     const serial = ['series', 'anime', 'video'].includes(entry.kind) || entry.season > 0 || entry.episode > 0;
     const types = serial ? ['series'] : entry.kind === 'other' ? ['movie', 'series'] : ['movie'];
     const candidates = [];
+    if (entry.catalogueId) {
+      const type = serial ? 'series' : 'movie';
+      const data = await get(`https://v3-cinemeta.strem.io/meta/${type}/${entry.catalogueId}.json`);
+      const found = chooseCatalogueArtwork(entry, data?.meta ? [data.meta] : [], type);
+      if (found) return found;
+    }
     for (const type of types) {
-      if (signal?.aborted) return null;
-      const data = await get(`https://v3-cinemeta.strem.io/catalog/${type}/top/search=${encodeURIComponent(cleanTitle(entry.title))}.json`);
-      const found = chooseCatalogueArtwork(entry, data?.metas, type);
-      if (found) candidates.push(found);
+      for (const title of aliases(entry)) {
+        if (signal?.aborted) return null;
+        const data = await get(`https://v3-cinemeta.strem.io/catalog/${type}/top/search=${encodeURIComponent(title)}.json`);
+        const found = chooseCatalogueArtwork(entry, data?.metas, type);
+        if (found) { candidates.push(found); break; }
+      }
     }
     if (candidates.length === 1) return candidates[0];
-    if (candidates.length > 1) return null; // Unsorted title with both a film and a series.
+    if (candidates.length > 1) return relatedIcon(); // Unsorted title with both a film and a series.
   }
   if (entry.kind !== 'game' && !['movie', 'special'].includes(entry.kind) && !skip.includes('TVmaze') && !signal?.aborted) {
-    const data = await get(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(cleanTitle(entry.title))}`);
-    const found = chooseTvArtwork(entry, data);
-    if (found) return found;
+    for (const title of aliases(entry)) {
+      const data = await get(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(title)}`);
+      const found = chooseTvArtwork(entry, data);
+      if (found) return found;
+    }
   }
-  if (signal?.aborted || skip.includes('Wikipedia')) return null;
+  if (signal?.aborted || skip.includes('Wikipedia')) return relatedIcon();
   const data = await get(artworkSearch(entry));
-  return chooseArtwork(entry, data?.query?.pages);
+  return chooseArtwork(entry, data?.query?.pages) || relatedIcon();
 }
 export function customArtwork(entry) {
   const escape = text => String(text).replace(/[\u0000-\u001f]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -135,7 +192,7 @@ export function createArtworkLoader() {
       if (request.generation !== generation || !request.art.isConnected) return;
       request.art.dataset.artwork = 'loaded';
       request.source.href = artwork.source; request.source.hidden = false;
-      request.source.textContent = `Image · ${artwork.provider || 'Wikipedia'}`;
+      request.source.textContent = `${artwork.role || 'Image'} · ${artwork.provider || 'Wikipedia'}`;
       request.source.title = `Image source: ${artwork.title}`;
     }, { once: true });
     image.addEventListener('error', () => {
@@ -158,8 +215,9 @@ export function createArtworkLoader() {
       controllers.add(controller);
       resolveArtwork(request.entry, { signal: controller.signal, skip: request.skip }).then(artwork => {
         if (request.generation !== generation) return;
-        cache.set(key, artwork); apply(request, artwork);
-      }).catch(() => { if (request.generation === generation) cache.set(key, null); }).finally(() => {
+        if (artwork) cache.set(key, artwork);
+        apply(request, artwork);
+      }).catch(() => { /* Leave failed lookups retryable when the list is reopened. */ }).finally(() => {
         clearTimeout(timeout); controllers.delete(controller); active--; pump();
       });
     }

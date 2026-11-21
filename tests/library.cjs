@@ -134,4 +134,29 @@ test('Games and Entertainment workflows', { timeout: 120000 }, async t => {
       assert.deepEqual(first.errors.concat(second.errors), []);
     } finally { await first.context.close(); await second.context.close(); }
   });
+  await t.test('universes have independent sections, filtering and remembered collapse state', async () => {
+    const model = await import('../library-model.mjs');
+    const library = {};
+    for (const [title, category] of [['Marvel fixture', 'MCU Universe'], ['DCU fixture', 'DCU'], ['DCEU fixture', 'DCEU'], ['Batman fixture', "Matt Reeves's Batman"]]) {
+      const entry = { ...model.newEntry('movie', title), category }; library[await model.entryId(entry)] = entry;
+    }
+    const { context, page, errors } = await make(browser, { width: 320, cloudDocuments: { 'account-a': { ...data(), library } } });
+    try {
+      await open(page, 'entertainment');
+      assert.equal(await page.locator('#entertainment-dialog .library-universe').count(), 4);
+      const marvel = page.locator('#entertainment-dialog [data-universe="Marvel Cinematic Universe"]');
+      await marvel.locator('summary').click();
+      assert.equal(await marvel.evaluate(el => el.open), false);
+      await part(page, 'entertainment', 'search').fill('fixture');
+      assert.equal(await marvel.evaluate(el => el.open), false);
+      await part(page, 'entertainment', 'category').selectOption('DC Universe (DCU)');
+      assert.equal(await page.locator('#entertainment-dialog .library-universe').count(), 1);
+      assert.match(await page.locator('#entertainment-dialog .library-card h3').textContent(), /DCU fixture/);
+      assert.equal(await page.locator('#entertainment-dialog').evaluate(el => el.scrollWidth > el.clientWidth), false);
+      await part(page, 'entertainment', 'category').selectOption('');
+      await part(page, 'entertainment', 'pick').click();
+      assert.equal(await page.locator('#entertainment-dialog .library-picked').isVisible(), true);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
 });

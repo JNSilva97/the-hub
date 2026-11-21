@@ -1,5 +1,5 @@
-import { lisbonDay } from './routine-model.mjs?v=library-covers-2';
-import { validDay } from './habits-model.mjs?v=library-covers-2';
+import { lisbonDay } from './routine-model.mjs?v=library-universes-1';
+import { validDay } from './habits-model.mjs?v=library-universes-1';
 export { lisbonDay };
 export const exercises = [
   { id: 'pushups', name: 'Push-ups', goal: 50 },

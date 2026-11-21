@@ -3,6 +3,36 @@ export const statuses = ['active', 'planned', 'completed', 'paused', 'dropped'];
 export const domainOf = entry => entry.kind === 'game' ? 'games' : 'entertainment';
 export const entryKey = entry => `${entry.kind}:${entry.title.trim().normalize('NFKC').toLocaleLowerCase()}`;
 export const serial = entry => ['series', 'anime', 'video'].includes(entry.kind);
+export function universeName(entry) {
+  const category = entry.category.trim();
+  const key = category.toLowerCase().replace(/[’']/g, "'");
+  const names = {
+    'mcu universe': 'Marvel Cinematic Universe',
+    "netflix's marvel universe": 'Marvel · Netflix',
+    'old marvel universe': 'Marvel · Legacy TV',
+    "marvel's sony universe": 'Marvel · Sony',
+    'dcu': 'DC Universe (DCU)',
+    'dceu': 'DC Extended Universe (DCEU)',
+    "matt reeves's batman": 'The Batman · Matt Reeves',
+    'dc universe [misc]': 'DC · Other stories'
+  };
+  if (names[key]) return names[key];
+  if (category) return category.replace(/\s+Universe$/i, '').trim();
+  return { movie: 'Movies · Standalone', series: 'Series · Standalone', anime: 'Anime · Standalone', video: 'Videos & Abridged', special: 'Specials · Standalone', other: 'Other titles' }[entry.kind] || 'Games';
+}
+export function universeGroups(entries) {
+  const groups = new Map();
+  for (const item of entries) {
+    const name = universeName(item[1]);
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(item);
+  }
+  const priority = ['Marvel Cinematic Universe', 'Marvel · Netflix', 'Marvel · Legacy TV', 'Marvel · Sony', 'DC Universe (DCU)', 'DC Extended Universe (DCEU)', 'The Batman · Matt Reeves', 'DC · Other stories'];
+  return [...groups].map(([name, items]) => ({ name, items })).sort((a, b) => {
+    const rank = name => { const i = priority.indexOf(name); return i === -1 ? name.includes('Standalone') || name === 'Videos & Abridged' || name === 'Other titles' ? 100 : 50 : i; };
+    return rank(a.name) - rank(b.name) || a.name.localeCompare(b.name);
+  });
+}
 export function readEntry(id, data) {
   const keys = ['version', 'revision', 'kind', 'title', 'status', 'category', 'notes', 'platform', 'rating', 'progress', 'season', 'episode', 'updatedAt'];
   if (!/^entry-[a-f0-9]{32}$/.test(id) || !data || Object.keys(data).length !== keys.length || Object.keys(data).some(k => !keys.includes(k))

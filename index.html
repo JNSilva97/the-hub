@@ -11,20 +11,20 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/shell.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/core.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/access.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/panels.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/routines.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/notes.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/health.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/addiction.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/library.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/calendar.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/fitness.css?v=library-covers-2">
-  <link rel="stylesheet" href="styles/motion.css?v=library-covers-2">
+  <link rel="stylesheet" href="styles/base.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/shell.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/core.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/access.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/panels.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/routines.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/notes.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/health.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/library.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=library-universes-1">
+  <link rel="stylesheet" href="styles/motion.css?v=library-universes-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -249,9 +249,9 @@
   <dialog id="entertainment-dialog" class="library-dialog" data-library="entertainment" aria-labelledby="entertainment-title">
     <header class="library-header"><div class="library-identity"><svg aria-hidden="true"><use href="#entertainment"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 10</div><h2 id="entertainment-title">Entertainment</h2></div></div><form method="dialog" class="library-close-form"><button data-part="close" type="button" aria-label="Close Entertainment">×</button></form></header>
     <div class="library-content"><section class="library-hero"><span class="library-kicker">THE EVENING IS YOURS</span><h3 data-part="subtitle"></h3><p data-part="stats"></p><div class="library-hero-actions" data-part="hero-actions"><button type="button" class="library-primary" data-part="add" data-write>Add title</button><button type="button" data-part="pick">Pick for me <span aria-hidden="true">↗</span></button><button type="button" data-part="import" data-write>Import list</button><button type="button" data-part="signin">Sign in</button><input data-part="file" type="file" accept=".txt,.json,text/plain,application/json" hidden aria-label="Import Entertainment list"></div></section>
-      <section data-part="collection" aria-label="Entertainment library"><div class="library-toolbar"><label class="library-search"><span>Find a title</span><input type="search" data-part="search" placeholder="Search titles, collections, notes…" autocomplete="off"></label><label >Type<select data-part="type"><option value="all">All types</option><option value="movie">Movie</option><option value="series">Series</option><option value="anime">Anime</option><option value="video">Video</option><option value="special">Special</option><option value="other">Unsorted</option></select></label><label>Collection<select data-part="category"><option value="">All collections</option></select></label></div>
+      <section data-part="collection" aria-label="Entertainment library"><div class="library-toolbar"><label class="library-search"><span>Find a title</span><input type="search" data-part="search" placeholder="Search titles, collections, notes…" autocomplete="off"></label><label >Type<select data-part="type"><option value="all">All types</option><option value="movie">Movie</option><option value="series">Series</option><option value="anime">Anime</option><option value="video">Video</option><option value="special">Special</option><option value="other">Unsorted</option></select></label><label>Universe<select data-part="category"><option value="">All universes</option></select></label></div>
         <div class="library-filters" role="group" aria-label="Filter by status"><button type="button" data-filter="all" aria-pressed="true">All</button><button type="button" data-filter="planned" aria-pressed="false">Up next</button><button type="button" data-filter="active" aria-pressed="false">In progress</button><button type="button" data-filter="completed" aria-pressed="false">Finished</button><button type="button" data-filter="paused" aria-pressed="false">On hold</button><button type="button" data-filter="dropped" aria-pressed="false">Dropped</button></div><p class="library-count" data-part="count" role="status"></p><div class="library-cards" data-part="cards"></div><div class="library-empty" data-part="empty"><svg aria-hidden="true"><use href="#entertainment"/></svg><h3 data-part="empty-title"></h3><p data-part="empty-copy"></p></div></section>
-      <form data-part="editor" class="library-editor" hidden><h3 data-part="editor-title">Title details</h3><div class="library-fields"><label class="library-field-wide">Title<input name="title" required maxlength="180" autocomplete="off"></label><label>Type<select name="kind"><option value="movie">Movie</option><option value="series">Series</option><option value="anime">Anime</option><option value="video">Video</option><option value="special">Special</option><option value="other">Unsorted</option></select></label><label>Status<select name="status"><option value="planned">Up next</option><option value="active">In progress</option><option value="completed">Finished</option><option value="paused">On hold</option><option value="dropped">Dropped</option></select></label><label>Collection / category<input name="category" maxlength="100" placeholder="Optional"></label><label data-field="game">Platform<input name="platform" maxlength="100" placeholder="PC, PlayStation, Switch…"></label><label>Rating<select name="rating"><option value="0">Not rated</option><option value="1">1 / 10</option><option value="2">2 / 10</option><option value="3">3 / 10</option><option value="4">4 / 10</option><option value="5">5 / 10</option><option value="6">6 / 10</option><option value="7">7 / 10</option><option value="8">8 / 10</option><option value="9">9 / 10</option><option value="10">10 / 10</option></select></label><label data-field="game">Progress (%)<input name="progress" type="number" min="0" max="100" step="1" value="0" required></label><label data-field="serial">Season<input name="season" type="number" min="0" max="50000" step="1" value="0" required></label><label data-field="serial">Last episode watched<input name="episode" type="number" min="0" max="50000" step="1" value="0" required></label><label class="library-field-wide">Notes<textarea name="notes" rows="4" maxlength="3000" placeholder="Where you left off, a recommendation, or what you thought…"></textarea></label></div><div class="library-editor-actions"><button class="library-primary" type="submit" data-write>Save title</button><button type="button" data-part="cancel">Cancel</button></div></form>
+      <form data-part="editor" class="library-editor" hidden><h3 data-part="editor-title">Title details</h3><div class="library-fields"><label class="library-field-wide">Title<input name="title" required maxlength="180" autocomplete="off"></label><label>Type<select name="kind"><option value="movie">Movie</option><option value="series">Series</option><option value="anime">Anime</option><option value="video">Video</option><option value="special">Special</option><option value="other">Unsorted</option></select></label><label>Status<select name="status"><option value="planned">Up next</option><option value="active">In progress</option><option value="completed">Finished</option><option value="paused">On hold</option><option value="dropped">Dropped</option></select></label><label>Universe / collection<input name="category" maxlength="100" placeholder="Optional"></label><label data-field="game">Platform<input name="platform" maxlength="100" placeholder="PC, PlayStation, Switch…"></label><label>Rating<select name="rating"><option value="0">Not rated</option><option value="1">1 / 10</option><option value="2">2 / 10</option><option value="3">3 / 10</option><option value="4">4 / 10</option><option value="5">5 / 10</option><option value="6">6 / 10</option><option value="7">7 / 10</option><option value="8">8 / 10</option><option value="9">9 / 10</option><option value="10">10 / 10</option></select></label><label data-field="game">Progress (%)<input name="progress" type="number" min="0" max="100" step="1" value="0" required></label><label data-field="serial">Season<input name="season" type="number" min="0" max="50000" step="1" value="0" required></label><label data-field="serial">Last episode watched<input name="episode" type="number" min="0" max="50000" step="1" value="0" required></label><label class="library-field-wide">Notes<textarea name="notes" rows="4" maxlength="3000" placeholder="Where you left off, a recommendation, or what you thought…"></textarea></label></div><div class="library-editor-actions"><button class="library-primary" type="submit" data-write>Save title</button><button type="button" data-part="cancel">Cancel</button></div></form>
       <div class="library-feedback"><p data-part="status" role="status">Connecting to your library…</p><button type="button" data-part="retry" hidden>Retry</button></div>
     </div>
   </dialog>
@@ -422,7 +422,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.21.3</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.21.4</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -581,18 +581,18 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=library-covers-2"></script>
-  <script defer src="notes.js?v=library-covers-2"></script>
-  <script defer src="checklist-picker.js?v=library-covers-2"></script>
-  <script defer src="health.js?v=library-covers-2"></script>
-  <script defer src="addiction.js?v=library-covers-2"></script>
-  <script defer src="calendar.js?v=library-covers-2"></script>
-  <script defer src="fitness.js?v=library-covers-2"></script>
-  <script defer src="library.js?v=library-covers-2"></script>
-  <script defer src="interface.js?v=library-covers-2"></script>
-  <script defer src="interface-sound.js?v=library-covers-2"></script>
-  <script defer src="pointer-effects.js?v=library-covers-2"></script>
-  <script defer src="experience.js?v=library-covers-2" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=library-covers-2"></script>
+  <script defer src="core-progress.js?v=library-universes-1"></script>
+  <script defer src="notes.js?v=library-universes-1"></script>
+  <script defer src="checklist-picker.js?v=library-universes-1"></script>
+  <script defer src="health.js?v=library-universes-1"></script>
+  <script defer src="addiction.js?v=library-universes-1"></script>
+  <script defer src="calendar.js?v=library-universes-1"></script>
+  <script defer src="fitness.js?v=library-universes-1"></script>
+  <script defer src="library.js?v=library-universes-1"></script>
+  <script defer src="interface.js?v=library-universes-1"></script>
+  <script defer src="interface-sound.js?v=library-universes-1"></script>
+  <script defer src="pointer-effects.js?v=library-universes-1"></script>
+  <script defer src="experience.js?v=library-universes-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=library-universes-1"></script>
 </body>
 </html>

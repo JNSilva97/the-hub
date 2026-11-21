@@ -28,6 +28,16 @@
 .library-filters button[aria-pressed="true"] { border-color: var(--library-accent); background: #253448; color: #fff; }
 .library-count { color: #a4c2d8; font-size: 13px; margin: 14px 0; }
 .library-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.library-cards.library-grouped { display: block; }
+.library-universe { margin: 0 0 24px; border: 1px solid #34526b; border-radius: 6px; overflow: hidden; background: #06132080; }
+.library-universe > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 14px 16px; color: #dfedfa; background: #0d2234e0; cursor: pointer; font: 600 21px var(--font-interface); list-style: none; }
+.library-universe > summary::-webkit-details-marker { display: none; }
+.library-universe > summary::after { content: '+'; color: var(--library-accent); font-size: 24px; }
+.library-universe[open] > summary::after { content: '−'; }
+.library-universe > summary > span { flex: 1; overflow-wrap: anywhere; }
+.library-universe > summary > small { color: #adc8dc; font-size: 13px; white-space: nowrap; }
+.library-universe > summary:focus-visible { outline: 2px solid #b8eaff; outline-offset: -3px; }
+.library-universe > .library-cards { padding: 16px; }
 .library-card { overflow: hidden; min-width: 0; border: 1px solid #2a4e68; border-radius: 6px; background: #081725e0; display: flex; flex-direction: column; }
 .library-art { position: relative; height: 104px; overflow: hidden; display: flex; align-items: center; justify-content: space-between; padding: 20px; background: radial-gradient(circle at 85% 20%, hsl(var(--card-hue) 50% 46% / .32), transparent 60%), linear-gradient(135deg, #112b40, #06111e); }
 .library-art::after { content: ''; position: absolute; width: 140px; height: 140px; right: -32px; top: -55px; border: 1px solid #ffffff20; border-radius: 50%; box-shadow: 0 0 0 16px #ffffff06, 0 0 0 32px #ffffff04; }

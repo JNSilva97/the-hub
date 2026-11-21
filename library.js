@@ -3,7 +3,7 @@ function createMediaLibrary() {
   const names = { games: 'Games', entertainment: 'Entertainment' };
   const labels = { active: 'In progress', planned: 'Up next', completed: 'Finished', paused: 'On hold', dropped: 'Dropped' };
   const typeNames = { game: 'Game', movie: 'Movie', series: 'Series', anime: 'Anime', video: 'Video', special: 'Special', other: 'Unsorted' };
-  const state = new Map([...panels.keys()].map(domain => [domain, { filter: 'all', query: '', type: 'all', category: '', editing: null, baseline: '', selected: null }]));
+  const state = new Map([...panels.keys()].map(domain => [domain, { filter: 'all', query: '', type: 'all', category: '', editing: null, baseline: '', selected: null, closedUniverses: new Set() }]));
   let model, artwork, account, busy = false, owner, notice = '', failure = '', importDomain, importOwner, preview = [];
   const previewPanel = document.getElementById('library-import-dialog');
   const node = (tag, text, className) => { const n = document.createElement(tag); n.textContent = text; if (className) n.className = className; return n; };
@@ -33,17 +33,28 @@ function createMediaLibrary() {
       find(domain, 'stats').textContent = `${all.length} titles · ${all.filter(([, e]) => e.status === 'active').length} in progress · ${all.filter(([, e]) => e.status === 'completed').length} finished`;
       if (!model || s.editing) continue;
       const category = find(domain, 'category');
-      category.replaceChildren(new Option('All collections', ''), ...[...new Set(all.map(([, e]) => e.category).filter(Boolean))].sort().map(c => new Option(c, c)));
+      const categoryOf = entry => domain === 'entertainment' ? model.universeName(entry) : entry.category;
+      category.replaceChildren(new Option(domain === 'entertainment' ? 'All universes' : 'All collections', ''), ...[...new Set(all.map(([, e]) => categoryOf(e)).filter(Boolean))].sort().map(c => new Option(c, c)));
       category.value = s.category;
       for (const button of panel.querySelectorAll('[data-filter]')) button.setAttribute('aria-pressed', String(s.filter === button.dataset.filter));
       find(domain, 'pick').disabled = busy || !all.some(([, e]) => ['planned', 'active', 'paused'].includes(e.status));
-      const shown = all.filter(([, e]) => (s.filter === 'all' || e.status === s.filter) && (s.type === 'all' || e.kind === s.type) && (!s.category || e.category === s.category) && `${e.title} ${e.category} ${e.platform} ${e.notes}`.toLocaleLowerCase().includes(s.query.toLocaleLowerCase()));
+      const shown = all.filter(([, e]) => (s.filter === 'all' || e.status === s.filter) && (s.type === 'all' || e.kind === s.type) && (!s.category || categoryOf(e) === s.category) && `${e.title} ${e.category} ${e.platform} ${e.notes} ${categoryOf(e)}`.toLocaleLowerCase().includes(s.query.toLocaleLowerCase()));
       const order = { active: 0, planned: 1, paused: 2, completed: 3, dropped: 4 };
       shown.sort((a, b) => order[a[1].status] - order[b[1].status] || b[1].updatedAt - a[1].updatedAt || a[1].title.localeCompare(b[1].title));
       find(domain, 'count').textContent = `${shown.length} ${shown.length === 1 ? 'title' : 'titles'}`;
       artwork?.resetView(domain);
       const cards = find(domain, 'cards'); cards.replaceChildren();
-      for (const [id, entry] of shown) {
+      cards.classList.toggle('library-grouped', domain === 'entertainment');
+      const groups = domain === 'entertainment' ? model.universeGroups(shown) : [{ name: '', items: shown }];
+      for (const group of groups) {
+        let grid = cards;
+        if (domain === 'entertainment') {
+          const section = node('details', '', 'library-universe'); section.dataset.universe = group.name; section.open = !s.closedUniverses.has(group.name);
+          const summary = node('summary', ''); summary.append(node('span', group.name), node('small', `${group.items.length} ${group.items.length === 1 ? 'title' : 'titles'}`));
+          grid = node('div', '', 'library-cards'); section.append(summary, grid); cards.append(section);
+          section.addEventListener('toggle', () => { if (!section.isConnected) return; if (section.open) s.closedUniverses.delete(group.name); else s.closedUniverses.add(group.name); });
+        }
+      for (const [id, entry] of group.items) {
         const card = node('article', '', 'library-card'); card.dataset.entry = id; card.dataset.kind = entry.kind;
         if (id === s.selected) card.classList.add('library-picked');
         const art = node('div', '', 'library-art'); art.setAttribute('aria-hidden', 'true');
@@ -70,8 +81,9 @@ function createMediaLibrary() {
         else if (entry.status === 'active') actions.append(action('Mark finished', () => quick(domain, id, e => ({ ...e, status: 'completed', progress: e.kind === 'game' ? 100 : e.progress }))));
         actions.append(action('Details', () => edit(domain, id), false)); body.append(actions);
         const source = node('a', 'Image · Wikipedia', 'library-image-source'); source.hidden = true; source.target = '_blank'; source.rel = 'noopener noreferrer'; source.referrerPolicy = 'no-referrer'; body.append(source);
-        card.append(art, body); cards.append(card);
+        card.append(art, body); grid.append(card);
         artwork?.observe(art, source, entry, domain);
+      }
       }
       find(domain, 'empty').hidden = shown.length > 0;
       find(domain, 'empty-title').textContent = all.length ? 'No titles match this view.' : domain === 'games' ? 'Make room for your next adventure.' : 'Your watchlist, all in one place.';
@@ -185,6 +197,7 @@ function createMediaLibrary() {
       const choices = planned.length ? planned : items(domain).filter(([, e]) => ['active', 'paused'].includes(e.status)); if (!choices.length) return;
       const choice = choices[Math.floor(Math.random() * choices.length)];
       s.selected = choice[0]; s.filter = choice[1].status; s.query = ''; s.category = ''; s.type = 'all';
+      s.closedUniverses.delete(model.universeName(choice[1]));
       find(domain, 'search').value = ''; find(domain, 'type').value = 'all'; render();
       panel.querySelector('.library-picked')?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
       notice = `Picked for you: ${account.entries.get(s.selected).title}`; find(domain, 'status').textContent = notice;
@@ -195,7 +208,7 @@ function createMediaLibrary() {
   document.getElementById('library-import-save').addEventListener('click', commitImport);
   document.getElementById('library-import-cancel').addEventListener('click', () => { if (!busy) { preview = []; previewPanel.close(); } });
   previewPanel.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
-  import('./library-model.mjs?v=library-covers-2').then(m => { model = m; render(); return import('./cloud-library.js?v=library-covers-2'); }).then(m => {
+  import('./library-model.mjs?v=library-universes-1').then(m => { model = m; render(); return import('./cloud-library.js?v=library-universes-1'); }).then(m => {
     const changed = () => {
       if (owner !== account?.uid) {
         owner = account?.uid; busy = false; notice = failure = ''; preview = []; previewPanel.close();
@@ -205,6 +218,7 @@ function createMediaLibrary() {
         document.getElementById('library-import-status').textContent = '';
         for (const [domain, s] of state) {
           s.editing = null; s.baseline = ''; s.selected = null; s.query = ''; s.category = ''; s.type = s.filter = 'all';
+          s.closedUniverses.clear();
           find(domain, 'editor').reset(); find(domain, 'search').value = ''; find(domain, 'type').value = 'all';
         }
       }
@@ -212,7 +226,7 @@ function createMediaLibrary() {
     };
     account = m.createLibraryAccount(changed); changed();
   }).catch(() => { failure = 'Your library could not load. Reload to try again.'; render(); });
-  import('./library-artwork.mjs?v=library-covers-2').then(module => { artwork = module.createArtworkLoader(); render(); }).catch(() => { /* The library remains fully usable with its icons. */ });
+  import('./library-artwork.mjs?v=library-universes-1').then(module => { artwork = module.createArtworkLoader(); render(); }).catch(() => { /* The library remains fully usable with its icons. */ });
   render();
   return { open(domain) { if (canNavigate()) { render(); panels.get(domain).showModal(); } }, canNavigate };
 }
