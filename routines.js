@@ -2,12 +2,12 @@ import {
   validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections, linkedDoseReplaces, routinePlan, routineRelevant,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=module-order-1';
-import { cloudWorkspace } from './cloud.js?v=module-order-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=module-order-1';
-import { createRoutineTools } from './routine-tools.js?v=module-order-1';
+} from './routine-model.mjs?v=routine-visibility-1';
+import { cloudWorkspace } from './cloud.js?v=routine-visibility-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=routine-visibility-1';
+import { createRoutineTools } from './routine-tools.js?v=routine-visibility-1';
 
-export { createHealthAccount } from './cloud-health.js?v=module-order-1';
+export { createHealthAccount } from './cloud-health.js?v=routine-visibility-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -36,7 +36,7 @@ let progressDay;
 let pendingSkinCare;
 let medicationProgress = new Map();
 let calendarState;
-let showAllChecklists = false;
+let showAllChecklists = true;
 
 function applyCalendarContext() {
   const context = document.getElementById('routine-plan-context');
@@ -66,7 +66,7 @@ function applyCalendarContext() {
   for (const row of content.querySelectorAll('.linked-check-row')) {
     const target = routines.find(routine => routine.id === row.querySelector('input').dataset.linked);
     const plan = target && routinePlan(target.name);
-    row.hidden = Boolean(tomorrow && plan && row.closest('.check-section').dataset.optional && !tomorrow.includes(plan));
+    row.hidden = Boolean(!showAllChecklists && tomorrow && plan && row.closest('.check-section').dataset.optional && !tomorrow.includes(plan));
   }
   for (const section of content.querySelectorAll('.check-section[data-optional]')) {
     if (section.querySelector('.linked-check-row')) section.hidden = [...section.querySelector('.check-items').children].every(child => child.hidden);
@@ -76,7 +76,7 @@ function applyCalendarContext() {
 document.getElementById('routine-all-checklists').addEventListener('click', () => { showAllChecklists = !showAllChecklists; applyCalendarContext(); });
 document.getElementById('routine-plan-tomorrow').addEventListener('click', () => document.dispatchEvent(new CustomEvent('hub:opencalendar', { detail: { day: calendarState?.tomorrow.day } })));
 document.addEventListener('hub:calendarchange', event => {
-  if (calendarState?.scope !== event.detail.scope) showAllChecklists = false;
+  if (calendarState?.scope !== event.detail.scope) showAllChecklists = true;
   calendarState = event.detail;
   applyCalendarContext();
 });

@@ -69,7 +69,7 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
   });
-  await t.test('plans sync between devices, guide Goals and only show tomorrow’s optional preparations', async () => {
+  await t.test('plans sync between devices and keep all checklists and preparation links accessible by default', async () => {
     const first = await make(browser); const second = await make(browser);
     try {
       for (const { page } of [first, second]) await start(page);
@@ -82,15 +82,23 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       await second.page.locator('#calendar-week [aria-current="date"] small').filter({ hasText: 'Gym/Muay Thai' }).waitFor();
       await close(second.page); await openRoutines(second.page);
       await second.page.locator('#routine-plan-context:not([hidden])').waitFor();
-      assert.equal(await second.page.locator('#routine-list [data-routine="other"]').evaluate(el => el.hidden), true);
+      assert.equal(await second.page.locator('#routine-list [data-routine="other"]').evaluate(el => el.hidden), false);
+      assert.equal(await second.page.locator('#routine-list [data-routine="office"]').evaluate(el => el.hidden), false);
       assert.equal(await second.page.locator('#routine-list [data-routine="muay-thai"]').evaluate(el => el.hidden), false);
       await chooseRoutine(second.page, 'wind-down');
       assert.equal(await second.page.getByRole('button', { name: 'Open Office Preparation', exact: true }).isVisible(), true);
-      assert.equal(await second.page.getByRole('button', { name: 'Open Muay Thai Preparation', exact: true }).isVisible(), false);
+      assert.equal(await second.page.getByRole('button', { name: 'Open Muay Thai Preparation', exact: true }).isVisible(), true);
       assert.equal(await second.page.locator('input[data-minoxidil]').count(), 0);
       assert.equal(await second.page.getByRole('heading', { name: /^Prepare outfit/ }).isVisible(), true);
       await second.page.locator('#routine-all-checklists').click();
+      assert.equal(await second.page.locator('#routine-list [data-routine="other"]').evaluate(el => el.hidden), true);
+      assert.equal(await second.page.getByRole('button', { name: 'Open Muay Thai Preparation', exact: true }).isVisible(), false);
+      await second.page.locator('#routine-all-checklists').click();
       assert.equal(await second.page.locator('#routine-list [data-routine="other"]').evaluate(el => el.hidden), false);
+      assert.equal(await second.page.getByRole('button', { name: 'Open Muay Thai Preparation', exact: true }).isVisible(), true);
+      await second.page.getByRole('button', { name: 'Open Office Preparation', exact: true }).click();
+      assert.equal(await second.page.locator('#routine-name').textContent(), 'Office Preparation');
+      assert.equal(await second.page.locator('#routine-content').getByText('MacBook', { exact: true }).isVisible(), true);
       assert.deepEqual(first.errors.concat(second.errors), []);
     } finally { await first.context.close(); await second.context.close(); }
   });

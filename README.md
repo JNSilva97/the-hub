@@ -16,7 +16,7 @@ A personal space with a near-black, neon-blue and ice-cyan interface.
 
 **Calendar** is a private weekly planner for **Office** and **Gym/Muay Thai**. Combine plans on a date, or edit **Every [weekday]** to repeat them weekly. A custom date overrides its weekly pattern; unchecking every plan and saving keeps that date free. **Follow weekly plan** restores inheritance. Save and Cancel protect edits; stale saves keep the draft instead of replacing another device's changes. Account plans sync between devices, and cached plans remain readable offline. Connect before saving.
 
-Open the **Calendar** module to review and edit plans. Goals prioritizes the relevant checklists; **All checklists** keeps everything accessible. Morning Routine, Wind Down, required outfit tasks and Health remain available. Wind Down shows the optional Office/Training preparation links appropriate for tomorrow. Planning never marks tasks or doses as done, and the schedule is separate from checklist definitions and backups.
+Open the **Calendar** module to review and edit plans. Goals shows all checklists by default. **Today’s checklists** optionally focuses on the plans for today; **All checklists** restores the full list. Morning Routine, Wind Down, required outfit tasks and Health remain available. Wind Down keeps both optional Office/Training preparation links visible by default; the focused view shows those appropriate for tomorrow. Planning never marks tasks or doses as done, and the schedule is separate from checklist definitions and backups.
 
 The intro is visual only and does not authenticate users. Any click or keypress skips it. Use **Pause motion** to stop interface animations; the system's reduced-motion preference is also respected.
 

@@ -11,20 +11,20 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/shell.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/core.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/access.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/panels.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/routines.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/notes.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/health.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/library.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/calendar.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/fitness.css?v=module-order-1">
-  <link rel="stylesheet" href="styles/motion.css?v=module-order-1">
+  <link rel="stylesheet" href="styles/base.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/shell.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/core.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/access.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/panels.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/routines.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/notes.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/health.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/library.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=routine-visibility-1">
+  <link rel="stylesheet" href="styles/motion.css?v=routine-visibility-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -422,7 +422,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.23.1</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.23.2</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -508,7 +508,7 @@
       </div>
     </div>
     <div class="routines-meta"><span id="routine-source" class="routine-source">LOADING</span><p id="routine-data-note">Loading your checklists…</p></div>
-    <div id="routine-plan-context" class="routine-plan-context" hidden><div><p id="routine-today-plans"></p><p id="routine-tomorrow-plans"></p></div><div><button id="routine-all-checklists" type="button" aria-pressed="false">All checklists</button><button id="routine-plan-tomorrow" type="button">Plan tomorrow</button></div></div>
+    <div id="routine-plan-context" class="routine-plan-context" hidden><div><p id="routine-today-plans"></p><p id="routine-tomorrow-plans"></p></div><div><button id="routine-all-checklists" type="button" aria-pressed="true">Today’s checklists</button><button id="routine-plan-tomorrow" type="button">Plan tomorrow</button></div></div>
     <div class="routine-layout">
       <nav id="routine-list" class="routine-list" aria-label="Checklists"></nav>
       <section class="routine-detail" aria-labelledby="routine-name">
@@ -581,18 +581,18 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=module-order-1"></script>
-  <script defer src="notes.js?v=module-order-1"></script>
-  <script defer src="checklist-picker.js?v=module-order-1"></script>
-  <script defer src="health.js?v=module-order-1"></script>
-  <script defer src="addiction.js?v=module-order-1"></script>
-  <script defer src="calendar.js?v=module-order-1"></script>
-  <script defer src="fitness.js?v=module-order-1"></script>
-  <script defer src="library.js?v=module-order-1"></script>
-  <script defer src="interface.js?v=module-order-1"></script>
-  <script defer src="interface-sound.js?v=module-order-1"></script>
-  <script defer src="pointer-effects.js?v=module-order-1"></script>
-  <script defer src="experience.js?v=module-order-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=module-order-1"></script>
+  <script defer src="core-progress.js?v=routine-visibility-1"></script>
+  <script defer src="notes.js?v=routine-visibility-1"></script>
+  <script defer src="checklist-picker.js?v=routine-visibility-1"></script>
+  <script defer src="health.js?v=routine-visibility-1"></script>
+  <script defer src="addiction.js?v=routine-visibility-1"></script>
+  <script defer src="calendar.js?v=routine-visibility-1"></script>
+  <script defer src="fitness.js?v=routine-visibility-1"></script>
+  <script defer src="library.js?v=routine-visibility-1"></script>
+  <script defer src="interface.js?v=routine-visibility-1"></script>
+  <script defer src="interface-sound.js?v=routine-visibility-1"></script>
+  <script defer src="pointer-effects.js?v=routine-visibility-1"></script>
+  <script defer src="experience.js?v=routine-visibility-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=routine-visibility-1"></script>
 </body>
 </html>
