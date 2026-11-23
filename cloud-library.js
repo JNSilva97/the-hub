@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=library-notes-1';
-import { readEntry } from './library-model.mjs?v=library-notes-1';
+import { cloudWorkspace } from './cloud.js?v=module-order-1';
+import { readEntry } from './library-model.mjs?v=module-order-1';
 export function createLibraryAccount(onChange) {
   let uid, unsubscribe, generation = 0, ready = false, cached = true, pending = false, error = '';
   let entries = new Map();

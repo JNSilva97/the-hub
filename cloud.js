@@ -1,6 +1,6 @@
-import { firebaseConfig } from './firebase-config.mjs?v=library-notes-1';
-import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=library-notes-1';
-import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=library-notes-1';
+import { firebaseConfig } from './firebase-config.mjs?v=module-order-1';
+import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=module-order-1';
+import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=module-order-1';
 
 const panel = document.getElementById('account-dialog');
 const loginButton = document.getElementById('account-login');

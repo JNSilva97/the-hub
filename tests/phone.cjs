@@ -34,7 +34,7 @@ test('Phone workflows', { timeout: 90000 }, async t => {
         await page.getByRole('button', { name: 'Close Goals', exact: true }).click();
         await page.locator('#future-spaces > summary').click();
         assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), true);
-        assert.equal(await page.locator('.future-grid .app-meta').first().textContent(), 'COMING SOON');
+        assert.equal(await page.locator('.future-grid .app-meta').first().textContent(), 'MODULE / 05 · COMING SOON');
         await page.locator('[data-icon="finance"]').click();
         assert.match(await page.locator('#app-description').textContent(), /coming later/);
         await page.locator('#app-dialog .close').click();
