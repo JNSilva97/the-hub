@@ -11,20 +11,20 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/shell.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/core.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/access.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/panels.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/routines.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/notes.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/health.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/library.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/calendar.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/fitness.css?v=calendar-checklist-links-1">
-  <link rel="stylesheet" href="styles/motion.css?v=calendar-checklist-links-1">
+  <link rel="stylesheet" href="styles/base.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/shell.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/core.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/access.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/panels.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/routines.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/notes.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/health.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/library.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=calendar-custom-plans-1">
+  <link rel="stylesheet" href="styles/motion.css?v=calendar-custom-plans-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -266,13 +266,13 @@
   <dialog id="calendar-dialog" class="calendar-dialog" aria-labelledby="calendar-title">
     <div class="calendar-header"><div class="calendar-identity"><svg aria-hidden="true"><use href="#calendar"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 04</div><h2 id="calendar-title">Calendar</h2></div></div><form method="dialog"><button id="calendar-close" class="routine-exit" type="button" aria-label="Close Calendar">×</button></form></div>
     <div class="calendar-content">
-      <div class="calendar-intro"><div><h3>Plan your week</h3><p>Office and Gym/Muay Thai. Combine the plans you need.</p></div><button id="calendar-signin" type="button">Sign in to plan</button></div>
+      <div class="calendar-intro"><h3>Plan your week</h3><button id="calendar-signin" type="button">Sign in to plan</button></div>
       <div class="calendar-navigation"><button id="calendar-previous" type="button" aria-label="Previous week">←</button><h3 id="calendar-week-title">This week</h3><button id="calendar-next" type="button" aria-label="Next week">→</button><button id="calendar-today" type="button">Today</button></div>
       <div id="calendar-week" class="calendar-week" role="group" aria-label="Week days"></div>
       <div class="calendar-editor">
         <section aria-labelledby="calendar-day-title"><h3 id="calendar-day-title">Choose a day</h3><div class="calendar-mode" role="group" aria-label="Plan applies to"><button id="calendar-mode-day" type="button" aria-pressed="true">This date</button><button id="calendar-mode-weekly" type="button" aria-pressed="false">Weekly pattern</button></div>
           <p id="calendar-source" class="calendar-note"></p>
-          <fieldset id="calendar-fields" disabled><legend class="calendar-note">Plans</legend><div id="calendar-plan-options" class="calendar-plan-options"></div></fieldset>
+          <fieldset id="calendar-fields" disabled><legend class="calendar-note">Plans</legend><div id="calendar-plan-options" class="calendar-plan-options"></div><section class="calendar-custom" aria-labelledby="calendar-custom-title"><h4 id="calendar-custom-title">Custom plans</h4><div id="calendar-custom-list"></div><button id="calendar-add-plan" type="button">Add plan</button><p id="calendar-event-limit" class="calendar-note" hidden>Up to 5 custom plans per day.</p></section></fieldset>
           <div class="calendar-actions"><button id="calendar-save" type="button" disabled>Save plans</button><button id="calendar-cancel" type="button" disabled>Cancel</button><button id="calendar-follow" type="button" hidden>Follow weekly plan</button></div>
         </section>
         <aside class="calendar-preview" aria-labelledby="calendar-checklists-title"><h4 id="calendar-checklists-title">Your checklists</h4><ul id="calendar-checklists"></ul><p class="calendar-note" id="calendar-weekly-note">A date can have its own plan, or follow the weekly pattern.</p></aside>
@@ -422,7 +422,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.24.4</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.24.5</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -581,18 +581,18 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=calendar-checklist-links-1"></script>
-  <script defer src="notes.js?v=calendar-checklist-links-1"></script>
-  <script defer src="checklist-picker.js?v=calendar-checklist-links-1"></script>
-  <script defer src="health.js?v=calendar-checklist-links-1"></script>
-  <script defer src="addiction.js?v=calendar-checklist-links-1"></script>
-  <script defer src="calendar.js?v=calendar-checklist-links-1"></script>
-  <script defer src="fitness.js?v=calendar-checklist-links-1"></script>
-  <script defer src="library.js?v=calendar-checklist-links-1"></script>
-  <script defer src="interface.js?v=calendar-checklist-links-1"></script>
-  <script defer src="interface-sound.js?v=calendar-checklist-links-1"></script>
-  <script defer src="pointer-effects.js?v=calendar-checklist-links-1"></script>
-  <script defer src="experience.js?v=calendar-checklist-links-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=calendar-checklist-links-1"></script>
+  <script defer src="core-progress.js?v=calendar-custom-plans-1"></script>
+  <script defer src="notes.js?v=calendar-custom-plans-1"></script>
+  <script defer src="checklist-picker.js?v=calendar-custom-plans-1"></script>
+  <script defer src="health.js?v=calendar-custom-plans-1"></script>
+  <script defer src="addiction.js?v=calendar-custom-plans-1"></script>
+  <script defer src="calendar.js?v=calendar-custom-plans-1"></script>
+  <script defer src="fitness.js?v=calendar-custom-plans-1"></script>
+  <script defer src="library.js?v=calendar-custom-plans-1"></script>
+  <script defer src="interface.js?v=calendar-custom-plans-1"></script>
+  <script defer src="interface-sound.js?v=calendar-custom-plans-1"></script>
+  <script defer src="pointer-effects.js?v=calendar-custom-plans-1"></script>
+  <script defer src="experience.js?v=calendar-custom-plans-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=calendar-custom-plans-1"></script>
 </body>
 </html>

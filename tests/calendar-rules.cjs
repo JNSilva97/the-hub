@@ -43,6 +43,14 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
     await assertSucceeds(setDoc(ref(a, '2026-11-20'), record([], 3, 'weekly')));
     await assertSucceeds(setDoc(ref(a, '2026-11-21'), record([])));
     await assertFails(deleteDoc(ref(a, '2026-11-20')));
+    const event = { title: 'Dinner', time: '20:00', note: '' };
+    const eventRef = ref(a, '2026-11-23');
+    await assertSucceeds(setDoc(eventRef, { ...record([]), events: [event] }));
+    for (const events of [[{ ...event, title: ' ' }], [{ ...event, time: '25:00' }], Array(6).fill(event)]) {
+      await assertFails(setDoc(eventRef, { ...record([], 2), events }));
+    }
+    await assertFails(setDoc(eventRef, record([], 2)));
+    await assertSucceeds(setDoc(eventRef, { ...record([], 2), events: [] }));
     const fitness = (db, uid = 'account-a', day = '2026-11-20') => doc(db, 'users', uid, 'fitness', day);
     const reps = { version: 1, revision: 1, pushups: 50, abs: 10 };
     await assertSucceeds(setDoc(fitness(a), reps));

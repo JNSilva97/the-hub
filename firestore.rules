@@ -96,22 +96,40 @@ service cloud.firestore {
       }
       function validPlanDetails(entry) {
         return entry is map && entry.keys().hasOnly(['time', 'note'])
-          && entry.time is string && (entry.time == '' || entry.time.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$'))
+          && validEventFields(entry);
+      }
+      function validEventFields(entry) {
+        return entry.time is string && (entry.time == '' || entry.time.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$'))
           && entry.note is string && entry.note.size() <= 120;
+      }
+      function validEvent(entry) {
+        return entry is map && entry.keys().hasOnly(['title', 'time', 'note'])
+          && entry.title is string && entry.title.size() <= 60 && entry.title.matches('.*[^\\s].*')
+          && validEventFields(entry);
+      }
+      function validEvents(events, mode) {
+        return events is list && events.size() <= 5 && (mode == 'custom' || events.size() == 0)
+          && (events.size() < 1 || validEvent(events[0]))
+          && (events.size() < 2 || validEvent(events[1]))
+          && (events.size() < 3 || validEvent(events[2]))
+          && (events.size() < 4 || validEvent(events[3]))
+          && (events.size() < 5 || validEvent(events[4]));
       }
       function validPlan() {
         let data = request.resource.data;
         return (id.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') || id.matches('^repeat-[1-7]$'))
-          && data.keys().hasOnly(['version', 'revision', 'mode', 'plans', 'details'])
+          && data.keys().hasOnly(['version', 'revision', 'mode', 'plans', 'details', 'events'])
           && data.version == 1 && data.revision is int && data.revision > 0 && data.revision <= 1000000000
           && data.mode in ['custom', 'weekly'] && data.plans is list && data.plans.size() <= 3
           && data.plans.hasOnly(['office', 'training', 'going-out']) && data.plans.toSet().size() == data.plans.size()
           && validDetails(data.get('details', {}), data.plans)
+          && validEvents(data.get('events', []), data.mode)
           && (data.mode == 'custom' || !id.matches('^repeat-.*$') && data.plans.size() == 0);
       }
       allow read: if owner(uid);
       allow create: if owner(uid) && validPlan() && request.resource.data.revision == 1;
-      allow update: if owner(uid) && validPlan() && request.resource.data.revision == resource.data.revision + 1;
+      allow update: if owner(uid) && validPlan() && request.resource.data.revision == resource.data.revision + 1
+        && (resource.data.get('events', []).size() == 0 || 'events' in request.resource.data);
     }
     match /users/{uid}/habits/{id} {
       function count(field) {

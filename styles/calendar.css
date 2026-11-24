@@ -10,7 +10,6 @@
 .calendar-content { padding: clamp(12px, 3vw, 24px); }
 .calendar-intro { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
 .calendar-dialog h3 { margin: 0; font: 600 23px var(--font-interface); }
-.calendar-intro p { margin: 5px 0 0; color: #a6c6dc; font-size: 14px; line-height: 1.5; }
 .calendar-navigation { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto; align-items: center; gap: 8px; margin-bottom: 12px; }
 .calendar-navigation h3 { text-align: center; font-size: 18px; }
 .calendar-navigation > button { padding-inline: 6px; }
@@ -39,8 +38,13 @@
 .calendar-plan-option strong { display: block; color: #ddf2ff; font: 600 18px var(--font-interface); }
 .calendar-plan-option small { display: block; margin-top: 3px; color: #a6c4d8; font-size: 12px; }
 .calendar-plan-details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; padding: 12px; }
-.calendar-plan-details label { display: grid; gap: 5px; min-width: 0; color: #c6def0; font-size: 13px; }
-.calendar-plan-details input { min-width: 0; width: 100%; min-height: 44px; padding: 6px 8px; border: 1px solid #366a92; border-radius: 4px; color: #d9f1ff; background: var(--panel-surface); color-scheme: dark; font: inherit; font-size: 16px; }
+.calendar-dialog :is(.calendar-plan-details, .calendar-custom-plan) label { display: grid; gap: 5px; min-width: 0; color: #c6def0; font-size: 13px; }
+.calendar-dialog :is(.calendar-plan-details, .calendar-custom-plan) input { min-width: 0; width: 100%; min-height: 44px; padding: 6px 8px; border: 1px solid #366a92; border-radius: 4px; color: #d9f1ff; background: var(--panel-surface); color-scheme: dark; font: inherit; font-size: 16px; }
+.calendar-custom { margin-top: 20px; }
+.calendar-custom h4 { margin: 0 0 10px; font: 600 19px var(--font-interface); }
+.calendar-custom-plan { display: grid; gap: 8px; min-width: 0; margin: 0 0 12px; padding: 10px 12px 12px; border: 1px solid #284b64; border-radius: 4px; }
+.calendar-custom-plan legend { padding-inline: 4px; color: #c6def0; font-size: 13px; }
+.calendar-custom-plan button { justify-self: start; }
 .calendar-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
 .calendar-actions #calendar-save { background: #16435f; border-color: #5ca5cf; }
 .calendar-preview { padding: 16px; border: 1px solid #284b64; border-radius: 4px; background: var(--panel-inset); }

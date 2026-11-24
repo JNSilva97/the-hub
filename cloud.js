@@ -1,6 +1,6 @@
-import { firebaseConfig } from './firebase-config.mjs?v=calendar-checklist-links-1';
-import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=calendar-checklist-links-1';
-import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=calendar-checklist-links-1';
+import { firebaseConfig } from './firebase-config.mjs?v=calendar-custom-plans-1';
+import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=calendar-custom-plans-1';
+import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=calendar-custom-plans-1';
 
 const panel = document.getElementById('account-dialog');
 const loginButton = document.getElementById('account-login');

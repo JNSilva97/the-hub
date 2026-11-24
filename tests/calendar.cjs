@@ -113,6 +113,39 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       assert.deepEqual(first.errors.concat(second.errors), []);
     } finally { await first.context.close(); await second.context.close(); }
   });
+  await t.test('custom plans can be saved without checklists, synced, edited and removed', async () => {
+    const first = await make(browser); const second = await make(browser);
+    try {
+      for (const { page } of [first, second]) await start(page);
+      const page = first.page;
+      const custom = page.locator('.calendar-custom-plan');
+      await page.getByRole('button', { name: 'Add plan', exact: true }).click();
+      assert.equal(await page.locator('#calendar-save').isDisabled(), true);
+      await custom.first().getByLabel('Plan name').fill('Dinner');
+      await custom.first().getByLabel('Time (Lisbon, optional)').fill('20:00');
+      await custom.first().getByLabel('Note (optional)').fill('Outdoor table');
+      await page.getByRole('button', { name: 'Add plan', exact: true }).click();
+      await custom.last().getByLabel('Plan name').fill('Appointment');
+      await custom.last().getByLabel('Time (Lisbon, optional)').fill('09:00');
+      await page.locator('#calendar-save').click();
+      await page.locator('#calendar-status').filter({ hasText: 'Plans saved' }).waitFor();
+      await sync(page, second.page);
+      const day = second.page.locator('#calendar-week [aria-current="date"]');
+      await day.getByText('Dinner', { exact: true }).waitFor();
+      assert.deepEqual(await day.locator('b').allTextContents(), ['Appointment', 'Dinner']);
+      assert.equal(await second.page.getByLabel('Note (optional)', { exact: true }).first().inputValue(), 'Outdoor table');
+      assert.equal(await second.page.locator('#calendar-checklists').getByRole('button').count(), 0);
+      await second.page.getByLabel('Plan name', { exact: true }).first().fill('Birthday dinner');
+      await second.page.getByRole('button', { name: 'Remove custom plan 2' }).click();
+      await second.page.locator('#calendar-save').click();
+      await second.page.locator('#calendar-status').filter({ hasText: 'Plans saved' }).waitFor();
+      assert.deepEqual(await day.locator('b').allTextContents(), ['Birthday dinner']);
+      await second.page.getByRole('button', { name: 'Remove custom plan 1' }).click();
+      await second.page.locator('#calendar-save').click();
+      await day.getByText('No plans', { exact: true }).waitFor();
+      assert.deepEqual(first.errors.concat(second.errors), []);
+    } finally { await first.context.close(); await second.context.close(); }
+  });
   await t.test('dirty plans guard navigation; rejected or conflicting saves keep the draft', async () => {
     const first = await make(browser); const second = await make(browser);
     try {

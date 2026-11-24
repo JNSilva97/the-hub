@@ -3,8 +3,8 @@ function createCalendar(panel, openChecklist) {
   const format = (day, options) => new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', ...options }).format(new Date(`${day}T12:00:00Z`));
   const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
   let model, account, selected, anchor, owner, editingWeekly = false, busy = false, notice = '', failed = false, loadError = '';
-  let draft = [], details = {}, baseline, revision = 0, lastDay;
-  const snapshot = () => JSON.stringify([draft, model?.planTypes.map(({ id }) => details[id]) ?? []]);
+  let draft = [], details = {}, customPlans = [], baseline, revision = 0, lastDay;
+  const snapshot = () => JSON.stringify([draft, model?.planTypes.map(({ id }) => details[id]) ?? [], customPlans]);
   const dirty = () => baseline !== undefined && snapshot() !== baseline;
   const id = () => editingWeekly ? `repeat-${model.weekday(selected)}` : selected;
   const records = () => account?.records ?? new Map();
@@ -14,7 +14,39 @@ function createCalendar(panel, openChecklist) {
     const plan = editingWeekly ? all.get(id()) : model.plansForDay(all, selected);
     draft = [...(plan?.plans ?? [])];
     details = { ...plan?.details };
+    customPlans = (plan?.events ?? []).map(event => ({ ...event }));
     baseline = snapshot(); revision = all.get(id())?.revision ?? 0;
+    renderCustomPlans();
+  }
+  function renderCustomPlans() {
+    const list = el('custom-list');
+    list.replaceChildren(...customPlans.map((event, index) => {
+      const plan = node('fieldset', '', 'calendar-custom-plan');
+      plan.append(node('legend', `Custom plan ${index + 1}`));
+      for (const [key, caption, length] of [['title', 'Plan name', 60], ['time', 'Time (Lisbon, optional)'], ['note', 'Note (optional)', 120]]) {
+        const label = node('label', caption);
+        const input = node('input', '');
+        input.type = key === 'time' ? 'time' : 'text';
+        if (length) input.maxLength = length;
+        if (key === 'title') input.required = true;
+        input.value = event[key];
+        input.addEventListener('input', () => {
+          event[key] = input.value;
+          notice = ''; failed = false; render();
+        });
+        label.append(input); plan.append(label);
+      }
+      const remove = node('button', 'Remove');
+      remove.type = 'button';
+      remove.setAttribute('aria-label', `Remove custom plan ${index + 1}`);
+      remove.addEventListener('click', () => {
+        customPlans.splice(index, 1);
+        notice = ''; failed = false; renderCustomPlans(); render();
+        el('add-plan').focus();
+      });
+      plan.append(remove);
+      return plan;
+    }));
   }
   function emit() {
     if (!model) return;
@@ -34,7 +66,10 @@ function createCalendar(panel, openChecklist) {
     el('signin').hidden = Boolean(account?.uid);
     el('retry').hidden = !loadError && !account?.error;
     el('fields').disabled = locked;
-    el('save').disabled = locked || !dirty();
+    el('save').disabled = locked || !dirty() || customPlans.some(event => !event.title.trim());
+    const atLimit = customPlans.length >= model?.maxCustomPlans;
+    el('add-plan').disabled = locked || atLimit;
+    el('event-limit').hidden = !atLimit;
     el('cancel').disabled = busy || !dirty() && !failed;
     el('cancel').textContent = failed && !dirty() ? 'Reload plan' : 'Cancel';
     el('close').disabled = busy;
@@ -73,13 +108,17 @@ function createCalendar(panel, openChecklist) {
       if (day === today) button.setAttribute('aria-current', 'date');
       button.append(node('span', format(day, { weekday: 'short' })), node('strong', format(day, { day: 'numeric' })));
       const agenda = node('span', '', 'calendar-agenda-plans');
-      const events = ready ? model.planTypes.filter(plan => plans.plans.includes(plan.id)) : [];
-      events.sort((a, b) => (plans.details?.[a.id]?.time || '99:99').localeCompare(plans.details?.[b.id]?.time || '99:99'));
+      const events = ready ? [
+        ...model.planTypes.filter(plan => plans.plans.includes(plan.id))
+          .map(plan => ({ id: plan.id, title: plan.name, time: plans.details?.[plan.id]?.time })),
+        ...(plans.events ?? [])
+      ] : [];
+      events.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
       for (const plan of events) {
-        const { time } = plans.details?.[plan.id] ?? {};
+        const { time } = plan;
         const entry = node('span', '', 'calendar-agenda-entry');
-        entry.dataset.plan = plan.id;
-        entry.append(node('b', plan.name));
+        if (plan.id) entry.dataset.plan = plan.id;
+        entry.append(node('b', plan.title));
         if (time) {
           const clock = node('time', time);
           clock.dateTime = time;
@@ -97,7 +136,7 @@ function createCalendar(panel, openChecklist) {
     el('mode-weekly').textContent = `Every ${format(selected, { weekday: 'long' })}`;
     const source = model.plansForDay(records(), selected).source;
     el('source').textContent = editingWeekly ? 'Repeat these plans on this weekday. Custom dates keep their own plans.'
-      : source === 'custom' ? 'A custom plan for this date. Uncheck every plan to keep the day free.'
+      : source === 'custom' ? 'Changes apply only to this date.'
       : 'Following your weekly pattern. Saving here changes only this date.';
     el('save').textContent = editingWeekly ? 'Save weekly pattern' : 'Save this date';
     const relevant = [node('li', draft.length ? 'Getting Ready' : 'No extra preparation selected')];
@@ -131,15 +170,19 @@ function createCalendar(panel, openChecklist) {
     render(); return false;
   }
   async function save(followWeekly = false) {
-    if (!account?.canWrite || busy) return;
+    if (!account?.canWrite || busy || !followWeekly && customPlans.some(event => !event.title.trim())) return;
     const uid = account.uid;
     busy = true; notice = ''; failed = false; render();
     try {
       const savedDetails = Object.fromEntries(draft
         .filter(plan => details[plan]?.time || details[plan]?.note.trim())
         .map(plan => [plan, { time: details[plan].time, note: details[plan].note.trim() }]));
+      const events = followWeekly ? [] : customPlans.map(event => ({
+        title: event.title.trim(), time: event.time, note: event.note.trim()
+      }));
+      const keepEventField = events.length || records().get(id())?.events?.length;
       await account.save(id(), { mode: followWeekly ? 'weekly' : 'custom', plans: followWeekly ? [] : draft,
-        details: followWeekly ? {} : savedDetails }, revision);
+        details: followWeekly ? {} : savedDetails, ...(keepEventField ? { events } : {}) }, revision);
       if (uid !== account.uid) return;
       baseline = snapshot(); busy = false; loadDraft();
       notice = followWeekly ? 'This date now follows your weekly pattern.' : editingWeekly ? 'Weekly pattern saved.' : 'Plans saved for this date.';
@@ -166,6 +209,12 @@ function createCalendar(panel, openChecklist) {
   el('mode-day').addEventListener('click', () => navigate(() => { editingWeekly = false; loadDraft(); }));
   el('mode-weekly').addEventListener('click', () => navigate(() => { editingWeekly = true; loadDraft(); }));
   el('save').addEventListener('click', () => save());
+  el('add-plan').addEventListener('click', () => {
+    if (!account?.canWrite || busy || customPlans.length >= model.maxCustomPlans) return;
+    customPlans.push({ title: '', time: '', note: '' });
+    notice = ''; failed = false; renderCustomPlans(); render();
+    el('custom-list').lastElementChild.querySelector('input').focus();
+  });
   el('follow').addEventListener('click', () => save(true));
   el('cancel').addEventListener('click', () => { notice = ''; failed = false; loadDraft(); render(); });
   el('retry').addEventListener('click', () => { if (account) account.retry(); else location.reload(); });
@@ -180,7 +229,7 @@ function createCalendar(panel, openChecklist) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-checklist-links-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-custom-plans-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -213,10 +262,10 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-checklist-links-1');
+    return import('./cloud-calendar.js?v=calendar-custom-plans-1');
   }).then(module => {
     const changed = () => {
-      if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }
+      if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }
       if (!dirty() && !busy) loadDraft();
       render(); emit();
     };
