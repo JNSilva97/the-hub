@@ -1,5 +1,5 @@
-import { lisbonDay } from './routine-model.mjs?v=calendar-agenda-1';
-import { validDay } from './habits-model.mjs?v=calendar-agenda-1';
+import { lisbonDay } from './routine-model.mjs?v=calendar-grid-1';
+import { validDay } from './habits-model.mjs?v=calendar-grid-1';
 export { lisbonDay };
 export const exercises = [
   { id: 'pushups', name: 'Push-ups', goal: 50 },

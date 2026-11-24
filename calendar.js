@@ -71,17 +71,20 @@ function createCalendar(panel) {
       const button = node('button', '', 'calendar-day'); button.type = 'button'; button.dataset.day = day;
       button.setAttribute('aria-pressed', String(day === selected));
       if (day === today) button.setAttribute('aria-current', 'date');
-      button.append(node('span', format(day, { weekday: 'short', day: 'numeric', month: 'short' }), 'calendar-agenda-date'));
+      button.append(node('span', format(day, { weekday: 'short' })), node('strong', format(day, { day: 'numeric' })));
       const agenda = node('span', '', 'calendar-agenda-plans');
       const events = ready ? model.planTypes.filter(plan => plans.plans.includes(plan.id)) : [];
       events.sort((a, b) => (plans.details?.[a.id]?.time || '99:99').localeCompare(plans.details?.[b.id]?.time || '99:99'));
       for (const plan of events) {
-        const { time, note } = plans.details?.[plan.id] ?? {};
+        const { time } = plans.details?.[plan.id] ?? {};
         const entry = node('span', '', 'calendar-agenda-entry');
         entry.dataset.plan = plan.id;
-        if (time) { const clock = node('time', time); clock.dateTime = time; entry.append(clock); }
         entry.append(node('b', plan.name));
-        if (note) entry.append(node('small', note));
+        if (time) {
+          const clock = node('time', time);
+          clock.dateTime = time;
+          entry.append(' ', clock);
+        }
         agenda.append(entry);
       }
       if (!events.length) agenda.append(node('small', ready ? 'No plans' : 'Sign in to plan'));
@@ -162,7 +165,7 @@ function createCalendar(panel) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-agenda-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-grid-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -195,7 +198,7 @@ function createCalendar(panel) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-agenda-1');
+    return import('./cloud-calendar.js?v=calendar-grid-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }

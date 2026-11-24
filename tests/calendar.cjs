@@ -85,7 +85,6 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       const training = second.page.locator('#calendar-week [aria-current="date"] [data-plan="training"]');
       await training.getByText('Gym/Muay Thai').waitFor();
       assert.equal(await training.locator('time').textContent(), '19:30');
-      assert.equal(await training.locator('small').textContent(), 'Bring gloves');
       assert.equal(await second.page.locator('#calendar-note-training').inputValue(), 'Bring gloves');
       await close(second.page); await openRoutines(second.page);
       await second.page.locator('#routine-plan-context:not([hidden])').waitFor();
