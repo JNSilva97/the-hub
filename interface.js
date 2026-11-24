@@ -7,7 +7,9 @@ const instantNotes = typeof createInstantNotes === 'function' ? createInstantNot
 const health = typeof createHealth === 'function' && typeof createChecklistPicker === 'function' ? createHealth(dialog) : undefined;
 const addictionDialog = document.getElementById('addiction-dialog');
 const addiction = typeof createAddictionHelper === 'function' ? createAddictionHelper(addictionDialog, health) : undefined;
-const calendar = typeof createCalendar === 'function' ? createCalendar(document.getElementById('calendar-dialog')) : undefined;
+const calendar = typeof createCalendar === 'function'
+  ? createCalendar(document.getElementById('calendar-dialog'), (plan, closeCalendar) => routinesModule?.openPlannedChecklist(plan, closeCalendar))
+  : undefined;
 const fitness = typeof createFitness === 'function' ? createFitness(document.getElementById('fitness-dialog')) : undefined;
 const mediaLibrary = typeof createMediaLibrary === 'function' ? createMediaLibrary() : undefined;
 const scriptUrl = new URL(document.currentScript.src);

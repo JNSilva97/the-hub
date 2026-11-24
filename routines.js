@@ -2,12 +2,12 @@ import {
   validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections, linkedDoseReplaces, routinePlan, routineRelevant,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=calendar-grid-1';
-import { cloudWorkspace } from './cloud.js?v=calendar-grid-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=calendar-grid-1';
-import { createRoutineTools } from './routine-tools.js?v=calendar-grid-1';
+} from './routine-model.mjs?v=calendar-checklist-links-1';
+import { cloudWorkspace } from './cloud.js?v=calendar-checklist-links-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=calendar-checklist-links-1';
+import { createRoutineTools } from './routine-tools.js?v=calendar-checklist-links-1';
 
-export { createHealthAccount } from './cloud-health.js?v=calendar-grid-1';
+export { createHealthAccount } from './cloud-health.js?v=calendar-checklist-links-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -347,6 +347,25 @@ function selectRoutine(routine, remember = true) {
   document.dispatchEvent(new CustomEvent('hub:checklistview', { detail: { scope: workspaceIdentity(), routines: routines.map(({ id, name }) => ({ id, name })), selected: { id: routine.id, name: routine.name } } }));
 }
 
+export function openPlannedChecklist(plan, closeCalendar) {
+  if (dialog.dataset.ready !== 'true' || !inAccount()) return false;
+  const target = routines.find(routine => routinePlan(routine.name) === plan);
+  if (!target) return false;
+
+  closeCalendar();
+  if (!dialog.open) document.getElementById('routines-launch').click();
+  focusChecklist(target);
+  return true;
+}
+
+function focusChecklist(target) {
+  selectRoutine(target);
+  const heading = document.getElementById('routine-name');
+  heading.tabIndex = -1;
+  heading.focus({ preventScroll: true });
+  heading.scrollIntoView({ block: 'start' });
+}
+
 function createLinkedRow(item, target) {
   const row = make('div', 'linked-check-row');
   const label = make('label', 'check-row');
@@ -360,13 +379,7 @@ function createLinkedRow(item, target) {
   const open = make('button', 'routine-linked-button', 'Open');
   open.type = 'button';
   open.setAttribute('aria-label', `Open ${target.name}`);
-  open.addEventListener('click', () => {
-    selectRoutine(target);
-    const heading = document.getElementById('routine-name');
-    heading.tabIndex = -1;
-    heading.focus({ preventScroll: true });
-    heading.scrollIntoView({ block: 'start' });
-  });
+  open.addEventListener('click', () => focusChecklist(target));
   row.append(label, open);
   return row;
 }

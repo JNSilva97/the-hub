@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
-const { fixture, ready, openRoutines, chooseRoutine } = require('./browser-fixture.cjs');
+const { fixture, ready, chooseRoutine } = require('./browser-fixture.cjs');
 
 const routines = { version: 1, routines: [
   ['morning', 'Morning Routine', 'Breakfast'], ['getting-ready', 'Getting Ready', 'Phone'],
@@ -86,7 +86,12 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       await training.getByText('Gym/Muay Thai').waitFor();
       assert.equal(await training.locator('time').textContent(), '19:30');
       assert.equal(await second.page.locator('#calendar-note-training').inputValue(), 'Bring gloves');
-      await close(second.page); await openRoutines(second.page);
+      await first.page.getByRole('button', { name: 'Open Office Preparation', exact: true }).click();
+      assert.equal(await first.page.locator('#routine-name').textContent(), 'Office Preparation');
+      assert.equal(await first.page.locator('#calendar-dialog').isVisible(), false);
+      await second.page.getByRole('button', { name: 'Open Muay Thai Preparation', exact: true }).click();
+      assert.equal(await second.page.locator('#routine-name').textContent(), 'Muay Thai Preparation');
+      assert.equal(await second.page.locator('#calendar-dialog').isVisible(), false);
       await second.page.locator('#routine-plan-context:not([hidden])').waitFor();
       assert.equal(await second.page.locator('#routine-list [data-routine="other"]').evaluate(el => el.hidden), false);
       assert.equal(await second.page.locator('#routine-list [data-routine="office"]').evaluate(el => el.hidden), false);
@@ -114,6 +119,9 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       for (const { page } of [first, second]) await start(page);
       const page = first.page;
       await plan(page, 'office').check();
+      await page.getByRole('button', { name: 'Open Office Preparation', exact: true }).click();
+      assert.equal(await page.locator('#calendar-dialog').isVisible(), true);
+      assert.equal(await page.locator('#routines-dialog').isVisible(), false);
       assert.equal(await page.locator('#account-logout').isDisabled(), true);
       await page.keyboard.press('Escape');
       assert.equal(await page.locator('#calendar-dialog').evaluate(el => el.open), true);

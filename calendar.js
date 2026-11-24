@@ -1,4 +1,4 @@
-function createCalendar(panel) {
+function createCalendar(panel, openChecklist) {
   const el = id => document.getElementById(`calendar-${id}`);
   const format = (day, options) => new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', ...options }).format(new Date(`${day}T12:00:00Z`));
   const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
@@ -100,11 +100,26 @@ function createCalendar(panel) {
       : source === 'custom' ? 'A custom plan for this date. Uncheck every plan to keep the day free.'
       : 'Following your weekly pattern. Saving here changes only this date.';
     el('save').textContent = editingWeekly ? 'Save weekly pattern' : 'Save this date';
-    const relevant = [];
-    if (draft.length) relevant.push('Getting Ready');
-    if (draft.includes('office')) relevant.push('Office Preparation');
-    if (draft.includes('training')) relevant.push('Muay Thai Preparation');
-    el('checklists').replaceChildren(...(relevant.length ? relevant : ['No extra preparation selected']).map(name => node('li', name)));
+    const relevant = [node('li', draft.length ? 'Getting Ready' : 'No extra preparation selected')];
+    for (const [plan, title] of [['office', 'Office Preparation'], ['training', 'Muay Thai Preparation']]) {
+      if (!draft.includes(plan)) continue;
+      const item = node('li', '', 'calendar-checklist-link');
+      const open = node('button', 'Open checklist');
+      open.type = 'button';
+      open.disabled = busy;
+      open.setAttribute('aria-label', `Open ${title}`);
+      open.addEventListener('click', () => {
+        if (!canNavigate()) { el('save').focus(); return; }
+        if (!openChecklist(plan, () => panel.close())) {
+          notice = `${title} is unavailable. Check your lists in Goals.`;
+          render();
+          el('checklists').querySelector(`[aria-label="Open ${title}"]`)?.focus();
+        }
+      });
+      item.append(node('span', title), open);
+      relevant.push(item);
+    }
+    el('checklists').replaceChildren(...relevant);
   }
   function navigate(run) {
     if (!canNavigate()) return;
@@ -165,7 +180,7 @@ function createCalendar(panel) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-grid-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-checklist-links-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -198,7 +213,7 @@ function createCalendar(panel) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-grid-1');
+    return import('./cloud-calendar.js?v=calendar-checklist-links-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }

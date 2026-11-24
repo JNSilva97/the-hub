@@ -47,6 +47,7 @@
 .calendar-preview h4 { margin: 0 0 8px; font: 600 19px var(--font-interface); }
 .calendar-preview ul { padding: 0; margin: 14px 0; list-style: none; display: grid; gap: 9px; }
 .calendar-preview li { padding: 8px 10px; border-left: 2px solid #5aaacb; background: #0e2032a1; color: #d4eaf6; font-size: 14px; }
+.calendar-checklist-link { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .calendar-feedback { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 12px; border-top: 1px solid #274459; }
 #calendar-status { margin: 0; color: #a9c6d9; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 #calendar-status[data-error="true"] { color: #ffd3a2; }
