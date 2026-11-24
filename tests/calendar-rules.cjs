@@ -21,6 +21,10 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
     const record = (plans = ['office'], revision = 1, mode = 'custom') => ({ version: 1, revision, mode, plans });
     await assertSucceeds(setDoc(ref(a, '2026-11-20'), record()));
     await assertSucceeds(setDoc(ref(a, 'repeat-5'), record(['office', 'training'])));
+    await assertSucceeds(setDoc(ref(a, 'repeat-5'), { ...record(['office', 'training'], 2), details: { training: { time: '19:30', note: 'Bring gloves' } } }));
+    for (const details of [{ office: { time: '25:00', note: '' } }, { office: { time: '', note: 'x'.repeat(121) } }, { training: { time: '', note: '' } }]) {
+      await assertFails(setDoc(ref(a, '2026-11-22'), { ...record(), details }));
+    }
     await assertSucceeds(getDoc(ref(a, '2026-11-20')));
     await assertFails(getDoc(ref(b, '2026-11-20')));
     await assertFails(getDoc(ref(guest, '2026-11-20')));

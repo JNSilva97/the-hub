@@ -46,7 +46,7 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       await plan(page, 'office').check(); await plan(page, 'training').check();
       await page.locator('#calendar-save').click();
       await page.locator('#calendar-status').filter({ hasText: 'Weekly pattern saved.' }).waitFor();
-      assert.match(await page.locator('#calendar-week [aria-current="date"] small').textContent(), /Office \+ Gym\/Muay Thai/);
+      assert.deepEqual(await page.locator('#calendar-week [aria-current="date"] .calendar-agenda-entry b').allTextContents(), ['Office', 'Gym/Muay Thai']);
       await page.locator('#calendar-mode-day').click();
       await plan(page, 'office').uncheck(); await plan(page, 'training').uncheck();
       await page.locator('#calendar-save').click();
@@ -61,7 +61,7 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       await plan(page, 'office').uncheck();
       await page.locator('#calendar-save').click();
       await page.locator('#calendar-status').filter({ hasText: 'Plans saved for this date.' }).waitFor();
-      assert.equal(await page.locator('#calendar-week [data-day="2026-11-27"] small').textContent(), 'Gym/Muay Thai');
+      assert.equal(await page.locator('#calendar-week [data-day="2026-11-27"] .calendar-agenda-entry b').textContent(), 'Gym/Muay Thai');
       const saved = await page.evaluate(() => window.__hubFirebase.docs['account-a']);
       assert.deepEqual(saved.calendar['repeat-5'].plans, ['office', 'training']);
       assert.deepEqual(saved.calendar['2026-11-27'].plans, ['training']);
@@ -73,13 +73,20 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
     const first = await make(browser); const second = await make(browser);
     try {
       for (const { page } of [first, second]) await start(page);
-      await plan(first.page, 'training').check(); await first.page.locator('#calendar-save').click();
+      await plan(first.page, 'training').check();
+      await first.page.locator('#calendar-time-training').fill('19:30');
+      await first.page.locator('#calendar-note-training').fill('Bring gloves');
+      await first.page.locator('#calendar-save').click();
       await first.page.locator('#calendar-status').filter({ hasText: 'Plans saved' }).waitFor();
       await first.page.locator('#calendar-week [data-day="2026-11-21"]').click();
       await plan(first.page, 'office').check(); await first.page.locator('#calendar-save').click();
       await first.page.locator('#calendar-status').filter({ hasText: 'Plans saved' }).waitFor();
       await sync(first.page, second.page);
-      await second.page.locator('#calendar-week [aria-current="date"] small').filter({ hasText: 'Gym/Muay Thai' }).waitFor();
+      const training = second.page.locator('#calendar-week [aria-current="date"] [data-plan="training"]');
+      await training.getByText('Gym/Muay Thai').waitFor();
+      assert.equal(await training.locator('time').textContent(), '19:30');
+      assert.equal(await training.locator('small').textContent(), 'Bring gloves');
+      assert.equal(await second.page.locator('#calendar-note-training').inputValue(), 'Bring gloves');
       await close(second.page); await openRoutines(second.page);
       await second.page.locator('#routine-plan-context:not([hidden])').waitFor();
       assert.equal(await second.page.locator('#routine-list [data-routine="other"]').evaluate(el => el.hidden), false);

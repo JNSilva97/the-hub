@@ -3,15 +3,18 @@ function createCalendar(panel) {
   const format = (day, options) => new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', ...options }).format(new Date(`${day}T12:00:00Z`));
   const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
   let model, account, selected, anchor, owner, editingWeekly = false, busy = false, notice = '', failed = false, loadError = '';
-  let draft = [], baseline = '[]', revision = 0, lastDay;
-  const dirty = () => JSON.stringify(draft) !== baseline;
+  let draft = [], details = {}, baseline, revision = 0, lastDay;
+  const snapshot = () => JSON.stringify([draft, model?.planTypes.map(({ id }) => details[id]) ?? []]);
+  const dirty = () => baseline !== undefined && snapshot() !== baseline;
   const id = () => editingWeekly ? `repeat-${model.weekday(selected)}` : selected;
   const records = () => account?.records ?? new Map();
   function loadDraft() {
     if (!model || !selected) return;
     const all = records();
-    draft = [...(editingWeekly ? all.get(id())?.plans ?? [] : model.plansForDay(all, selected).plans)];
-    baseline = JSON.stringify(draft); revision = all.get(id())?.revision ?? 0;
+    const plan = editingWeekly ? all.get(id()) : model.plansForDay(all, selected);
+    draft = [...(plan?.plans ?? [])];
+    details = { ...plan?.details };
+    baseline = snapshot(); revision = all.get(id())?.revision ?? 0;
   }
   function emit() {
     if (!model) return;
@@ -36,7 +39,16 @@ function createCalendar(panel) {
     el('cancel').textContent = failed && !dirty() ? 'Reload plan' : 'Cancel';
     el('close').disabled = busy;
     for (const name of ['previous', 'next', 'today', 'mode-day', 'mode-weekly']) el(name).disabled = !model || busy;
-    for (const input of el('plan-options').querySelectorAll('input')) input.checked = draft.includes(input.value);
+    for (const check of el('plan-options').querySelectorAll('input[type="checkbox"]')) {
+      const plan = check.value;
+      check.checked = draft.includes(plan);
+      el(`details-${plan}`).hidden = !check.checked;
+      for (const field of ['time', 'note']) {
+        const input = el(`${field}-${plan}`);
+        const value = details[plan]?.[field] ?? '';
+        if (input.value !== value) input.value = value;
+      }
+    }
     el('mode-day').setAttribute('aria-pressed', String(!editingWeekly));
     el('mode-weekly').setAttribute('aria-pressed', String(editingWeekly));
     const custom = selected && records().get(selected)?.mode === 'custom';
@@ -53,13 +65,27 @@ function createCalendar(panel) {
     const dates = model.weekDates(anchor);
     el('week-title').textContent = `${format(dates[0], { day: 'numeric', month: 'short' })} – ${format(dates[6], { day: 'numeric', month: 'short', year: 'numeric' })}`;
     const focusDay = el('week').contains(document.activeElement) ? document.activeElement.dataset.day : undefined;
+    const weekRecords = records();
     el('week').replaceChildren(...dates.map(day => {
-      const plans = model.plansForDay(records(), day);
+      const plans = model.plansForDay(weekRecords, day);
       const button = node('button', '', 'calendar-day'); button.type = 'button'; button.dataset.day = day;
       button.setAttribute('aria-pressed', String(day === selected));
-      button.setAttribute('aria-label', `${format(day, { weekday: 'long', day: 'numeric', month: 'long' })}: ${ready ? model.planNames(plans.plans) || 'No plans' : 'Sign in to plan'}`);
       if (day === today) button.setAttribute('aria-current', 'date');
-      button.append(node('span', format(day, { weekday: 'short' })), node('strong', format(day, { day: 'numeric' })), node('small', ready ? model.planNames(plans.plans) || 'No plans' : '—'));
+      button.append(node('span', format(day, { weekday: 'short', day: 'numeric', month: 'short' }), 'calendar-agenda-date'));
+      const agenda = node('span', '', 'calendar-agenda-plans');
+      const events = ready ? model.planTypes.filter(plan => plans.plans.includes(plan.id)) : [];
+      events.sort((a, b) => (plans.details?.[a.id]?.time || '99:99').localeCompare(plans.details?.[b.id]?.time || '99:99'));
+      for (const plan of events) {
+        const { time, note } = plans.details?.[plan.id] ?? {};
+        const entry = node('span', '', 'calendar-agenda-entry');
+        entry.dataset.plan = plan.id;
+        if (time) { const clock = node('time', time); clock.dateTime = time; entry.append(clock); }
+        entry.append(node('b', plan.name));
+        if (note) entry.append(node('small', note));
+        agenda.append(entry);
+      }
+      if (!events.length) agenda.append(node('small', ready ? 'No plans' : 'Sign in to plan'));
+      button.append(agenda);
       button.addEventListener('click', () => navigate(() => { selected = day; loadDraft(); }));
       return button;
     }));
@@ -91,9 +117,13 @@ function createCalendar(panel) {
     const uid = account.uid;
     busy = true; notice = ''; failed = false; render();
     try {
-      await account.save(id(), { mode: followWeekly ? 'weekly' : 'custom', plans: followWeekly ? [] : draft }, revision);
+      const savedDetails = Object.fromEntries(draft
+        .filter(plan => details[plan]?.time || details[plan]?.note.trim())
+        .map(plan => [plan, { time: details[plan].time, note: details[plan].note.trim() }]));
+      await account.save(id(), { mode: followWeekly ? 'weekly' : 'custom', plans: followWeekly ? [] : draft,
+        details: followWeekly ? {} : savedDetails }, revision);
       if (uid !== account.uid) return;
-      baseline = JSON.stringify(draft); busy = false; loadDraft();
+      baseline = snapshot(); busy = false; loadDraft();
       notice = followWeekly ? 'This date now follows your weekly pattern.' : editingWeekly ? 'Weekly pattern saved.' : 'Plans saved for this date.';
     } catch (error) { if (uid === account.uid) { notice = error.message || 'Your plans could not be saved. Your draft is still here.'; failed = true; } }
     finally { if (uid === account.uid) busy = false; render(); emit(); }
@@ -132,7 +162,7 @@ function createCalendar(panel) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=routine-visibility-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-agenda-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -140,14 +170,35 @@ function createCalendar(panel) {
       const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); icon.setAttribute('aria-hidden', 'true');
       const use = document.createElementNS('http://www.w3.org/2000/svg', 'use'); use.setAttribute('href', `#${plan.icon}`); icon.append(use);
       const copy = node('span', ''); copy.append(node('strong', plan.name), node('small', plan.description));
-      check.addEventListener('change', () => { draft = model.planTypes.map(plan => plan.id).filter(id => el(`plan-${id}`).checked); notice = ''; failed = false; render(); });
-      label.append(check, icon, copy); return label;
+      check.addEventListener('change', () => {
+        draft = model.planTypes.map(plan => plan.id).filter(id => el(`plan-${id}`).checked);
+        if (!check.checked) delete details[plan.id];
+        notice = ''; failed = false; render();
+      });
+      const fields = node('div', '', 'calendar-plan-details');
+      fields.id = `calendar-details-${plan.id}`; fields.hidden = true;
+      const time = node('input', ''); time.type = 'time';
+      const note = node('input', ''); note.type = 'text'; note.maxLength = 120;
+      time.id = `calendar-time-${plan.id}`; note.id = `calendar-note-${plan.id}`;
+      for (const [input, caption] of [[time, 'Time (Lisbon, optional)'], [note, 'Note (optional)']]) {
+        const field = node('label', caption);
+        input.setAttribute('aria-label', `${plan.name} ${caption}`);
+        input.addEventListener('input', () => {
+          if (time.value || note.value) details[plan.id] = { time: time.value, note: note.value };
+          else delete details[plan.id];
+          notice = ''; failed = false; render();
+        });
+        field.append(input); fields.append(field);
+      }
+      label.append(check, icon, copy);
+      const option = node('div', '');
+      option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=routine-visibility-1');
+    return import('./cloud-calendar.js?v=calendar-agenda-1');
   }).then(module => {
     const changed = () => {
-      if (account?.uid !== owner) { owner = account?.uid; draft = []; baseline = '[]'; busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }
+      if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }
       if (!dirty() && !busy) loadDraft();
       render(); emit();
     };

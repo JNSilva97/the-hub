@@ -2,12 +2,12 @@ import {
   validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections, linkedDoseReplaces, routinePlan, routineRelevant,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
   isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=routine-visibility-1';
-import { cloudWorkspace } from './cloud.js?v=routine-visibility-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=routine-visibility-1';
-import { createRoutineTools } from './routine-tools.js?v=routine-visibility-1';
+} from './routine-model.mjs?v=calendar-agenda-1';
+import { cloudWorkspace } from './cloud.js?v=calendar-agenda-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=calendar-agenda-1';
+import { createRoutineTools } from './routine-tools.js?v=calendar-agenda-1';
 
-export { createHealthAccount } from './cloud-health.js?v=routine-visibility-1';
+export { createHealthAccount } from './cloud-health.js?v=calendar-agenda-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');

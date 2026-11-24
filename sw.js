@@ -1,6 +1,6 @@
 // Bump this version whenever a public app file changes; install the complete release atomically.
 const prefix = `the-hub:${new URL(self.registration.scope).pathname}:`;
-const cacheName = `${prefix}routine-visibility-1`;
+const cacheName = `${prefix}calendar-agenda-1`;
 const files = [
   'library-artwork.mjs', 'library.js', 'library-model.mjs', 'cloud-library.js', 'styles/library.css',
   'fitness.js', 'fitness-model.mjs', 'cloud-fitness.js', 'styles/fitness.css',
