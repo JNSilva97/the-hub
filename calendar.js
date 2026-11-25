@@ -5,7 +5,7 @@ function createCalendar(panel, openChecklist) {
   let model, account, selected, anchor, owner, editingWeekly = false, busy = false, notice = '', failed = false, loadError = '';
   let draft = [], details = {}, customPlans = [], baseline, revision = 0, lastDay;
   let hourly = false;
-  let fullDay = false, weekScroll = 0;
+  let fullDay = false;
   const snapshot = () => JSON.stringify([draft, model?.planTypes.map(({ id }) => details[id]) ?? [], customPlans]);
   const dirty = () => baseline !== undefined && snapshot() !== baseline;
   const id = () => editingWeekly ? `repeat-${model.weekday(selected)}` : selected;
@@ -122,8 +122,8 @@ function createCalendar(panel, openChecklist) {
   function leaveFullDay() {
     fullDay = false;
     render();
-    panel.scrollTop = weekScroll;
-    el('full-day').focus({ preventScroll: true });
+    panel.scrollTop = 0;
+    el('week').querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
   }
   function emit() {
     if (!model) return;
@@ -310,14 +310,12 @@ function createCalendar(panel, openChecklist) {
   }
   el('add-plan').addEventListener('click', () => addCustomPlan());
   el('full-day').addEventListener('click', () => {
-    if (editingWeekly) {
-      if (!canNavigate()) return;
-      editingWeekly = false;
-      loadDraft();
-    }
-    weekScroll = panel.scrollTop;
+    if (!model || panel.open || !canNavigate()) return;
+    selected = anchor = model.lisbonDay();
+    editingWeekly = false;
+    loadDraft();
     fullDay = true;
-    render();
+    open();
     panel.scrollTop = 0;
     el('back-to-week').focus({ preventScroll: true });
   });
@@ -344,7 +342,7 @@ function createCalendar(panel, openChecklist) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-day-view-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-home-schedule-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -377,7 +375,7 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-day-view-1');
+    return import('./cloud-calendar.js?v=calendar-home-schedule-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }
