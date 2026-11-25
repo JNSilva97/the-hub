@@ -118,7 +118,19 @@ for (const launcher of [routinesLauncher, document.getElementById('phone-routine
     routinesDialog.scrollTop = 0;
   });
 }
-for (const panel of [dialog, addictionDialog, routinesDialog, notesDialog, document.getElementById('note-delete-dialog'), document.getElementById('notes-import-dialog'), document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
+const quickAdd = document.getElementById('quick-add-dialog');
+document.getElementById('quick-add-launch').addEventListener('click', () => { if (!quickAdd.open) quickAdd.showModal(); });
+for (const [action, run] of [
+  ['plan', calendar && (() => calendar.openNewPlan())],
+  ['note', instantNotes && (() => { instantNotes.open(); document.getElementById('note-new').click(); })],
+  ['coffee', addiction && (() => addiction.openAndLogCoffee())]
+]) {
+  const button = document.getElementById(`quick-add-${action}`);
+  button.disabled = !run;
+  if (run) button.addEventListener('click', () => { quickAdd.close(); run(); });
+}
+
+for (const panel of [dialog, addictionDialog, routinesDialog, notesDialog, quickAdd, document.getElementById('note-delete-dialog'), document.getElementById('notes-import-dialog'), document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
   panel.addEventListener('click', event => {
     if (event.target !== panel) return;
     const bounds = panel.getBoundingClientRect();

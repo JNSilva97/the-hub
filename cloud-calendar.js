@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=calendar-today-1';
-import { readCalendarRecord } from './calendar-model.mjs?v=calendar-today-1';
+import { cloudWorkspace } from './cloud.js?v=quick-add-1';
+import { readCalendarRecord } from './calendar-model.mjs?v=quick-add-1';
 
 export function createCalendarAccount(onChange) {
   let uid, unsubscribe, generation = 0, ready = false, fromCache = true, pending = false, error = '';

@@ -11,20 +11,20 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/shell.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/core.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/access.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/panels.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/routines.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/notes.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/health.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/library.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/calendar.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/fitness.css?v=calendar-today-1">
-  <link rel="stylesheet" href="styles/motion.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/base.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/shell.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/core.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/access.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/panels.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/routines.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/notes.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/health.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/library.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=quick-add-1">
+  <link rel="stylesheet" href="styles/motion.css?v=quick-add-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -80,6 +80,7 @@
       <button id="calendar-full-day" class="command-launch home-schedule-launch" type="button" aria-haspopup="dialog" aria-controls="calendar-dialog" disabled>
         <svg aria-hidden="true"><use href="#calendar"/></svg>Today’s schedule
       </button>
+      <button id="quick-add-launch" class="command-launch" type="button" aria-label="Quick Add" aria-haspopup="dialog" aria-controls="quick-add-dialog"><span aria-hidden="true">+</span></button>
     </div>
     <div class="workspace">
       <svg class="connections" viewBox="0 0 1200 570" preserveAspectRatio="none" aria-hidden="true">
@@ -441,7 +442,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.25.7</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.25.8</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -592,6 +593,14 @@
       <button id="restart-confirm" class="restart-confirm" type="button">Clear ticks</button>
     </form>
   </dialog>
+  <dialog id="quick-add-dialog" class="command-dialog" aria-labelledby="quick-add-title">
+    <div class="command-heading"><h2 id="quick-add-title">Quick Add</h2><form method="dialog"><button class="routine-exit" aria-label="Close Quick Add">×</button></form></div>
+    <div class="command-results">
+      <button id="quick-add-plan" type="button" autofocus><span>Add plan</span><small>Calendar · Today</small></button>
+      <button id="quick-add-note" type="button"><span>New note</span><small>Notes</small></button>
+      <button id="quick-add-coffee" type="button"><span>Log coffee</span><small>Habits · +1</small></button>
+    </div>
+  </dialog>
   <dialog id="command-dialog" class="command-dialog" aria-labelledby="command-title">
     <div class="command-heading"><h2 id="command-title">Quick access</h2><form method="dialog"><button class="routine-exit" aria-label="Close quick access">×</button></form></div>
     <label for="command-search">Find an app or checklist</label>
@@ -600,18 +609,18 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=calendar-today-1"></script>
-  <script defer src="notes.js?v=calendar-today-1"></script>
-  <script defer src="checklist-picker.js?v=calendar-today-1"></script>
-  <script defer src="health.js?v=calendar-today-1"></script>
-  <script defer src="addiction.js?v=calendar-today-1"></script>
-  <script defer src="calendar.js?v=calendar-today-1"></script>
-  <script defer src="fitness.js?v=calendar-today-1"></script>
-  <script defer src="library.js?v=calendar-today-1"></script>
-  <script defer src="interface.js?v=calendar-today-1"></script>
-  <script defer src="interface-sound.js?v=calendar-today-1"></script>
-  <script defer src="pointer-effects.js?v=calendar-today-1"></script>
-  <script defer src="experience.js?v=calendar-today-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=calendar-today-1"></script>
+  <script defer src="core-progress.js?v=quick-add-1"></script>
+  <script defer src="notes.js?v=quick-add-1"></script>
+  <script defer src="checklist-picker.js?v=quick-add-1"></script>
+  <script defer src="health.js?v=quick-add-1"></script>
+  <script defer src="addiction.js?v=quick-add-1"></script>
+  <script defer src="calendar.js?v=quick-add-1"></script>
+  <script defer src="fitness.js?v=quick-add-1"></script>
+  <script defer src="library.js?v=quick-add-1"></script>
+  <script defer src="interface.js?v=quick-add-1"></script>
+  <script defer src="interface-sound.js?v=quick-add-1"></script>
+  <script defer src="pointer-effects.js?v=quick-add-1"></script>
+  <script defer src="experience.js?v=quick-add-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=quick-add-1"></script>
 </body>
 </html>

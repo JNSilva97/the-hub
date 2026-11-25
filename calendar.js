@@ -6,6 +6,7 @@ function createCalendar(panel, openChecklist) {
   let draft = [], details = {}, customPlans = [], baseline, revision = 0, lastDay;
   let hourly = false;
   let fullDay = false;
+  let quickPlanPending = false;
   let checklistProgress = [], nextChecklist;
   const lisbonTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   const snapshot = () => JSON.stringify([draft, model?.planTypes.map(({ id }) => details[id]) ?? [], customPlans]);
@@ -335,6 +336,24 @@ function createCalendar(panel, openChecklist) {
     notice = ''; failed = false; renderCustomPlans(); render();
     el('custom-list').lastElementChild.querySelector('input').focus();
   }
+  function tryQuickPlan() {
+    if (!quickPlanPending || !panel.open || !account?.canWrite) return;
+    quickPlanPending = false;
+    if (customPlans.length >= model.maxCustomPlans) {
+      el('event-limit').scrollIntoView({ block: 'center' });
+      return;
+    }
+    addCustomPlan();
+  }
+  function openNewPlan() {
+    if (panel.open || !canNavigate()) return;
+    fullDay = false;
+    editingWeekly = false;
+    quickPlanPending = true;
+    open(model?.lisbonDay());
+    tryQuickPlan();
+  }
+  panel.addEventListener('close', () => { if (!panel.open) quickPlanPending = false; });
   el('add-plan').addEventListener('click', () => addCustomPlan());
   el('full-day').addEventListener('click', () => {
     if (!model || panel.open || !canNavigate()) return;
@@ -388,7 +407,7 @@ function createCalendar(panel, openChecklist) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-today-1').then(module => {
+  import('./calendar-model.mjs?v=quick-add-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -421,15 +440,16 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-today-1');
+    return import('./cloud-calendar.js?v=quick-add-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }
       if (!dirty() && !busy) loadDraft();
       render(); emit();
+      tryQuickPlan();
     };
     account = module.createCalendarAccount(changed); changed();
   }).catch(() => { loadError = 'Calendar could not load. Reload to try again. Your other modules are available.'; render(); });
   render();
-  return { open, close, canNavigate };
+  return { open, openNewPlan, close, canNavigate };
 }

@@ -185,7 +185,10 @@ function createAddictionHelper(panel, health) {
     element('date').textContent = displayDate.format(now);
     renderCraving();
     renderQuit();
-    if (!model) return;
+    if (!model) {
+      element('status').textContent = notice;
+      return;
+    }
     let days;
     try { days = currentDays(); } catch { days = new Map(); notice = 'Saved counts could not be read on this device.'; }
     const settings = currentSettings();
@@ -392,30 +395,46 @@ function createAddictionHelper(panel, health) {
   window.addEventListener('online', () => { migrate(); if (panel.open) render(); });
   window.addEventListener('offline', () => { if (panel.open) render(); });
   document.addEventListener('visibilitychange', () => { if (panel.open && !document.hidden) render(); });
-  import('./habits-model.mjs?v=calendar-today-1').then(module => {
+  const modelReady = import('./habits-model.mjs?v=quick-add-1').then(module => {
     model = module;
     render();
-    return import('./cloud-habits.js?v=calendar-today-1');
+  }).catch(() => { notice = 'Habits could not load. Reload the page to try again.'; render(); });
+  modelReady.then(() => {
+    if (model) return import('./cloud-habits.js?v=quick-add-1');
   }).then(module => {
+    if (!module) return;
     account = module.createHabitsAccount(() => {
       migrate();
       // Never overwrite fields while the settings form is open.
       if (!element('settings').open) fillSettings();
       if (panel.open) render();
     });
-  }).catch(() => { if (!model) notice = 'Habits could not load. Reload the page to try again.'; render(); });
+  }).catch(() => { render(); });
 
+  let openSequence = 0;
+  function open() {
+    openSequence++;
+    migrate();
+    render();
+    fillSettings();
+    panel.showModal();
+    clearInterval(ticking);
+    ticking = setInterval(() => {
+      if (lastMinute !== Math.floor(Date.now() / 60000)) render();
+      else { renderQuit(); renderCraving(); }
+    }, 1000);
+  }
   return {
-    open() {
-      migrate();
-      render();
-      fillSettings();
-      panel.showModal();
-      clearInterval(ticking);
-      ticking = setInterval(() => {
-        if (lastMinute !== Math.floor(Date.now() / 60000)) render();
-        else { renderQuit(); renderCraving(); }
-      }, 1000);
+    open,
+    async openAndLogCoffee() {
+      open();
+      const current = openSequence;
+      if (!model) await modelReady;
+      if (!model || !panel.open || openSequence !== current) return;
+      element('log-coffee').click();
+      element('coffee').scrollIntoView({ block: 'center' });
+      const undo = element('undo-coffee');
+      if (!undo.disabled) undo.focus({ preventScroll: true });
     }
   };
 }

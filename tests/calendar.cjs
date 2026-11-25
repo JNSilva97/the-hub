@@ -174,6 +174,15 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       await second.page.getByRole('button', { name: 'Remove custom plan 1' }).click();
       await second.page.locator('#calendar-save').click();
       await day.getByText('No plans', { exact: true }).waitFor();
+      await second.page.locator('#calendar-week [data-day="2026-11-21"]').click();
+      await close(second.page);
+      await second.page.getByRole('button', { name: 'Quick Add', exact: true }).click();
+      await second.page.getByRole('button', { name: /Add plan Calendar/ }).click();
+      const name = second.page.locator('#calendar-custom-list').getByLabel('Plan name');
+      await name.waitFor();
+      assert.equal(await name.evaluate(el => el === document.activeElement), true);
+      assert.equal(await second.page.locator('#calendar-week [aria-pressed="true"]').getAttribute('data-day'), '2026-11-20');
+      await second.page.locator('#calendar-cancel').click();
       assert.deepEqual(first.errors.concat(second.errors), []);
     } finally { await first.context.close(); await second.context.close(); }
   });

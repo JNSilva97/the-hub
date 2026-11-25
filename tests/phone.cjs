@@ -8,6 +8,27 @@ test('Phone workflows', { timeout: 90000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   t.after(() => browser.close());
 
+  await t.test('home Quick Add opens a fresh note and logs exactly one undoable coffee', async () => {
+    const { context, page, errors } = await fixture(browser, { width: 320, height: 640, mobile: true, motion: 'reduce' });
+    try {
+      await ready(page);
+      const quick = page.getByRole('button', { name: 'Quick Add', exact: true });
+      await quick.click();
+      await page.getByRole('button', { name: 'New note Notes', exact: true }).click();
+      const editor = page.locator('#note-text');
+      assert.equal(await editor.inputValue(), '');
+      await editor.fill('Quick note');
+      await page.getByRole('button', { name: 'Close notes', exact: true }).click();
+      await quick.click();
+      await page.getByRole('button', { name: /Log coffee Habits/ }).click();
+      const count = page.locator('#addiction-coffees');
+      await count.filter({ hasText: '1 / 3 coffees today' }).waitFor();
+      await page.getByRole('button', { name: 'Undo last coffee', exact: true }).click();
+      await count.filter({ hasText: '0 / 3 coffees today' }).waitFor();
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
+
   await t.test('phone home exposes working apps in thumb reach and folds unfinished spaces away', async () => {
     for (const width of [320, 390]) {
       const { context, page, errors } = await fixture(browser, { width, height: 640, motion: 'reduce' });
