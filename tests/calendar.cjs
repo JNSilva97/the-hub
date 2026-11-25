@@ -125,7 +125,8 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       assert.equal(await hours.locator('li').first().getAttribute('data-slot'), '00:00');
       assert.equal(await hours.locator('li').last().getAttribute('data-slot'), '23:00');
       await page.getByRole('button', { name: '18:00', exact: true }).click();
-      assert.equal(await hours.evaluate(el => el.scrollTop === el.querySelector('[data-slot="18:00"]').offsetTop), true);
+      assert.equal(await hours.evaluate(el => el.scrollHeight === el.clientHeight), true);
+      assert.equal(await hours.locator('[data-slot="18:00"]').evaluate(el => document.activeElement === el && el.closest('dialog').scrollTop > 0), true);
       await hours.getByRole('button', { name: 'Add plan at 20:00', exact: true }).click();
       assert.equal(await page.locator('#calendar-save').isDisabled(), true);
       assert.equal(await custom.first().getByLabel('Time (Lisbon, optional)').inputValue(), '20:00');

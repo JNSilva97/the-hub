@@ -69,6 +69,7 @@ function createCalendar(panel, openChecklist) {
       const time = `${String(hour).padStart(2, '0')}:00`;
       const row = node('li', '', 'calendar-hour');
       row.dataset.slot = time;
+      row.tabIndex = -1;
       row.append(node('span', time, 'calendar-hour-label'));
       const entries = node('div', '', 'calendar-hour-entries');
       for (const plan of plans.filter(plan => plan.time?.slice(0, 2) === time.slice(0, 2))) entries.append(scheduleEntry(plan, locked));
@@ -109,15 +110,10 @@ function createCalendar(panel, openChecklist) {
     if (plan.note) entry.append(node('small', plan.note));
     return entry;
   }
-  function showFirstScheduledHour() {
-    if (!hourly) return;
-    const first = scheduledPlans(draft, details, customPlans).find(plan => plan.time && plan.title.trim());
-    const slot = first ? `${first.time.slice(0, 2)}:00` : '08:00';
-    jumpToHour(slot);
-  }
   function jumpToHour(slot) {
-    const list = el('hour-list');
-    list.scrollTop = list.querySelector(`[data-slot="${slot}"]`)?.offsetTop ?? 0;
+    const row = el('hour-list').querySelector(`[data-slot="${slot}"]`);
+    row?.focus({ preventScroll: true });
+    row?.scrollIntoView({ block: 'start' });
   }
   function emit() {
     if (!model) return;
@@ -236,7 +232,6 @@ function createCalendar(panel, openChecklist) {
   function navigate(run) {
     if (!canNavigate()) return;
     notice = ''; failed = false; run(); render();
-    showFirstScheduledHour();
   }
   function canNavigate() {
     if (!busy && !dirty()) return true;
@@ -267,7 +262,7 @@ function createCalendar(panel, openChecklist) {
   function open(day) {
     if (panel.open) { if (day && model?.validDay(day)) navigate(() => { selected = anchor = day; editingWeekly = false; loadDraft(); }); return; }
     if (model && day && model.validDay(day)) { selected = anchor = day; editingWeekly = false; loadDraft(); }
-    render(); panel.showModal(); showFirstScheduledHour();
+    render(); panel.showModal();
   }
   el('close').addEventListener('click', close);
   panel.addEventListener('submit', event => { event.preventDefault(); close(); });
@@ -294,7 +289,6 @@ function createCalendar(panel, openChecklist) {
     if (!model) return;
     hourly = !hourly;
     render();
-    showFirstScheduledHour();
   });
   for (const button of el('hourly').querySelectorAll('[data-calendar-jump]')) {
     button.addEventListener('click', () => jumpToHour(button.dataset.calendarJump));
@@ -313,7 +307,7 @@ function createCalendar(panel, openChecklist) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-glass-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-full-day-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -346,7 +340,7 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-glass-1');
+    return import('./cloud-calendar.js?v=calendar-full-day-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }

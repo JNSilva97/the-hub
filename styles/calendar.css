@@ -30,10 +30,10 @@
 .calendar-schedule-header h3 { font-size: 19px; }
 .calendar-hour-jumps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
 .calendar-dialog .calendar-hour-jumps button { padding-inline: 4px; color: #bce6fa; font-variant-numeric: tabular-nums; background: #0b1e30d6; }
-.calendar-hour-list { position: relative; max-height: min(19rem, 47dvh); overflow: auto; margin: 12px 0 0; padding: 0; list-style: none; border: 1px solid #294e68; border-radius: 4px; scrollbar-color: #587c9b #0a1523; background: #081522b5; }
-.calendar-hour { display: grid; grid-template-columns: 3.7rem minmax(0, 1fr) auto; align-items: start; gap: 8px; min-height: 48px; padding: 3px 6px; background: linear-gradient(90deg, #12324b91 3.7rem, transparent 3.7rem); }
+.calendar-hour-list { margin: 12px 0 0; padding: 0; list-style: none; border: 1px solid #294e68; border-radius: 4px; background: #081522b5; }
+.calendar-hour { --hour-column: 5.25rem; display: grid; grid-template-columns: var(--hour-column) minmax(0, 1fr) auto; align-items: start; gap: 8px; min-height: 56px; padding: 6px; background: linear-gradient(90deg, #12324b91 calc(var(--hour-column) + 6px), transparent calc(var(--hour-column) + 6px)); }
 .calendar-hour + .calendar-hour { border-top: 1px solid #25435b; }
-.calendar-hour-label { align-self: center; padding-inline: 4px; color: #b8d5e9; font-variant-numeric: tabular-nums; font-size: 13px; }
+.calendar-hour-label { align-self: center; padding-inline: 6px; color: #d8eeff; font: 600 clamp(19px, 3vw, 24px)/1.2 var(--font-interface); font-variant-numeric: tabular-nums; }
 .calendar-hour-entries { display: grid; gap: 4px; }
 .calendar-schedule-entry { display: flex; flex-wrap: wrap; gap: 3px 8px; align-items: center; padding: 6px 8px; border-left: 2px solid var(--calendar-accent); background: #153249e8; overflow-wrap: anywhere; }
 .calendar-schedule-entry strong { min-width: 0; }
@@ -78,7 +78,7 @@
 #calendar-status[data-error="true"] { color: #ffd3a2; }
 .calendar-dialog button:disabled { opacity: .45; cursor: default; }
 .calendar-dialog button:not(:disabled):hover { border-color: #86d9ff; }
-.calendar-dialog :is(button, input, .calendar-hour-list):focus-visible { outline: 2px solid #a7eaff; outline-offset: 3px; }
+.calendar-dialog :is(button, input, .calendar-hour):focus-visible { outline: 2px solid #a7eaff; outline-offset: -2px; }
 .routine-plan-context { display: flex; gap: 10px; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid #274459; background: #0817249e; }
 .routine-plan-context p { margin: 3px 0; color: #b5d4e8; font-size: 13px; }
 .routine-plan-context > div:last-child { display: flex; gap: 8px; }
