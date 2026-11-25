@@ -59,18 +59,19 @@ function createCalendar(panel, openChecklist) {
   function renderHourly(ready, locked) {
     const list = el('hour-list');
     const activeHour = list.contains(document.activeElement) ? document.activeElement.dataset.hour : undefined;
-    const plans = ready ? scheduledPlans(draft, details, customPlans.filter(plan => plan.title.trim())) : [];
+    const events = customPlans.map((plan, index) => ({ ...plan, index })).filter(plan => plan.title.trim());
+    const plans = ready ? scheduledPlans(draft, details, events) : [];
     const untimed = plans.filter(plan => !plan.time);
     const group = el('untimed');
     group.hidden = !untimed.length;
-    group.replaceChildren(node('h4', 'No time set'), ...untimed.map(plan => scheduleEntry(plan)));
+    group.replaceChildren(node('h4', 'No time set'), ...untimed.map(plan => scheduleEntry(plan, locked)));
     list.replaceChildren(...Array.from({ length: 24 }, (_, hour) => {
       const time = `${String(hour).padStart(2, '0')}:00`;
       const row = node('li', '', 'calendar-hour');
       row.dataset.slot = time;
       row.append(node('span', time, 'calendar-hour-label'));
       const entries = node('div', '', 'calendar-hour-entries');
-      for (const plan of plans.filter(plan => plan.time?.slice(0, 2) === time.slice(0, 2))) entries.append(scheduleEntry(plan));
+      for (const plan of plans.filter(plan => plan.time?.slice(0, 2) === time.slice(0, 2))) entries.append(scheduleEntry(plan, locked));
       row.append(entries);
       if (ready) {
         const add = node('button', '+', 'calendar-hour-add');
@@ -85,14 +86,26 @@ function createCalendar(panel, openChecklist) {
     }));
     if (activeHour) list.querySelector(`[data-hour="${activeHour}"]`)?.focus({ preventScroll: true });
   }
-  function scheduleEntry(plan) {
+  function scheduleEntry(plan, locked) {
     const entry = node('div', '', 'calendar-schedule-entry');
+    entry.dataset.kind = plan.id ?? 'custom';
     if (plan.time) {
       const time = node('time', plan.time);
       time.dateTime = plan.time;
       entry.append(time);
     }
     entry.append(node('strong', plan.title));
+    if (!locked) {
+      const edit = node('button', 'Edit', 'calendar-schedule-edit');
+      edit.type = 'button';
+      edit.setAttribute('aria-label', `Edit ${plan.title}`);
+      edit.addEventListener('click', () => {
+        const target = plan.id ? el(`time-${plan.id}`) : el('custom-list').children[plan.index]?.querySelector('input');
+        target?.focus({ preventScroll: true });
+        target?.scrollIntoView({ block: 'center' });
+      });
+      entry.append(edit);
+    }
     if (plan.note) entry.append(node('small', plan.note));
     return entry;
   }
@@ -100,6 +113,9 @@ function createCalendar(panel, openChecklist) {
     if (!hourly) return;
     const first = scheduledPlans(draft, details, customPlans).find(plan => plan.time && plan.title.trim());
     const slot = first ? `${first.time.slice(0, 2)}:00` : '08:00';
+    jumpToHour(slot);
+  }
+  function jumpToHour(slot) {
     const list = el('hour-list');
     list.scrollTop = list.querySelector(`[data-slot="${slot}"]`)?.offsetTop ?? 0;
   }
@@ -167,6 +183,7 @@ function createCalendar(panel, openChecklist) {
       for (const plan of events) {
         const { time } = plan;
         const entry = node('span', '', 'calendar-agenda-entry');
+        entry.dataset.kind = plan.id ?? 'custom';
         if (plan.id) entry.dataset.plan = plan.id;
         entry.append(node('b', plan.title));
         if (time) {
@@ -187,6 +204,7 @@ function createCalendar(panel, openChecklist) {
     el('schedule-title').textContent = hourly ? `${scheduleDate} · Lisbon time` : 'Day schedule';
     el('hourly').hidden = !hourly;
     el('hourly-toggle').setAttribute('aria-expanded', String(hourly));
+    el('hourly-toggle').textContent = hourly ? 'Hide hours' : 'Show hours';
     if (hourly) renderHourly(ready, locked);
     el('mode-weekly').textContent = `Every ${format(selected, { weekday: 'long' })}`;
     const source = model.plansForDay(records(), selected).source;
@@ -278,6 +296,9 @@ function createCalendar(panel, openChecklist) {
     render();
     showFirstScheduledHour();
   });
+  for (const button of el('hourly').querySelectorAll('[data-calendar-jump]')) {
+    button.addEventListener('click', () => jumpToHour(button.dataset.calendarJump));
+  }
   el('follow').addEventListener('click', () => save(true));
   el('cancel').addEventListener('click', () => { notice = ''; failed = false; loadDraft(); render(); });
   el('retry').addEventListener('click', () => { if (account) account.retry(); else location.reload(); });
@@ -292,7 +313,7 @@ function createCalendar(panel, openChecklist) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-hourly-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-glass-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -325,7 +346,7 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-hourly-1');
+    return import('./cloud-calendar.js?v=calendar-glass-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }

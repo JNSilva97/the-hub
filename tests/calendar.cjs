@@ -119,11 +119,13 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       for (const { page } of [first, second]) await start(page);
       const page = first.page;
       const custom = page.locator('.calendar-custom-plan');
-      await page.getByRole('button', { name: 'Hourly', exact: true }).click();
+      await page.getByRole('button', { name: 'Show hours', exact: true }).click();
       const hours = page.locator('#calendar-hour-list');
       assert.equal(await hours.locator('li').count(), 24);
       assert.equal(await hours.locator('li').first().getAttribute('data-slot'), '00:00');
       assert.equal(await hours.locator('li').last().getAttribute('data-slot'), '23:00');
+      await page.getByRole('button', { name: '18:00', exact: true }).click();
+      assert.equal(await hours.evaluate(el => el.scrollTop === el.querySelector('[data-slot="18:00"]').offsetTop), true);
       await hours.getByRole('button', { name: 'Add plan at 20:00', exact: true }).click();
       assert.equal(await page.locator('#calendar-save').isDisabled(), true);
       assert.equal(await custom.first().getByLabel('Time (Lisbon, optional)').inputValue(), '20:00');
@@ -135,6 +137,8 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       await page.locator('#calendar-save').click();
       await page.locator('#calendar-status').filter({ hasText: 'Plans saved' }).waitFor();
       assert.equal(await hours.locator('[data-slot="20:00"]').getByText('Outdoor table', { exact: true }).count(), 1);
+      await hours.getByRole('button', { name: 'Edit Dinner', exact: true }).click();
+      assert.equal(await custom.first().getByLabel('Plan name').evaluate(el => el === document.activeElement), true);
       await page.locator('#calendar-week [data-day="2026-11-21"]').click();
       assert.equal(await hours.getByText('Dinner', { exact: true }).count(), 0);
       assert.equal(await page.locator('#calendar-dialog').evaluate(el => el.scrollWidth > el.clientWidth), false);
