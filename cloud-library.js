@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=calendar-full-day-1';
-import { readEntry } from './library-model.mjs?v=calendar-full-day-1';
+import { cloudWorkspace } from './cloud.js?v=calendar-day-view-1';
+import { readEntry } from './library-model.mjs?v=calendar-day-view-1';
 export function createLibraryAccount(onChange) {
   let uid, unsubscribe, generation = 0, ready = false, cached = true, pending = false, error = '';
   let entries = new Map();

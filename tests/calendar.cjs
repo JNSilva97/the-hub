@@ -125,9 +125,17 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       assert.equal(await hours.locator('li').first().getAttribute('data-slot'), '00:00');
       assert.equal(await hours.locator('li').last().getAttribute('data-slot'), '23:00');
       await page.getByRole('button', { name: '18:00', exact: true }).click();
+      assert.equal(await hours.evaluate(el => el.scrollHeight > el.clientHeight && el.scrollTop > 0), true);
+      await page.getByRole('button', { name: 'View full day', exact: true }).click();
+      assert.equal(await page.locator('#calendar-week').isVisible(), false);
       assert.equal(await hours.evaluate(el => el.scrollHeight === el.clientHeight), true);
+      await page.getByRole('button', { name: '18:00', exact: true }).click();
       assert.equal(await hours.locator('[data-slot="18:00"]').evaluate(el => document.activeElement === el && el.closest('dialog').scrollTop > 0), true);
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#calendar-week').isVisible(), true);
+      await page.getByRole('button', { name: 'View full day', exact: true }).click();
       await hours.getByRole('button', { name: 'Add plan at 20:00', exact: true }).click();
+      assert.equal(await page.locator('#calendar-week').isVisible(), true);
       assert.equal(await page.locator('#calendar-save').isDisabled(), true);
       assert.equal(await custom.first().getByLabel('Time (Lisbon, optional)').inputValue(), '20:00');
       await custom.first().getByLabel('Plan name').fill('Dinner');

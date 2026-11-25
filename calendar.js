@@ -5,6 +5,7 @@ function createCalendar(panel, openChecklist) {
   let model, account, selected, anchor, owner, editingWeekly = false, busy = false, notice = '', failed = false, loadError = '';
   let draft = [], details = {}, customPlans = [], baseline, revision = 0, lastDay;
   let hourly = false;
+  let fullDay = false, weekScroll = 0;
   const snapshot = () => JSON.stringify([draft, model?.planTypes.map(({ id }) => details[id]) ?? [], customPlans]);
   const dirty = () => baseline !== undefined && snapshot() !== baseline;
   const id = () => editingWeekly ? `repeat-${model.weekday(selected)}` : selected;
@@ -101,6 +102,7 @@ function createCalendar(panel, openChecklist) {
       edit.type = 'button';
       edit.setAttribute('aria-label', `Edit ${plan.title}`);
       edit.addEventListener('click', () => {
+        if (fullDay) leaveFullDay();
         const target = plan.id ? el(`time-${plan.id}`) : el('custom-list').children[plan.index]?.querySelector('input');
         target?.focus({ preventScroll: true });
         target?.scrollIntoView({ block: 'center' });
@@ -111,9 +113,17 @@ function createCalendar(panel, openChecklist) {
     return entry;
   }
   function jumpToHour(slot) {
-    const row = el('hour-list').querySelector(`[data-slot="${slot}"]`);
+    const list = el('hour-list');
+    const row = list.querySelector(`[data-slot="${slot}"]`);
     row?.focus({ preventScroll: true });
-    row?.scrollIntoView({ block: 'start' });
+    if (fullDay) row?.scrollIntoView({ block: 'start' });
+    else if (row) list.scrollTop = row.offsetTop;
+  }
+  function leaveFullDay() {
+    fullDay = false;
+    render();
+    panel.scrollTop = weekScroll;
+    el('full-day').focus({ preventScroll: true });
   }
   function emit() {
     if (!model) return;
@@ -140,6 +150,7 @@ function createCalendar(panel, openChecklist) {
     el('cancel').disabled = busy || !dirty() && !failed;
     el('cancel').textContent = failed && !dirty() ? 'Reload plan' : 'Cancel';
     el('close').disabled = busy;
+    el('full-day').disabled = !model || busy;
     for (const name of ['previous', 'next', 'today', 'mode-day', 'mode-weekly']) el(name).disabled = !model || busy;
     for (const check of el('plan-options').querySelectorAll('input[type="checkbox"]')) {
       const plan = check.value;
@@ -197,11 +208,14 @@ function createCalendar(panel, openChecklist) {
     if (focusDay) el('week').querySelector(`[data-day="${focusDay}"]`)?.focus({ preventScroll: true });
     el('day-title').textContent = format(selected, { weekday: 'long', day: 'numeric', month: 'long' });
     const scheduleDate = editingWeekly ? el('mode-weekly').textContent : format(selected, { weekday: 'short', day: 'numeric', month: 'short' });
-    el('schedule-title').textContent = hourly ? `${scheduleDate} · Lisbon time` : 'Day schedule';
-    el('hourly').hidden = !hourly;
+    panel.toggleAttribute('data-full-day', fullDay);
+    el('hourly-toggle').hidden = fullDay;
+    el('back-to-week').hidden = !fullDay;
+    el('schedule-title').textContent = hourly || fullDay ? `${scheduleDate} · Lisbon time` : 'Day schedule';
+    el('hourly').hidden = !(hourly || fullDay);
     el('hourly-toggle').setAttribute('aria-expanded', String(hourly));
     el('hourly-toggle').textContent = hourly ? 'Hide hours' : 'Show hours';
-    if (hourly) renderHourly(ready, locked);
+    if (hourly || fullDay) renderHourly(ready, locked);
     el('mode-weekly').textContent = `Every ${format(selected, { weekday: 'long' })}`;
     const source = model.plansForDay(records(), selected).source;
     el('source').textContent = editingWeekly ? 'Repeat these plans on this weekday. Custom dates keep their own plans.'
@@ -258,7 +272,13 @@ function createCalendar(panel, openChecklist) {
     } catch (error) { if (uid === account.uid) { notice = error.message || 'Your plans could not be saved. Your draft is still here.'; failed = true; } }
     finally { if (uid === account.uid) busy = false; render(); emit(); }
   }
-  function close() { if (canNavigate()) panel.close(); }
+  function close() {
+    if (fullDay && dirty()) { leaveFullDay(); canNavigate(); return; }
+    if (canNavigate()) {
+      if (fullDay) leaveFullDay();
+      panel.close();
+    }
+  }
   function open(day) {
     if (panel.open) { if (day && model?.validDay(day)) navigate(() => { selected = anchor = day; editingWeekly = false; loadDraft(); }); return; }
     if (model && day && model.validDay(day)) { selected = anchor = day; editingWeekly = false; loadDraft(); }
@@ -266,7 +286,10 @@ function createCalendar(panel, openChecklist) {
   }
   el('close').addEventListener('click', close);
   panel.addEventListener('submit', event => { event.preventDefault(); close(); });
-  panel.addEventListener('cancel', event => { if (!canNavigate()) event.preventDefault(); });
+  panel.addEventListener('cancel', event => {
+    if (fullDay) { event.preventDefault(); leaveFullDay(); }
+    else if (!canNavigate()) event.preventDefault();
+  });
   panel.addEventListener('click', event => {
     if (event.target !== panel) return;
     const bounds = panel.getBoundingClientRect();
@@ -280,11 +303,25 @@ function createCalendar(panel, openChecklist) {
   el('save').addEventListener('click', () => save());
   function addCustomPlan(time = '') {
     if (!account?.canWrite || busy || customPlans.length >= model.maxCustomPlans) return;
+    if (fullDay) leaveFullDay();
     customPlans.push({ title: '', time, note: '' });
     notice = ''; failed = false; renderCustomPlans(); render();
     el('custom-list').lastElementChild.querySelector('input').focus();
   }
   el('add-plan').addEventListener('click', () => addCustomPlan());
+  el('full-day').addEventListener('click', () => {
+    if (editingWeekly) {
+      if (!canNavigate()) return;
+      editingWeekly = false;
+      loadDraft();
+    }
+    weekScroll = panel.scrollTop;
+    fullDay = true;
+    render();
+    panel.scrollTop = 0;
+    el('back-to-week').focus({ preventScroll: true });
+  });
+  el('back-to-week').addEventListener('click', leaveFullDay);
   el('hourly-toggle').addEventListener('click', () => {
     if (!model) return;
     hourly = !hourly;
@@ -307,7 +344,7 @@ function createCalendar(panel, openChecklist) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-full-day-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-day-view-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -340,7 +377,7 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-full-day-1');
+    return import('./cloud-calendar.js?v=calendar-day-view-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }
