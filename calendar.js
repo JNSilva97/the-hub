@@ -4,6 +4,7 @@ function createCalendar(panel, openChecklist) {
   const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
   let model, account, selected, anchor, owner, editingWeekly = false, busy = false, notice = '', failed = false, loadError = '';
   let draft = [], details = {}, customPlans = [], baseline, revision = 0, lastDay;
+  let hourly = false;
   const snapshot = () => JSON.stringify([draft, model?.planTypes.map(({ id }) => details[id]) ?? [], customPlans]);
   const dirty = () => baseline !== undefined && snapshot() !== baseline;
   const id = () => editingWeekly ? `repeat-${model.weekday(selected)}` : selected;
@@ -47,6 +48,60 @@ function createCalendar(panel, openChecklist) {
       plan.append(remove);
       return plan;
     }));
+  }
+  function scheduledPlans(plans, details = {}, events = []) {
+    return [
+      ...model.planTypes.filter(plan => plans.includes(plan.id))
+        .map(plan => ({ id: plan.id, title: plan.name, ...details[plan.id] })),
+      ...events
+    ].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+  }
+  function renderHourly(ready, locked) {
+    const list = el('hour-list');
+    const activeHour = list.contains(document.activeElement) ? document.activeElement.dataset.hour : undefined;
+    const plans = ready ? scheduledPlans(draft, details, customPlans.filter(plan => plan.title.trim())) : [];
+    const untimed = plans.filter(plan => !plan.time);
+    const group = el('untimed');
+    group.hidden = !untimed.length;
+    group.replaceChildren(node('h4', 'No time set'), ...untimed.map(plan => scheduleEntry(plan)));
+    list.replaceChildren(...Array.from({ length: 24 }, (_, hour) => {
+      const time = `${String(hour).padStart(2, '0')}:00`;
+      const row = node('li', '', 'calendar-hour');
+      row.dataset.slot = time;
+      row.append(node('span', time, 'calendar-hour-label'));
+      const entries = node('div', '', 'calendar-hour-entries');
+      for (const plan of plans.filter(plan => plan.time?.slice(0, 2) === time.slice(0, 2))) entries.append(scheduleEntry(plan));
+      row.append(entries);
+      if (ready) {
+        const add = node('button', '+', 'calendar-hour-add');
+        add.type = 'button';
+        add.dataset.hour = time;
+        add.setAttribute('aria-label', `Add plan at ${time}`);
+        add.disabled = locked || customPlans.length >= model.maxCustomPlans;
+        add.addEventListener('click', () => addCustomPlan(time));
+        row.append(add);
+      }
+      return row;
+    }));
+    if (activeHour) list.querySelector(`[data-hour="${activeHour}"]`)?.focus({ preventScroll: true });
+  }
+  function scheduleEntry(plan) {
+    const entry = node('div', '', 'calendar-schedule-entry');
+    if (plan.time) {
+      const time = node('time', plan.time);
+      time.dateTime = plan.time;
+      entry.append(time);
+    }
+    entry.append(node('strong', plan.title));
+    if (plan.note) entry.append(node('small', plan.note));
+    return entry;
+  }
+  function showFirstScheduledHour() {
+    if (!hourly) return;
+    const first = scheduledPlans(draft, details, customPlans).find(plan => plan.time && plan.title.trim());
+    const slot = first ? `${first.time.slice(0, 2)}:00` : '08:00';
+    const list = el('hour-list');
+    list.scrollTop = list.querySelector(`[data-slot="${slot}"]`)?.offsetTop ?? 0;
   }
   function emit() {
     if (!model) return;
@@ -108,12 +163,7 @@ function createCalendar(panel, openChecklist) {
       if (day === today) button.setAttribute('aria-current', 'date');
       button.append(node('span', format(day, { weekday: 'short' })), node('strong', format(day, { day: 'numeric' })));
       const agenda = node('span', '', 'calendar-agenda-plans');
-      const events = ready ? [
-        ...model.planTypes.filter(plan => plans.plans.includes(plan.id))
-          .map(plan => ({ id: plan.id, title: plan.name, time: plans.details?.[plan.id]?.time })),
-        ...(plans.events ?? [])
-      ] : [];
-      events.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+      const events = ready ? scheduledPlans(plans.plans, plans.details, plans.events) : [];
       for (const plan of events) {
         const { time } = plan;
         const entry = node('span', '', 'calendar-agenda-entry');
@@ -133,6 +183,11 @@ function createCalendar(panel, openChecklist) {
     }));
     if (focusDay) el('week').querySelector(`[data-day="${focusDay}"]`)?.focus({ preventScroll: true });
     el('day-title').textContent = format(selected, { weekday: 'long', day: 'numeric', month: 'long' });
+    const scheduleDate = editingWeekly ? el('mode-weekly').textContent : format(selected, { weekday: 'short', day: 'numeric', month: 'short' });
+    el('schedule-title').textContent = hourly ? `${scheduleDate} · Lisbon time` : 'Day schedule';
+    el('hourly').hidden = !hourly;
+    el('hourly-toggle').setAttribute('aria-expanded', String(hourly));
+    if (hourly) renderHourly(ready, locked);
     el('mode-weekly').textContent = `Every ${format(selected, { weekday: 'long' })}`;
     const source = model.plansForDay(records(), selected).source;
     el('source').textContent = editingWeekly ? 'Repeat these plans on this weekday. Custom dates keep their own plans.'
@@ -163,6 +218,7 @@ function createCalendar(panel, openChecklist) {
   function navigate(run) {
     if (!canNavigate()) return;
     notice = ''; failed = false; run(); render();
+    showFirstScheduledHour();
   }
   function canNavigate() {
     if (!busy && !dirty()) return true;
@@ -193,7 +249,7 @@ function createCalendar(panel, openChecklist) {
   function open(day) {
     if (panel.open) { if (day && model?.validDay(day)) navigate(() => { selected = anchor = day; editingWeekly = false; loadDraft(); }); return; }
     if (model && day && model.validDay(day)) { selected = anchor = day; editingWeekly = false; loadDraft(); }
-    render(); panel.showModal();
+    render(); panel.showModal(); showFirstScheduledHour();
   }
   el('close').addEventListener('click', close);
   panel.addEventListener('submit', event => { event.preventDefault(); close(); });
@@ -209,11 +265,18 @@ function createCalendar(panel, openChecklist) {
   el('mode-day').addEventListener('click', () => navigate(() => { editingWeekly = false; loadDraft(); }));
   el('mode-weekly').addEventListener('click', () => navigate(() => { editingWeekly = true; loadDraft(); }));
   el('save').addEventListener('click', () => save());
-  el('add-plan').addEventListener('click', () => {
+  function addCustomPlan(time = '') {
     if (!account?.canWrite || busy || customPlans.length >= model.maxCustomPlans) return;
-    customPlans.push({ title: '', time: '', note: '' });
+    customPlans.push({ title: '', time, note: '' });
     notice = ''; failed = false; renderCustomPlans(); render();
     el('custom-list').lastElementChild.querySelector('input').focus();
+  }
+  el('add-plan').addEventListener('click', () => addCustomPlan());
+  el('hourly-toggle').addEventListener('click', () => {
+    if (!model) return;
+    hourly = !hourly;
+    render();
+    showFirstScheduledHour();
   });
   el('follow').addEventListener('click', () => save(true));
   el('cancel').addEventListener('click', () => { notice = ''; failed = false; loadDraft(); render(); });
@@ -229,7 +292,7 @@ function createCalendar(panel, openChecklist) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-custom-plans-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-hourly-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -262,7 +325,7 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-custom-plans-1');
+    return import('./cloud-calendar.js?v=calendar-hourly-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }

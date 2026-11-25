@@ -1,13 +1,13 @@
 import {
   validateRoutines, parseProgress, itemKey, getWorkspaceProgress, isComplete, restartRoutine, lisbonDay, routineItemLabel, updateRoutineSections, linkedDoseReplaces, routinePlan, routineRelevant,
   skinCareOptionsFor, skinCareOptions, skinCareProgress, skinCareItemKey, setSkinCareChoice,
-  isMinoxidilItem, minoxidilCheckKey
-} from './routine-model.mjs?v=calendar-custom-plans-1';
-import { cloudWorkspace } from './cloud.js?v=calendar-custom-plans-1';
-import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=calendar-custom-plans-1';
-import { createRoutineTools } from './routine-tools.js?v=calendar-custom-plans-1';
+  isMinoxidilItem, minoxidilCheckKey, setMinoxidilLater
+} from './routine-model.mjs?v=calendar-hourly-1';
+import { cloudWorkspace } from './cloud.js?v=calendar-hourly-1';
+import { readWorkspace, cleanRoutines, keepProgress } from './workspace-model.mjs?v=calendar-hourly-1';
+import { createRoutineTools } from './routine-tools.js?v=calendar-hourly-1';
 
-export { createHealthAccount } from './cloud-health.js?v=calendar-custom-plans-1';
+export { createHealthAccount } from './cloud-health.js?v=calendar-hourly-1';
 
 const dialog = document.getElementById('routines-dialog');
 const list = document.getElementById('routine-list');
@@ -33,7 +33,7 @@ let localOverride = false;
 let storageAvailable = true;
 let loadGeneration = 0;
 let progressDay;
-let pendingSkinCare;
+let pendingDailyChoice;
 let medicationProgress = new Map();
 let calendarState;
 let showAllChecklists = true;
@@ -182,13 +182,27 @@ function updateProgress() {
       const skip = button.dataset.skinCareDisposition;
       button.hidden = option ? Boolean(choice || disposition) || skinCare.used.has(option)
         : skip ? Boolean(choice || disposition) || bothUsed || (skip === 'l' && laterUsed) : !(choice || disposition);
-      button.disabled = Boolean(pendingSkinCare);
+      button.disabled = Boolean(pendingDailyChoice);
     }
   }
   for (const input of content.querySelectorAll('input[data-check]')) {
     const key = input.hasAttribute('data-minoxidil') ? minoxidilCheckKey(progressDay) : input.dataset.check;
     input.checked = state.checks[key] === true;
     if (input.dataset.healthDose) input.closest('.check-row').hidden = Boolean(linkedDoseReplaces({ label: input.dataset.healthDose }, medicationProgress.get(selected.id)));
+  }
+  const minoxidilLaterUsed = [...skinCare.selected.values()].includes('d');
+  for (const row of content.querySelectorAll('[data-minoxidil-row]')) {
+    const input = row.querySelector('input');
+    const deferred = skinCare.selected.get(input.dataset.check) === 'd';
+    if (deferred) input.checked = false;
+    input.hidden = deferred;
+    input.disabled = deferred || Boolean(pendingDailyChoice);
+    row.dataset.skipped = String(deferred);
+    row.dataset.done = String(!deferred && input.checked);
+    row.querySelector('.skin-care-status').textContent = deferred ? 'Later · excluded from this checklist' : '';
+    row.querySelector('[data-minoxidil-later]').hidden = input.checked || minoxidilLaterUsed;
+    row.querySelector('[data-minoxidil-undo]').hidden = !deferred;
+    for (const button of row.querySelectorAll('button')) button.disabled = Boolean(pendingDailyChoice);
   }
   for (const row of content.querySelectorAll('.linked-check-row')) {
     const input = row.querySelector('input');
@@ -213,8 +227,37 @@ function updateProgress() {
   bar.firstElementChild.style.transform = `scaleX(${progress.percent / 100})`;
   const prefix = `${selected.id}/`;
   const hasTicks = Object.entries(state.checks).some(([key, checked]) => checked && key.startsWith(prefix) && !skinCareItemKey(key));
-  document.getElementById('routine-restart').disabled = Boolean(pendingSkinCare) || !(hasTicks || [...skinCare.selected.keys()].some(key => key.startsWith(prefix)));
+  document.getElementById('routine-restart').disabled = Boolean(pendingDailyChoice) || !(hasTicks || [...skinCare.selected.keys()].some(key => key.startsWith(prefix)));
   document.dispatchEvent(new CustomEvent('hub:progress', { detail: signals }));
+}
+
+async function chooseDailyTask(row, key, button, option, checked) {
+  if (!option || pendingDailyChoice) return;
+  const error = row.querySelector('.skin-care-error');
+  const identity = workspaceIdentity();
+  const day = lisbonDay();
+  pendingDailyChoice = row;
+  error.textContent = '';
+  updateProgress();
+  try {
+    if (inAccount()) {
+      await cloudWorkspace.chooseDailyTask(key, option, checked, day);
+      if (identity === workspaceIdentity()) state = latestProgress();
+    } else {
+      const latest = latestProgress();
+      state = option === 'd' ? setMinoxidilLater(routines, latest, key, checked, day)
+        : setSkinCareChoice(routines, latest, key, option, checked, day);
+      save();
+    }
+  } catch (failure) {
+    error.textContent = failure.message;
+  } finally {
+    pendingDailyChoice = undefined;
+    if (selected) updateProgress();
+    if (row.isConnected && [button, document.body].includes(document.activeElement)) {
+      (button.hidden ? row.querySelector('button:not([hidden]), input:not([hidden])') : button)?.focus();
+    }
+  }
 }
 
 function createSkinCareRow(key, title, options) {
@@ -225,31 +268,7 @@ function createSkinCareRow(key, title, options) {
   const error = make('span', 'skin-care-error');
   error.setAttribute('role', 'status');
   const buttons = make('div', 'skin-care-actions');
-  async function choose(button, option, checked) {
-    if (!option || pendingSkinCare) return;
-    const identity = workspaceIdentity();
-    const day = lisbonDay();
-    pendingSkinCare = row;
-    error.textContent = '';
-    updateProgress();
-    try {
-      if (inAccount()) {
-        await cloudWorkspace.chooseSkinCare(key, option, checked, day);
-        if (identity === workspaceIdentity()) state = latestProgress();
-      } else {
-        state = setSkinCareChoice(routines, latestProgress(), key, option, checked, day);
-        save();
-      }
-    } catch (failure) {
-      error.textContent = failure.message;
-    } finally {
-      pendingSkinCare = undefined;
-      if (selected) updateProgress();
-      if (row.isConnected && [button, document.body].includes(document.activeElement)) {
-        (button.hidden ? buttons.querySelector('button:not([hidden])') : button)?.focus();
-      }
-    }
-  }
+  const choose = (button, option, checked) => chooseDailyTask(row, key, button, option, checked);
   for (const option of options) {
     const button = make('button', '', skinCareOptions[option]);
     button.type = 'button';
@@ -272,6 +291,31 @@ function createSkinCareRow(key, title, options) {
   const copy = make('div', 'skin-care-copy');
   copy.append(make('span', '', title), status, error);
   row.append(copy, buttons);
+  return row;
+}
+
+function createMinoxidilRow(label, key) {
+  const row = make('div', 'check-row skin-care-row');
+  row.dataset.minoxidilRow = '';
+  const copy = make('div', 'skin-care-copy');
+  const status = make('span', 'skin-care-status');
+  status.setAttribute('role', 'status');
+  const error = make('span', 'skin-care-error');
+  error.setAttribute('role', 'status');
+  copy.append(label, status, error);
+  const actions = make('div', 'skin-care-actions');
+  const later = make('button', '', 'Later');
+  later.type = 'button';
+  later.dataset.minoxidilLater = '';
+  later.setAttribute('aria-label', 'Minoxidil: Later');
+  later.addEventListener('click', () => chooseDailyTask(row, key, later, 'd', true));
+  const undo = make('button', '', 'Undo');
+  undo.type = 'button';
+  undo.dataset.minoxidilUndo = '';
+  undo.setAttribute('aria-label', 'Undo Minoxidil postponement');
+  undo.addEventListener('click', () => chooseDailyTask(row, key, undo, 'd', false));
+  actions.append(later, undo);
+  row.append(copy, actions);
   return row;
 }
 
@@ -306,7 +350,8 @@ function selectRoutine(routine, remember = true) {
         body.append(createSkinCareRow(key, routineItemLabel(routine, item), options));
         continue;
       }
-      const label = make('label', 'check-row');
+      const minoxidil = isMinoxidilItem(item.label);
+      const label = make('label', minoxidil ? 'minoxidil-control' : 'check-row');
       const input = document.createElement('input');
       input.type = 'checkbox';
       input.dataset.check = key;
@@ -314,7 +359,6 @@ function selectRoutine(routine, remember = true) {
         input.dataset.healthDose = item.label;
         section.dataset.medicationTarget = '';
       }
-      const minoxidil = isMinoxidilItem(item.label);
       if (minoxidil) input.dataset.minoxidil = '';
       input.addEventListener('change', () => {
         state = latestProgress();
@@ -324,7 +368,7 @@ function selectRoutine(routine, remember = true) {
       });
       label.append(input, make('span', '', routineItemLabel(routine, item)));
       if (group.optional) label.append(make('small', 'optional-task', 'Optional'));
-      body.append(label);
+      body.append(minoxidil ? createMinoxidilRow(label, key) : label);
     }
     section.append(body);
     content.append(section);

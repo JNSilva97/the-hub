@@ -223,6 +223,22 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
       await check.uncheck();
       await chooseRoutine(page, first.id);
       assert.equal(await check.isChecked(), false);
+      const later = page.getByRole('button', { name: 'Minoxidil: Later', exact: true });
+      const undo = page.getByRole('button', { name: 'Undo Minoxidil postponement' });
+      const before = await page.locator('#routine-progress-label').textContent();
+      await later.click();
+      await undo.waitFor();
+      assert.match(await page.locator('[data-minoxidil-row] .skin-care-status').textContent(), /excluded from this checklist/);
+      assert.notEqual(await page.locator('#routine-progress-label').textContent(), before);
+      await chooseRoutine(page, second.id);
+      assert.equal(await later.isVisible(), false);
+      assert.equal(await check.isChecked(), false);
+      await check.check();
+      await chooseRoutine(page, first.id);
+      await undo.click();
+      await later.waitFor({ state: 'hidden' });
+      await check.waitFor();
+      assert.equal(await check.isChecked(), true);
     } finally { await context.close(); }
   });
 
@@ -383,7 +399,7 @@ test('The Hub browser regressions', { timeout: 240000 }, async t => {
         Object.defineProperty(navigator.serviceWorker, 'register', { value: async () => registration });
       });
       await ready(page); await page.locator('[data-icon="settings"]').click();
-      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.24.5');
+      assert.equal(await page.locator('#app-version').textContent(), 'Version 2026.11.25.2');
       await page.locator('#check-updates').click();
       assert.equal(await page.evaluate(() => window.__hubUpdateChecks), 1);
       assert.match(await page.locator('#offline-status').textContent(), /installed app/);

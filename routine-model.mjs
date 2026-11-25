@@ -205,6 +205,7 @@ export function updateRoutineSections(routine) {
   if (routine.name.trim().toLowerCase() !== 'getting ready') return routine;
   return { ...routine, groups: routine.groups.map(group => {
     const title = group.title.replace(/\s*\(if needed\)/gi, '').trim();
+    if (group.optional && /^optional essentials$/i.test(title)) return { ...group, title: 'Essentials' };
     if (/^(?:optional )?accessories$/i.test(title)) return { ...group, title, optional: true };
     const occupied = new Set(group.items.map(item => item.id));
     const newItem = label => {
@@ -222,9 +223,10 @@ export function updateRoutineSections(routine) {
       return { ...group, title, items };
     }
     if (!/^(?:belt bag(?: contents)?|pouch)$/i.test(title)) {
-      if (/^optional clothing$/i.test(title) && group.items.some(item => /^put on /i.test(item.label))) {
+      if (group.optional && /^optional clothing$/i.test(title)) {
+        if (!group.items.some(item => /^put on /i.test(item.label))) return { ...group, title: 'Clothing' };
         const rank = item => ['Sweatshirt', 'Jacket'].indexOf(routineItemLabel(routine, item));
-        return { ...group, title, items: [...group.items].sort((a, b) => (rank(a) < 0 ? 2 : rank(a)) - (rank(b) < 0 ? 2 : rank(b))) };
+        return { ...group, title: 'Clothing', items: [...group.items].sort((a, b) => (rank(a) < 0 ? 2 : rank(a)) - (rank(b) < 0 ? 2 : rank(b))) };
       }
       return { ...group, title };
     }
@@ -256,7 +258,7 @@ export function progressKey(item, key, day) {
 
 // The compact suffix fits inside the existing progress key limit, even with three 50-character IDs.
 const dayToken = day => Math.floor(Date.parse(day + 'T00:00:00Z') / 86400000).toString(36);
-const skinCareMarker = /^([a-z][a-z0-9-]*\/[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*)~([0-9a-z]{1,5})([mstln])$/;
+const skinCareMarker = /^([a-z][a-z0-9-]*\/[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*)~([0-9a-z]{1,5})([mstlnd])$/;
 export const skinCareItemKey = key => skinCareMarker.exec(key)?.[1];
 
 export function skinCareProgress(checks, day = lisbonDay()) {
@@ -273,10 +275,14 @@ export function skinCareProgress(checks, day = lisbonDay()) {
   return { selected, used };
 }
 
-export function setSkinCareChoice(routines, progress, key, option, checked, day = lisbonDay()) {
+function findRoutineItem(routines, key) {
   const [routineId, groupId, itemId] = key.split('/');
-  const item = routines.find(routine => routine.id === routineId)?.groups.find(group => group.id === groupId)
+  return routines.find(routine => routine.id === routineId)?.groups.find(group => group.id === groupId)
     ?.items.find(item => item.id === itemId);
+}
+
+export function setSkinCareChoice(routines, progress, key, option, checked, day = lisbonDay()) {
+  const item = findRoutineItem(routines, key);
   const options = item ? skinCareOptionsFor(item.label) : [];
   if (!options.length || ![...options, 'l', 'n'].includes(option)) throw new Error('This checklist item changed. Open the checklist again.');
   const { selected, used } = skinCareProgress(progress.checks, day);
@@ -284,6 +290,21 @@ export function setSkinCareChoice(routines, progress, key, option, checked, day 
   if ((checked && previous === option) || (!checked && previous !== option)) return progress;
   if (checked && (options.includes(previous) || used.has(option))) throw new Error('A skincare choice changed on another device. Check the available options.');
 
+  return writeDailyChoice(progress, key, option, checked, day);
+}
+
+export function setMinoxidilLater(routines, progress, key, checked, day = lisbonDay()) {
+  const item = findRoutineItem(routines, key);
+  if (!item || !isMinoxidilItem(item.label)) throw new Error('This checklist item changed. Open the checklist again.');
+  const { selected } = skinCareProgress(progress.checks, day);
+  if ((selected.get(key) === 'd') === checked) return progress;
+  if (checked && (progress.checks[minoxidilCheckKey(day)] || [...selected.values()].includes('d'))) {
+    throw new Error('Minoxidil was already ticked or postponed today.');
+  }
+  return writeDailyChoice(progress, key, 'd', checked, day);
+}
+
+function writeDailyChoice(progress, key, option, checked, day) {
   const token = dayToken(day);
   const checks = Object.fromEntries(Object.entries(progress.checks).filter(([savedKey, value]) => {
     const marker = skinCareMarker.exec(savedKey);
@@ -316,6 +337,7 @@ export function getWorkspaceProgress(routines, state, skinCare, day = lisbonDay(
         const options = skinCareOptionsFor(item.label);
         const choice = skinCare.selected.get(key);
         if (options.length && ['l', 'n'].includes(choice)) continue;
+        if (choice === 'd' && isMinoxidilItem(item.label)) continue;
         const done = state.checks[progressKey(item, key, day)] === true || options.includes(choice)
           || options.length && options.every(option => skinCare.used.has(option));
         if (group.optional && !done) continue;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { validateRoutines, parseProgress, getProgress, getWorkspaceProgress, restartRoutine, getProgressPatch, lisbonDay, setSkinCareChoice, skinCareProgress, minoxidilCheckKey } from '../routine-model.mjs';
+import { validateRoutines, parseProgress, getProgress, getWorkspaceProgress, restartRoutine, getProgressPatch, lisbonDay, setSkinCareChoice, skinCareProgress, minoxidilCheckKey, setMinoxidilLater } from '../routine-model.mjs';
 import { createBackup, parseBackup } from '../workspace-model.mjs';
 
 const demo = JSON.parse(readFileSync(new URL('../routines.demo.json', import.meta.url), 'utf8'));
@@ -170,6 +170,14 @@ test('minoxidil is one Lisbon-day check across routines and survives backup and 
   const nextDay = lisbonDay(new Date('2026-07-01T23:00:00Z'));
   state.checks['getting-ready/care/minoxidil'] = true;
   assert.deepEqual([...getWorkspaceProgress(routines, state, undefined, day).values()].map(progress => progress.done), [0, 0]);
+  const key = 'getting-ready/care/minoxidil';
+  const deferred = setMinoxidilLater(routines, state, key, true, day);
+  const backup = parseBackup(JSON.stringify(createBackup(routines, deferred))).progress;
+  const totals = (progress, date) => [...getWorkspaceProgress(routines, progress, undefined, date).values()].map(item => item.total);
+  assert.deepEqual(totals(backup, day), [0, 1]);
+  assert.deepEqual(totals(backup, nextDay), [1, 1]);
+  assert.throws(() => setMinoxidilLater(routines, backup, 'wind-down/care/minoxidil', true, day), /already ticked or postponed/);
+  assert.deepEqual(totals(setMinoxidilLater(routines, backup, key, false, day), day), [1, 1]);
   state.checks[minoxidilCheckKey(day)] = true;
   const restored = parseBackup(JSON.stringify(createBackup(routines, restartRoutine(routines[0], state)))).progress;
   assert.deepEqual([...getWorkspaceProgress(routines, restored, undefined, day).values()].map(progress => progress.done), [1, 1]);

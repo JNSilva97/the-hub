@@ -1,6 +1,6 @@
-import { firebaseConfig } from './firebase-config.mjs?v=calendar-custom-plans-1';
-import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, lisbonDay } from './routine-model.mjs?v=calendar-custom-plans-1';
-import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=calendar-custom-plans-1';
+import { firebaseConfig } from './firebase-config.mjs?v=calendar-hourly-1';
+import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, setMinoxidilLater, lisbonDay } from './routine-model.mjs?v=calendar-hourly-1';
+import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=calendar-hourly-1';
 
 const panel = document.getElementById('account-dialog');
 const loginButton = document.getElementById('account-login');
@@ -24,7 +24,7 @@ let sequence = 0;
 let pending = 0;
 let importing = false;
 let workspaceSaving = false;
-let skinCareSaving = false;
+let dailyChoiceSaving = false;
 let revision = 0;
 let persistent = false;
 let fromCache = true;
@@ -41,7 +41,7 @@ function syncMessage() {
   if (failure) return failure;
   if (importing) return 'Uploading your PC checklists… Keep this tab open.';
   if (workspaceSaving) return 'Saving your checklists… Keep this tab open.';
-  if (skinCareSaving) return 'Saving your skincare choice…';
+  if (dailyChoiceSaving) return 'Saving your checklist choice…';
   if (!ready) return navigator.onLine ? 'Loading your account…' : 'Offline. Open your checklists online once on this device before using them offline.';
   if (pending || edits.size || queued) {
     if (persistent && [...edits.values()].every(edit => edit.durable)) return 'Saved on this device. Waiting to sync automatically when connected.';
@@ -55,11 +55,11 @@ function render() {
   loginButton.hidden = Boolean(user);
   loginButton.disabled = !auth || setupFailure;
   logoutButton.hidden = !user;
-  logoutButton.disabled = importing || workspaceSaving || skinCareSaving || pending > 0 || edits.size > 0 || queued || notesPending || healthBusy || calendarUnsafe || fitnessBusy || libraryUnsafe;
+  logoutButton.disabled = importing || workspaceSaving || dailyChoiceSaving || pending > 0 || edits.size > 0 || queued || notesPending || healthBusy || calendarUnsafe || fitnessBusy || libraryUnsafe;
   importButton.hidden = !user || !ready || routines !== null || !local || Boolean(failure);
   importButton.disabled = importing;
   retryButton.hidden = !firebaseConfig || (!failure && !edits.size);
-  retryButton.disabled = importing || workspaceSaving || skinCareSaving || pending > 0;
+  retryButton.disabled = importing || workspaceSaving || dailyChoiceSaving || pending > 0;
   document.getElementById('account-identity').textContent = user ? user.email || 'Signed in' : 'Your checklists, on your devices.';
   document.getElementById('account-launch').textContent = user ? 'Account & sync' : 'Private access';
   let message;
@@ -163,7 +163,7 @@ async function connect() {
       pending = 0;
       importing = false;
       workspaceSaving = false;
-      skinCareSaving = false;
+      dailyChoiceSaving = false;
       revision = 0;
       fromCache = true;
       queued = false;
@@ -220,15 +220,15 @@ export const cloudWorkspace = {
   get progress() { return parseProgress(JSON.stringify(progress)); },
   get revision() { return revision; },
   get status() { return syncMessage(); },
-  get canEdit() { return this.active && !failure && !pending && !edits.size && !queued && !importing && !workspaceSaving && !skinCareSaving; },
-  async chooseSkinCare(key, option, checked, day) {
-    if (!this.active || failure || importing || workspaceSaving || skinCareSaving || !navigator.onLine || fromCache) {
+  get canEdit() { return this.active && !failure && !pending && !edits.size && !queued && !importing && !workspaceSaving && !dailyChoiceSaving; },
+  async chooseDailyTask(key, option, checked, day) {
+    if (!this.active || failure || importing || workspaceSaving || dailyChoiceSaving || !navigator.onLine || fromCache) {
       throw new Error('Connect and wait for your checklist to sync before choosing.');
     }
     const current = generation;
     const definitionsRef = sdk.doc(database, 'users', user.uid, 'hub', 'routines');
     const progressRef = sdk.doc(database, 'users', user.uid, 'hub', 'progress');
-    skinCareSaving = true;
+    dailyChoiceSaving = true;
     render();
     try {
       await sdk.runTransaction(database, async transaction => {
@@ -237,15 +237,17 @@ export const cloudWorkspace = {
         if (current !== generation || !definitions.exists() || !saved.exists()) throw new Error('The checklist changed. Open it again.');
         if (day !== lisbonDay()) throw new Error('A new day has started. Choose again for today.');
         const latest = parseProgress(JSON.stringify(saved.data()));
-        const next = setSkinCareChoice(validateRoutines(definitions.data()), latest, key, option, checked, day);
+        const items = validateRoutines(definitions.data());
+        const next = option === 'd' ? setMinoxidilLater(items, latest, key, checked, day)
+          : setSkinCareChoice(items, latest, key, option, checked, day);
         if (next !== latest) transaction.set(progressRef, next);
       });
     } catch (error) {
-      if (error.code) throw new Error('Your skincare choice could not sync. Check your connection and try again.');
+      if (error.code) throw new Error('Your checklist choice could not sync. Check your connection and try again.');
       throw error;
     } finally {
       if (current === generation) {
-        skinCareSaving = false;
+        dailyChoiceSaving = false;
         render();
       }
     }
@@ -350,7 +352,7 @@ loginButton.addEventListener('click', () => {
   }).finally(render);
 });
 logoutButton.addEventListener('click', () => {
-  if (!auth || importing || workspaceSaving || skinCareSaving || pending || edits.size || queued || notesPending || healthBusy || calendarUnsafe || fitnessBusy || libraryUnsafe) return;
+  if (!auth || importing || workspaceSaving || dailyChoiceSaving || pending || edits.size || queued || notesPending || healthBusy || calendarUnsafe || fitnessBusy || libraryUnsafe) return;
   sdk.signOut(auth).catch(() => { failure = 'Sign-out did not finish. Try again.'; render(); });
 });
 importButton.addEventListener('click', () => cloudWorkspace.importPC());
@@ -369,7 +371,7 @@ window.addEventListener('online', () => {
 });
 window.addEventListener('offline', render);
 window.addEventListener('beforeunload', event => {
-  if (libraryUnsafe || fitnessBusy || calendarUnsafe || notesUnsafe || importing || workspaceSaving || skinCareSaving || [...edits.values()].some(edit => !edit.durable) || queued && !persistent) { event.preventDefault(); event.returnValue = ''; }
+  if (libraryUnsafe || fitnessBusy || calendarUnsafe || notesUnsafe || importing || workspaceSaving || dailyChoiceSaving || [...edits.values()].some(edit => !edit.durable) || queued && !persistent) { event.preventDefault(); event.returnValue = ''; }
 });
 document.addEventListener('hub:healthsync', event => { healthBusy = event.detail; render(); });
 document.addEventListener('hub:librarysync', event => { libraryUnsafe = Boolean(event.detail); render(); });

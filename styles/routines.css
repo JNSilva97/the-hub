@@ -365,6 +365,8 @@
 }
 
 .skin-care-copy { display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.minoxidil-control { display: flex; align-items: center; gap: 12px; }
+.minoxidil-control input[hidden] { display: none; }
 
 .skin-care-row[data-skipped="true"] { border-style: dashed; color: #9cb9d2; }
 .skin-care-actions [data-skin-care-disposition] { background: transparent; color: #a8c5dc; }

@@ -1,4 +1,4 @@
-import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey, isMinoxidilItem, isMinoxidilCheckKey, updateRoutineSections, routineItemLabel } from './routine-model.mjs?v=calendar-custom-plans-1';
+import { validateRoutines, parseProgress, groupKey, itemKey, isSkinCareChoice, skinCareItemKey, isMinoxidilItem, isMinoxidilCheckKey, updateRoutineSections, routineItemLabel } from './routine-model.mjs?v=calendar-hourly-1';
 
 export const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 
@@ -25,8 +25,8 @@ export function keepProgress(routines, progress) {
     for (const item of group.items) {
       const key = itemKey(routine, group, item);
       checks.add(key);
-      if (isSkinCareChoice(item.label)) skinCare.add(key);
       if (isMinoxidilItem(item.label)) hasMinoxidil = true;
+      if (isSkinCareChoice(item.label) || isMinoxidilItem(item.label)) skinCare.add(key);
     }
   }
   return { checks: Object.fromEntries(Object.entries(saved.checks).filter(([key, value]) =>

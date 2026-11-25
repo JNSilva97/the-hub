@@ -1,6 +1,6 @@
 /* The week planner shares the terminal's glass surfaces and touch targets. */
 .calendar-dialog button, .routine-plan-context button { min-height: 44px; padding: 8px 13px; border: 1px solid #366a92; border-radius: 4px; color: #d9f1ff; background: #0a1e30; font: 600 15px var(--font-interface); cursor: pointer; }
-.calendar-dialog { width: min(1060px, calc(100% - 24px)); max-height: calc(100dvh - 24px); padding: 0; text-align: left; overflow: auto; background: linear-gradient(#030a12a6, #030a12a6), var(--panel-glass); }
+.calendar-dialog { width: min(1060px, calc(100% - 24px)); max-height: calc(100dvh - 24px); padding: 0; text-align: left; overflow: auto; background: #08111e; scroll-padding-top: 110px; }
 .calendar-dialog[hidden], .calendar-dialog [hidden], .routine-plan-context[hidden] { display: none; }
 .calendar-header { position: sticky; top: 0; z-index: 3; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 24px; border-bottom: 1px solid #284e6a; background: #081521f5; }
 .calendar-identity { display: flex; gap: 14px; align-items: center; }
@@ -19,9 +19,22 @@
 .calendar-day strong { font: 600 27px var(--font-interface); }
 .calendar-day small { color: #a9c5d8; font-size: 12px; line-height: 1.4; }
 .calendar-day[aria-current="date"] strong::after { content: ' ·'; color: #8decda; }
-.calendar-agenda-plans { display: grid; gap: 4px; }
-.calendar-agenda-entry { color: #a9c5d8; font-size: 12px; line-height: 1.4; }
-.calendar-agenda-entry time { color: #bce6fa; font-variant-numeric: tabular-nums; }
+.calendar-agenda-plans { display: grid; width: 100%; gap: 5px; }
+.calendar-agenda-entry { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1px 6px; padding: 3px 5px; border-left: 2px solid #5aaacb; background: #14324a80; color: #deeffb; font-size: 13px; line-height: 1.35; }
+.calendar-agenda-entry time { color: #bce6fa; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.calendar-schedule { margin-bottom: 24px; padding: 12px; border: 1px solid #284e6a; border-radius: 4px; background: #0c1928; }
+.calendar-schedule-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.calendar-schedule-header h3 { font-size: 19px; }
+.calendar-hour-list { position: relative; max-height: min(19rem, 47dvh); overflow: auto; margin: 12px 0 0; padding: 0; list-style: none; border: 1px solid #294e68; border-radius: 4px; scrollbar-color: #587c9b #0a1523; }
+.calendar-hour { display: grid; grid-template-columns: 3.7rem minmax(0, 1fr) auto; align-items: start; gap: 8px; min-height: 48px; padding: 3px 6px; background: #0a1523; }
+.calendar-hour + .calendar-hour { border-top: 1px solid #25435b; }
+.calendar-hour-label { align-self: center; padding-inline: 4px; color: #b8d5e9; font-variant-numeric: tabular-nums; font-size: 13px; }
+.calendar-hour-entries { display: grid; gap: 4px; }
+.calendar-schedule-entry { display: flex; flex-wrap: wrap; gap: 3px 8px; align-items: baseline; padding: 8px; border-left: 2px solid #78cbef; background: #153249; overflow-wrap: anywhere; }
+.calendar-schedule-entry time { color: #a7def9; font-variant-numeric: tabular-nums; }
+.calendar-schedule-entry small { flex-basis: 100%; color: #c1d8e8; }
+.calendar-schedule #calendar-untimed h4 { margin: 12px 0 6px; }
+.calendar-dialog .calendar-hour-add { min-width: 44px; padding-inline: 6px; }
 .calendar-dialog .calendar-day[aria-pressed="true"] { border-color: #86d9ff; box-shadow: inset 0 -2px #74d9ff; background: #10334ac9; }
 .calendar-editor { display: grid; grid-template-columns: minmax(0, 2fr) minmax(200px, 1fr); gap: 24px; align-items: start; }
 .calendar-mode { display: flex; gap: 8px; margin: 12px 0 8px; }
@@ -42,7 +55,8 @@
 .calendar-dialog :is(.calendar-plan-details, .calendar-custom-plan) input { min-width: 0; width: 100%; min-height: 44px; padding: 6px 8px; border: 1px solid #366a92; border-radius: 4px; color: #d9f1ff; background: var(--panel-surface); color-scheme: dark; font: inherit; font-size: 16px; }
 .calendar-custom { margin-top: 20px; }
 .calendar-custom h4 { margin: 0 0 10px; font: 600 19px var(--font-interface); }
-.calendar-custom-plan { display: grid; gap: 8px; min-width: 0; margin: 0 0 12px; padding: 10px 12px 12px; border: 1px solid #284b64; border-radius: 4px; }
+.calendar-custom-plan { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 8px; min-width: 0; margin: 0 0 12px; padding: 10px 12px 12px; border: 1px solid #284b64; border-radius: 4px; background: #0d1b2b; }
+.calendar-custom-plan label:last-of-type { grid-column: 1 / -1; }
 .calendar-custom-plan legend { padding-inline: 4px; color: #c6def0; font-size: 13px; }
 .calendar-custom-plan button { justify-self: start; }
 .calendar-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
@@ -66,7 +80,7 @@
   .calendar-intro { align-items: flex-start; flex-direction: column; }
   .calendar-week { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
   .calendar-dialog .calendar-day { min-height: 108px; padding: 8px; }
-  .calendar-plan-details { grid-template-columns: minmax(0, 1fr); }
+  .calendar-plan-details, .calendar-custom-plan { grid-template-columns: minmax(0, 1fr); }
   .calendar-editor { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .calendar-navigation { grid-template-columns: 44px minmax(0, 1fr) 44px; }
   #calendar-today { grid-column: 1 / -1; justify-self: center; min-width: 90px; }
