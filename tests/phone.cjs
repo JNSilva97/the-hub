@@ -8,7 +8,7 @@ test('Phone workflows', { timeout: 90000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   t.after(() => browser.close());
 
-  await t.test('home Quick Add opens a fresh note and logs exactly one undoable coffee', async () => {
+  await t.test('home Quick Add opens a fresh note and lets the user choose what to log in Habits', async () => {
     const { context, page, errors } = await fixture(browser, { width: 320, height: 640, mobile: true, motion: 'reduce' });
     try {
       await ready(page);
@@ -20,8 +20,10 @@ test('Phone workflows', { timeout: 90000 }, async t => {
       await editor.fill('Quick note');
       await page.getByRole('button', { name: 'Close notes', exact: true }).click();
       await quick.click();
-      await page.getByRole('button', { name: /Log coffee Habits/ }).click();
+      await page.getByRole('button', { name: /Log habits/ }).click();
       const count = page.locator('#addiction-coffees');
+      await count.filter({ hasText: '0 / 3 coffees today' }).waitFor();
+      await page.getByRole('button', { name: 'Log coffee', exact: true }).click();
       await count.filter({ hasText: '1 / 3 coffees today' }).waitFor();
       await page.getByRole('button', { name: 'Undo last coffee', exact: true }).click();
       await count.filter({ hasText: '0 / 3 coffees today' }).waitFor();

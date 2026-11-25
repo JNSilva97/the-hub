@@ -123,7 +123,7 @@ document.getElementById('quick-add-launch').addEventListener('click', () => { if
 for (const [action, run] of [
   ['plan', calendar && (() => calendar.openNewPlan())],
   ['note', instantNotes && (() => { instantNotes.open(); document.getElementById('note-new').click(); })],
-  ['coffee', addiction && (() => addiction.openAndLogCoffee())]
+  ['habits', addiction && (() => addiction.open())]
 ]) {
   const button = document.getElementById(`quick-add-${action}`);
   button.disabled = !run;

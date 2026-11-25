@@ -395,46 +395,30 @@ function createAddictionHelper(panel, health) {
   window.addEventListener('online', () => { migrate(); if (panel.open) render(); });
   window.addEventListener('offline', () => { if (panel.open) render(); });
   document.addEventListener('visibilitychange', () => { if (panel.open && !document.hidden) render(); });
-  const modelReady = import('./habits-model.mjs?v=quick-add-1').then(module => {
+  import('./habits-model.mjs?v=quick-add-habits-1').then(module => {
     model = module;
     render();
-  }).catch(() => { notice = 'Habits could not load. Reload the page to try again.'; render(); });
-  modelReady.then(() => {
-    if (model) return import('./cloud-habits.js?v=quick-add-1');
+    return import('./cloud-habits.js?v=quick-add-habits-1');
   }).then(module => {
-    if (!module) return;
     account = module.createHabitsAccount(() => {
       migrate();
       // Never overwrite fields while the settings form is open.
       if (!element('settings').open) fillSettings();
       if (panel.open) render();
     });
-  }).catch(() => { render(); });
+  }).catch(() => { if (!model) notice = 'Habits could not load. Reload the page to try again.'; render(); });
 
-  let openSequence = 0;
-  function open() {
-    openSequence++;
-    migrate();
-    render();
-    fillSettings();
-    panel.showModal();
-    clearInterval(ticking);
-    ticking = setInterval(() => {
-      if (lastMinute !== Math.floor(Date.now() / 60000)) render();
-      else { renderQuit(); renderCraving(); }
-    }, 1000);
-  }
   return {
-    open,
-    async openAndLogCoffee() {
-      open();
-      const current = openSequence;
-      if (!model) await modelReady;
-      if (!model || !panel.open || openSequence !== current) return;
-      element('log-coffee').click();
-      element('coffee').scrollIntoView({ block: 'center' });
-      const undo = element('undo-coffee');
-      if (!undo.disabled) undo.focus({ preventScroll: true });
+    open() {
+      migrate();
+      render();
+      fillSettings();
+      panel.showModal();
+      clearInterval(ticking);
+      ticking = setInterval(() => {
+        if (lastMinute !== Math.floor(Date.now() / 60000)) render();
+        else { renderQuit(); renderCraving(); }
+      }, 1000);
     }
   };
 }

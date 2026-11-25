@@ -407,7 +407,7 @@ function createCalendar(panel, openChecklist) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=quick-add-1').then(module => {
+  import('./calendar-model.mjs?v=quick-add-habits-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -440,7 +440,7 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=quick-add-1');
+    return import('./cloud-calendar.js?v=quick-add-habits-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }

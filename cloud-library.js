@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=quick-add-1';
-import { readEntry } from './library-model.mjs?v=quick-add-1';
+import { cloudWorkspace } from './cloud.js?v=quick-add-habits-1';
+import { readEntry } from './library-model.mjs?v=quick-add-habits-1';
 export function createLibraryAccount(onChange) {
   let uid, unsubscribe, generation = 0, ready = false, cached = true, pending = false, error = '';
   let entries = new Map();
