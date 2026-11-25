@@ -209,7 +209,7 @@ function createMediaLibrary() {
   document.getElementById('library-import-save').addEventListener('click', commitImport);
   document.getElementById('library-import-cancel').addEventListener('click', () => { if (!busy) { preview = []; previewPanel.close(); } });
   previewPanel.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
-  import('./library-model.mjs?v=quick-add-plan-time-1').then(m => { model = m; render(); return import('./cloud-library.js?v=quick-add-plan-time-1'); }).then(m => {
+  import('./library-model.mjs?v=weekly-review-1').then(m => { model = m; render(); return import('./cloud-library.js?v=weekly-review-1'); }).then(m => {
     const changed = () => {
       if (owner !== account?.uid) {
         owner = account?.uid; busy = false; notice = failure = ''; preview = []; previewPanel.close();
@@ -227,7 +227,7 @@ function createMediaLibrary() {
     };
     account = m.createLibraryAccount(changed); changed();
   }).catch(() => { failure = 'Your library could not load. Reload to try again.'; render(); });
-  import('./library-artwork.mjs?v=quick-add-plan-time-1').then(module => { artwork = module.createArtworkLoader(); render(); }).catch(() => { /* The library remains fully usable with its icons. */ });
+  import('./library-artwork.mjs?v=weekly-review-1').then(module => { artwork = module.createArtworkLoader(); render(); }).catch(() => { /* The library remains fully usable with its icons. */ });
   render();
   return { open(domain) { if (canNavigate()) { render(); panels.get(domain).showModal(); } }, canNavigate };
 }

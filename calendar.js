@@ -1,5 +1,6 @@
-function createCalendar(panel, openChecklist) {
+function createCalendar(panel, openChecklist, readActivity) {
   const el = id => document.getElementById(`calendar-${id}`);
+  const review = id => document.getElementById(`weekly-review-${id}`);
   const format = (day, options) => new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', ...options }).format(new Date(`${day}T12:00:00Z`));
   const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
   let model, account, selected, anchor, owner, editingWeekly = false, busy = false, notice = '', failed = false, loadError = '';
@@ -59,6 +60,67 @@ function createCalendar(panel, openChecklist) {
         .map(plan => ({ id: plan.id, title: plan.name, ...details[plan.id] })),
       ...events
     ].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+  }
+  let lastWeek = false;
+  function reviewRange(days) {
+    const start = days[0];
+    const end = days.at(-1);
+    return `${format(start, { day: 'numeric', month: 'short', ...(start.slice(0, 4) !== end.slice(0, 4) && { year: 'numeric' }) })} – ${format(end, { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  }
+  function setReviewMetrics(container, metrics, caption) {
+    const list = node('dl', '');
+    for (const [label, value] of metrics) {
+      const item = node('div', '');
+      item.append(node('dt', label), node('dd', value));
+      list.append(item);
+    }
+    container.replaceChildren(list, node('p', caption, 'calendar-note'));
+  }
+  function renderReview() {
+    if (!model || !review('dialog').open) return;
+    const today = model.lisbonDay();
+    const days = model.weekDates(lastWeek ? model.addDays(today, -7) : today);
+    const nextDays = model.weekDates(model.addDays(today, 7));
+    review('period').textContent = lastWeek ? 'Last week' : 'This week';
+    review('dates').textContent = reviewRange(days);
+    review('next-dates').textContent = reviewRange(nextDays);
+    review('toggle').textContent = lastWeek ? 'This week' : 'Last week';
+    review('toggle').setAttribute('aria-pressed', String(lastWeek));
+
+    const { habits, fitness } = readActivity();
+    if (habits) {
+      const logged = days.map(day => habits.days.get(day)).filter(Boolean);
+      const total = key => logged.reduce((sum, item) => sum + item[key], 0);
+      setReviewMetrics(review('habits'), [['Cigarettes logged', total('cigarettes')], ['Coffees logged', total('coffees')]],
+        habits.local ? 'Counts saved on this device.' : 'Counts logged in your account.');
+    } else review('habits').replaceChildren(node('p', 'Habits records are unavailable right now.', 'calendar-note'));
+
+    if (fitness) {
+      const logged = days.map(day => fitness.days.get(day)).filter(Boolean);
+      const metrics = fitness.exercises.map(({ id, name }) => [name, logged.reduce((sum, item) => sum + item[id], 0)]);
+      const active = logged.filter(item => fitness.exercises.some(({ id }) => item[id] > 0)).length;
+      const complete = logged.filter(item => fitness.exercises.every(({ id, goal }) => item[id] >= goal)).length;
+      setReviewMetrics(review('fitness'), metrics, `${active} ${active === 1 ? 'day' : 'days'} with reps logged · Both daily goals met on ${complete} ${complete === 1 ? 'day' : 'days'}`);
+    } else review('fitness').replaceChildren(node('p', 'Sign in and sync Fitness to see your reps.', 'calendar-note'));
+
+    const upcoming = review('plans');
+    if (!account?.uid || !account.ready) {
+      upcoming.replaceChildren(node('p', account?.uid ? 'Calendar plans are unavailable right now.' : 'Sign in to see your Calendar plans.', 'calendar-note'));
+      return;
+    }
+    const list = node('ul', '');
+    const all = records();
+    for (const day of nextDays) {
+      const plan = model.plansForDay(all, day);
+      const items = scheduledPlans(plan.plans, plan.details, plan.events);
+      if (!items.length) continue;
+      const date = node('time', format(day, { weekday: 'short', day: 'numeric', month: 'short' }));
+      date.dateTime = day;
+      const row = node('li', '');
+      row.append(date, node('span', items.map(item => item.time ? `${item.time} ${item.title}` : item.title).join(' · ')));
+      list.append(row);
+    }
+    upcoming.replaceChildren(list.children.length ? list : node('p', 'No plans next week.', 'calendar-note'));
   }
   function renderToday() {
     const brief = el('today-brief');
@@ -177,6 +239,7 @@ function createCalendar(panel, openChecklist) {
     el('cancel').disabled = busy || !dirty() && !failed;
     el('cancel').textContent = failed && !dirty() ? 'Reload plan' : 'Cancel';
     el('close').disabled = busy;
+    el('review-launch').disabled = !model;
     el('full-day').disabled = !model || busy;
     for (const name of ['previous', 'next', 'today', 'mode-day', 'mode-weekly']) el(name).disabled = !model || busy;
     for (const check of el('plan-options').querySelectorAll('input[type="checkbox"]')) {
@@ -314,6 +377,13 @@ function createCalendar(panel, openChecklist) {
     render(); panel.showModal();
   }
   el('close').addEventListener('click', close);
+  el('review-launch').addEventListener('click', () => {
+    lastWeek = false;
+    review('dialog').showModal();
+    renderReview();
+  });
+  review('toggle').addEventListener('click', () => { lastWeek = !lastWeek; renderReview(); });
+  for (const event of ['hub:habitsreview', 'hub:fitnesssync', 'hub:calendarchange']) document.addEventListener(event, renderReview);
   panel.addEventListener('submit', event => { event.preventDefault(); close(); });
   panel.addEventListener('cancel', event => {
     if (fullDay) { event.preventDefault(); leaveFullDay(); }
@@ -406,10 +476,11 @@ function createCalendar(panel, openChecklist) {
     const day = model.lisbonDay();
     if (lastDay !== day) { lastDay = day; render(); emit(); }
     else if (fullDay) renderToday();
+    if (review('dialog').open) renderReview();
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=quick-add-plan-time-1').then(module => {
+  import('./calendar-model.mjs?v=weekly-review-1').then(module => {
     model = module; lastDay = model.lisbonDay();
     selected = anchor = model.validDay(quickPlanPending?.day) ? quickPlanPending.day : lastDay;
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
@@ -443,7 +514,7 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=quick-add-plan-time-1');
+    return import('./cloud-calendar.js?v=weekly-review-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) {

@@ -50,13 +50,13 @@ function createFitness(panel) {
   el('retry').addEventListener('click', () => { if (account) account.retry(); else location.reload(); });
   setInterval(render, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
-  import('./fitness-model.mjs?v=quick-add-plan-time-1').then(module => {
+  import('./fitness-model.mjs?v=weekly-review-1').then(module => {
     model = module;
     for (const exercise of model.exercises) {
       const row = panel.querySelector(`[data-exercise="${exercise.id}"]`);
       for (const button of row.querySelectorAll('button')) button.addEventListener('click', () => adjust(exercise.id, Number(button.dataset.delta)));
     }
-    return import('./cloud-fitness.js?v=quick-add-plan-time-1');
+    return import('./cloud-fitness.js?v=weekly-review-1');
   }).then(module => {
     const changed = () => {
       if (owner !== account?.uid) { owner = account?.uid; busy = false; message = ''; }
@@ -65,5 +65,8 @@ function createFitness(panel) {
     account = module.createFitnessAccount(changed); changed();
   }).catch(() => { loadError = 'Fitness could not load. Reload the page to try again.'; render(); });
   render();
-  return { open() { render(); panel.showModal(); }, canNavigate };
+  return {
+    open() { render(); panel.showModal(); }, canNavigate,
+    reviewData() { return model && account?.ready ? { days: account.records, exercises: model.exercises } : undefined; }
+  };
 }

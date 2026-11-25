@@ -1,6 +1,6 @@
-import { firebaseConfig } from './firebase-config.mjs?v=quick-add-plan-time-1';
-import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, setMinoxidilLater, lisbonDay } from './routine-model.mjs?v=quick-add-plan-time-1';
-import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=quick-add-plan-time-1';
+import { firebaseConfig } from './firebase-config.mjs?v=weekly-review-1';
+import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, setMinoxidilLater, lisbonDay } from './routine-model.mjs?v=weekly-review-1';
+import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=weekly-review-1';
 
 const panel = document.getElementById('account-dialog');
 const loginButton = document.getElementById('account-login');

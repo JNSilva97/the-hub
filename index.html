@@ -11,20 +11,20 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/shell.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/core.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/access.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/panels.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/routines.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/notes.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/health.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/library.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/calendar.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/fitness.css?v=quick-add-plan-time-1">
-  <link rel="stylesheet" href="styles/motion.css?v=quick-add-plan-time-1">
+  <link rel="stylesheet" href="styles/base.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/shell.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/core.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/access.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/panels.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/routines.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/notes.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/health.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/library.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/motion.css?v=weekly-review-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -272,7 +272,7 @@
   <dialog id="calendar-dialog" class="calendar-dialog" aria-labelledby="calendar-title">
     <div class="calendar-header"><div class="calendar-identity"><svg aria-hidden="true"><use href="#calendar"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 04</div><h2 id="calendar-title">Calendar</h2></div></div><form method="dialog"><button id="calendar-close" class="routine-exit" type="button" aria-label="Close Calendar">×</button></form></div>
     <div class="calendar-content">
-      <div class="calendar-intro"><h3>Plan your week</h3><button id="calendar-signin" type="button">Sign in to plan</button></div>
+      <div class="calendar-intro"><h3>Plan your week</h3><div class="calendar-intro-actions"><button id="calendar-review-launch" type="button" aria-haspopup="dialog" aria-controls="weekly-review-dialog" disabled>Weekly Review</button><button id="calendar-signin" type="button">Sign in to plan</button></div></div>
       <div class="calendar-navigation"><button id="calendar-previous" type="button" aria-label="Previous week">←</button><h3 id="calendar-week-title">This week</h3><button id="calendar-next" type="button" aria-label="Next week">→</button><button id="calendar-today" type="button">Today</button></div>
       <div id="calendar-week" class="calendar-week" role="group" aria-label="Week days"></div>
       <section class="calendar-schedule" aria-labelledby="calendar-schedule-title">
@@ -298,6 +298,19 @@
         <aside class="calendar-preview" aria-labelledby="calendar-checklists-title"><h4 id="calendar-checklists-title">Your checklists</h4><ul id="calendar-checklists"></ul><p class="calendar-note" id="calendar-weekly-note">A date can have its own plan, or follow the weekly pattern.</p></aside>
       </div>
       <div class="calendar-feedback"><p id="calendar-status" role="status">Connecting to Calendar…</p><button id="calendar-retry" type="button" hidden>Retry</button></div>
+    </div>
+  </dialog>
+  <dialog id="weekly-review-dialog" class="calendar-dialog weekly-review" aria-labelledby="weekly-review-title">
+    <div class="calendar-header"><div class="calendar-identity"><svg aria-hidden="true"><use href="#calendar"/></svg><h2 id="weekly-review-title">Weekly Review</h2></div><form method="dialog"><button class="routine-exit" aria-label="Close Weekly Review" autofocus>×</button></form></div>
+    <div class="calendar-content">
+      <div class="weekly-review-range"><div><h3 id="weekly-review-period">This week</h3><p id="weekly-review-dates" class="calendar-note"></p></div><button type="button" id="weekly-review-toggle" aria-pressed="false">Last week</button></div>
+      <div class="weekly-review-metrics">
+        <section aria-labelledby="weekly-review-habits-title"><h4 id="weekly-review-habits-title">Habits</h4><div id="weekly-review-habits"></div></section>
+        <section aria-labelledby="weekly-review-fitness-title"><h4 id="weekly-review-fitness-title">Fitness</h4><div id="weekly-review-fitness"></div></section>
+      </div>
+      <section class="weekly-review-upcoming" aria-labelledby="weekly-review-next-title">
+        <h3 id="weekly-review-next-title">Next week</h3><p id="weekly-review-next-dates" class="calendar-note"></p><div id="weekly-review-plans"></div>
+      </section>
     </div>
   </dialog>
   <dialog id="addiction-dialog" aria-labelledby="addiction-title">
@@ -442,7 +455,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.25.10</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.25.11</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -614,18 +627,18 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=quick-add-plan-time-1"></script>
-  <script defer src="notes.js?v=quick-add-plan-time-1"></script>
-  <script defer src="checklist-picker.js?v=quick-add-plan-time-1"></script>
-  <script defer src="health.js?v=quick-add-plan-time-1"></script>
-  <script defer src="addiction.js?v=quick-add-plan-time-1"></script>
-  <script defer src="calendar.js?v=quick-add-plan-time-1"></script>
-  <script defer src="fitness.js?v=quick-add-plan-time-1"></script>
-  <script defer src="library.js?v=quick-add-plan-time-1"></script>
-  <script defer src="interface.js?v=quick-add-plan-time-1"></script>
-  <script defer src="interface-sound.js?v=quick-add-plan-time-1"></script>
-  <script defer src="pointer-effects.js?v=quick-add-plan-time-1"></script>
-  <script defer src="experience.js?v=quick-add-plan-time-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=quick-add-plan-time-1"></script>
+  <script defer src="core-progress.js?v=weekly-review-1"></script>
+  <script defer src="notes.js?v=weekly-review-1"></script>
+  <script defer src="checklist-picker.js?v=weekly-review-1"></script>
+  <script defer src="health.js?v=weekly-review-1"></script>
+  <script defer src="addiction.js?v=weekly-review-1"></script>
+  <script defer src="calendar.js?v=weekly-review-1"></script>
+  <script defer src="fitness.js?v=weekly-review-1"></script>
+  <script defer src="library.js?v=weekly-review-1"></script>
+  <script defer src="interface.js?v=weekly-review-1"></script>
+  <script defer src="interface-sound.js?v=weekly-review-1"></script>
+  <script defer src="pointer-effects.js?v=weekly-review-1"></script>
+  <script defer src="experience.js?v=weekly-review-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=weekly-review-1"></script>
 </body>
 </html>

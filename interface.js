@@ -8,7 +8,8 @@ const health = typeof createHealth === 'function' && typeof createChecklistPicke
 const addictionDialog = document.getElementById('addiction-dialog');
 const addiction = typeof createAddictionHelper === 'function' ? createAddictionHelper(addictionDialog, health) : undefined;
 const calendar = typeof createCalendar === 'function'
-  ? createCalendar(document.getElementById('calendar-dialog'), (plan, closeCalendar) => routinesModule?.openPlannedChecklist(plan, closeCalendar))
+  ? createCalendar(document.getElementById('calendar-dialog'), (plan, closeCalendar) => routinesModule?.openPlannedChecklist(plan, closeCalendar),
+    () => ({ habits: addiction?.reviewData(), fitness: fitness?.reviewData() }))
   : undefined;
 const fitness = typeof createFitness === 'function' ? createFitness(document.getElementById('fitness-dialog')) : undefined;
 const mediaLibrary = typeof createMediaLibrary === 'function' ? createMediaLibrary() : undefined;
@@ -159,7 +160,7 @@ for (const [action, run] of [
   if (run) button.addEventListener('click', () => { quickAdd.close(); run(); });
 }
 
-for (const panel of [dialog, addictionDialog, routinesDialog, notesDialog, quickAdd, document.getElementById('note-delete-dialog'), document.getElementById('notes-import-dialog'), document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
+for (const panel of [dialog, addictionDialog, routinesDialog, notesDialog, quickAdd, document.getElementById('weekly-review-dialog'), document.getElementById('note-delete-dialog'), document.getElementById('notes-import-dialog'), document.getElementById('command-dialog'), document.getElementById('restart-dialog')]) {
   panel.addEventListener('click', event => {
     if (event.target !== panel) return;
     const bounds = panel.getBoundingClientRect();

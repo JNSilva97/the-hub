@@ -28,6 +28,28 @@ async function sync(from, to) {
 
 test('Calendar workflows', { timeout: 150000 }, async t => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true }); t.after(() => browser.close());
+  await t.test('Weekly Review uses Lisbon weeks and reads Habits, Fitness and upcoming plans', async () => {
+    const cloudDocuments = data({ 'repeat-5': { version: 1, revision: 1, mode: 'custom', plans: ['training'], details: { training: { time: '19:30', note: '' } } } });
+    const account = cloudDocuments['account-a'];
+    account.habits = { '2026-11-16': { version: 1, cigarettes: 2, coffees: 3 }, '2026-11-13': { version: 1, coffees: 8 } };
+    account.fitness = { '2026-11-17': { version: 1, revision: 1, pushups: 60, abs: 50 } };
+    const { context, page, errors } = await make(browser, { width: 320, cloudDocuments });
+    try {
+      await start(page);
+      await page.getByRole('button', { name: 'Weekly Review', exact: true }).click();
+      const review = page.locator('#weekly-review-dialog');
+      await review.getByText('Both daily goals met on 1 day', { exact: false }).waitFor();
+      assert.deepEqual(await review.locator('#weekly-review-habits dd').allTextContents(), ['2', '3']);
+      assert.deepEqual(await review.locator('#weekly-review-fitness dd').allTextContents(), ['60', '50']);
+      assert.match(await review.locator('#weekly-review-plans').textContent(), /27 Nov.*19:30 Gym\/Muay Thai/);
+      await review.getByRole('button', { name: 'Last week', exact: true }).click();
+      assert.deepEqual(await review.locator('#weekly-review-habits dd').allTextContents(), ['0', '8']);
+      assert.equal(await review.evaluate(el => el.scrollWidth > el.clientWidth), false);
+      await review.getByRole('button', { name: 'Close Weekly Review' }).click();
+      assert.equal(await page.locator('#calendar-dialog').isVisible(), true);
+      assert.deepEqual(errors, []);
+    } finally { await context.close(); }
+  });
   for (const width of [320, 390, 1440]) await t.test(`weekly repeats, custom dates and free days at ${width}px`, async () => {
     const { context, page, errors } = await make(browser, { width, mobile: width < 700 });
     try {

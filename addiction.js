@@ -226,6 +226,7 @@ function createAddictionHelper(panel, health) {
       : account?.uid ? account.error || 'Connecting to your account… Counts are saved on this device until then.'
         : 'Signed out: cigarette and coffee counts are saved on this device.';
     element('status').textContent = notice;
+    document.dispatchEvent(new Event('hub:habitsreview'));
   }
 
   function fillSettings() {
@@ -395,20 +396,25 @@ function createAddictionHelper(panel, health) {
   window.addEventListener('online', () => { migrate(); if (panel.open) render(); });
   window.addEventListener('offline', () => { if (panel.open) render(); });
   document.addEventListener('visibilitychange', () => { if (panel.open && !document.hidden) render(); });
-  import('./habits-model.mjs?v=quick-add-plan-time-1').then(module => {
+  import('./habits-model.mjs?v=weekly-review-1').then(module => {
     model = module;
     render();
-    return import('./cloud-habits.js?v=quick-add-plan-time-1');
+    return import('./cloud-habits.js?v=weekly-review-1');
   }).then(module => {
     account = module.createHabitsAccount(() => {
       migrate();
       // Never overwrite fields while the settings form is open.
       if (!element('settings').open) fillSettings();
       if (panel.open) render();
+      else document.dispatchEvent(new Event('hub:habitsreview'));
     });
   }).catch(() => { if (!model) notice = 'Habits could not load. Reload the page to try again.'; render(); });
 
   return {
+    reviewData() {
+      if (!model || account?.uid && !synced()) return undefined;
+      try { return { days: currentDays(), local: !synced() }; } catch { return undefined; }
+    },
     open() {
       migrate();
       render();

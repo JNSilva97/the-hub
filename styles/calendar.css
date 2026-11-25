@@ -9,6 +9,7 @@
 .calendar-header .panel-eyebrow { font-size: 10px; }
 .calendar-content { padding: clamp(12px, 3vw, 24px); }
 .calendar-intro { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+.calendar-intro-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .calendar-dialog h3 { margin: 0; font: 600 23px var(--font-interface); }
 .calendar-navigation { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto; align-items: center; gap: 8px; margin-bottom: 12px; }
 .calendar-navigation h3 { text-align: center; font-size: 18px; }
@@ -19,6 +20,19 @@
 .calendar-day strong { font: 600 27px var(--font-interface); }
 .calendar-day small { color: #a9c5d8; font-size: 12px; line-height: 1.4; }
 .calendar-day[aria-current="date"] strong::after { content: ' ·'; color: #8decda; }
+.weekly-review { width: min(720px, calc(100% - 24px)); }
+.weekly-review-range { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.weekly-review-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.weekly-review-metrics section, .weekly-review-upcoming { padding: 14px; border: 1px solid #376987; border-top: 2px solid #78cbef; border-radius: 4px; background: #10283ddd; }
+.weekly-review-metrics h4 { margin: 0; color: #e8f5ff; font: 600 20px var(--font-interface); }
+.weekly-review-metrics dl { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 12px 0; }
+.weekly-review-metrics dt { color: #b9d4e8; font-size: 13px; }
+.weekly-review-metrics dd { margin: 3px 0 0; color: #e5f5ff; font: 600 28px var(--font-interface); font-variant-numeric: tabular-nums; }
+.weekly-review-metrics .calendar-note { margin-bottom: 0; }
+.weekly-review-upcoming { margin-top: 14px; }
+.weekly-review-upcoming ul { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.weekly-review-upcoming li { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 8px; border-left: 2px solid #73e2c3; background: #081b2c; overflow-wrap: anywhere; }
+.weekly-review-upcoming time { color: #a8d8ef; font-weight: 600; }
 .calendar-agenda-plans { display: grid; width: 100%; gap: 5px; }
 .calendar-dialog [data-kind="office"] { --calendar-accent: #78cbef; }
 .calendar-dialog [data-kind="training"] { --calendar-accent: #73e2c3; }
@@ -99,6 +113,7 @@
 .routine-plan-context p { margin: 3px 0; color: #b5d4e8; font-size: 13px; }
 .routine-plan-context > div:last-child { display: flex; gap: 8px; }
 @media (max-width: 700px) {
+  .weekly-review-metrics { grid-template-columns: minmax(0, 1fr); }
   .apps:has(> .app[data-icon="calendar"]) > [data-icon="settings"] { grid-column: auto; }
   .calendar-header { padding: 14px; }
   .calendar-intro { align-items: flex-start; flex-direction: column; }
