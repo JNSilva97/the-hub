@@ -119,9 +119,38 @@ for (const launcher of [routinesLauncher, document.getElementById('phone-routine
   });
 }
 const quickAdd = document.getElementById('quick-add-dialog');
-document.getElementById('quick-add-launch').addEventListener('click', () => { if (!quickAdd.open) quickAdd.showModal(); });
+const quickAddActions = document.getElementById('quick-add-actions');
+const quickPlanForm = document.getElementById('quick-add-plan-form');
+const quickPlanDate = document.getElementById('quick-add-plan-date');
+const quickPlanTime = document.getElementById('quick-add-plan-time');
+const quickPlanButton = document.getElementById('quick-add-plan');
+const quickAddDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Lisbon', dateStyle: 'short' });
+function showQuickPlan(show) {
+  quickAddActions.hidden = show;
+  quickPlanForm.hidden = !show;
+}
+document.getElementById('quick-add-launch').addEventListener('click', () => {
+  if (quickAdd.open) return;
+  showQuickPlan(false);
+  quickAdd.showModal();
+});
+quickPlanButton.disabled = !calendar;
+quickPlanButton.addEventListener('click', () => {
+  quickPlanDate.value = quickAddDate.format(new Date());
+  quickPlanTime.value = '';
+  showQuickPlan(true);
+  quickPlanDate.focus();
+});
+document.getElementById('quick-add-back').addEventListener('click', () => {
+  showQuickPlan(false);
+  quickPlanButton.focus();
+});
+quickPlanForm.addEventListener('submit', event => {
+  event.preventDefault();
+  quickAdd.close();
+  calendar?.openNewPlan(quickPlanDate.value, quickPlanTime.value);
+});
 for (const [action, run] of [
-  ['plan', calendar && (() => calendar.openNewPlan())],
   ['note', instantNotes && (() => { instantNotes.open(); document.getElementById('note-new').click(); })],
   ['habits', addiction && (() => addiction.open())]
 ]) {

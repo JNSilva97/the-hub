@@ -14,6 +14,7 @@ test('Phone workflows', { timeout: 90000 }, async t => {
       await ready(page);
       const quick = page.getByRole('button', { name: 'Quick Add', exact: true });
       await quick.click();
+      assert.deepEqual(await page.locator('#quick-add-actions button span').allTextContents(), ['Log habits', 'New note', 'Add plan']);
       await page.getByRole('button', { name: 'New note Notes', exact: true }).click();
       const editor = page.locator('#note-text');
       assert.equal(await editor.inputValue(), '');

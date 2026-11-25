@@ -395,10 +395,10 @@ function createAddictionHelper(panel, health) {
   window.addEventListener('online', () => { migrate(); if (panel.open) render(); });
   window.addEventListener('offline', () => { if (panel.open) render(); });
   document.addEventListener('visibilitychange', () => { if (panel.open && !document.hidden) render(); });
-  import('./habits-model.mjs?v=quick-add-habits-1').then(module => {
+  import('./habits-model.mjs?v=quick-add-plan-time-1').then(module => {
     model = module;
     render();
-    return import('./cloud-habits.js?v=quick-add-habits-1');
+    return import('./cloud-habits.js?v=quick-add-plan-time-1');
   }).then(module => {
     account = module.createHabitsAccount(() => {
       migrate();

@@ -178,11 +178,21 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       await close(second.page);
       await second.page.getByRole('button', { name: 'Quick Add', exact: true }).click();
       await second.page.getByRole('button', { name: /Add plan Calendar/ }).click();
+      const quickPlan = second.page.locator('#quick-add-plan-form');
+      assert.equal(await quickPlan.getByLabel('Date', { exact: true }).inputValue(), '2026-11-20');
+      await quickPlan.getByLabel('Date', { exact: true }).fill('2026-11-22');
+      await quickPlan.getByLabel('Time (Lisbon, optional)').fill('16:30');
+      await quickPlan.getByRole('button', { name: 'Continue', exact: true }).click();
       const name = second.page.locator('#calendar-custom-list').getByLabel('Plan name');
       await name.waitFor();
       assert.equal(await name.evaluate(el => el === document.activeElement), true);
-      assert.equal(await second.page.locator('#calendar-week [aria-pressed="true"]').getAttribute('data-day'), '2026-11-20');
-      await second.page.locator('#calendar-cancel').click();
+      const pickedDay = second.page.locator('#calendar-week [aria-pressed="true"]');
+      assert.equal(await pickedDay.getAttribute('data-day'), '2026-11-22');
+      assert.equal(await second.page.locator('#calendar-custom-list').getByLabel('Time (Lisbon, optional)').inputValue(), '16:30');
+      await name.fill('Quick plan');
+      await second.page.locator('#calendar-save').click();
+      await pickedDay.getByText('Quick plan', { exact: true }).waitFor();
+      assert.equal(await pickedDay.locator('time').textContent(), '16:30');
       assert.deepEqual(first.errors.concat(second.errors), []);
     } finally { await first.context.close(); await second.context.close(); }
   });

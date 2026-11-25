@@ -6,7 +6,7 @@ function createCalendar(panel, openChecklist) {
   let draft = [], details = {}, customPlans = [], baseline, revision = 0, lastDay;
   let hourly = false;
   let fullDay = false;
-  let quickPlanPending = false;
+  let quickPlanPending;
   let checklistProgress = [], nextChecklist;
   const lisbonTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   const snapshot = () => JSON.stringify([draft, model?.planTypes.map(({ id }) => details[id]) ?? [], customPlans]);
@@ -273,6 +273,7 @@ function createCalendar(panel, openChecklist) {
   }
   function navigate(run) {
     if (!canNavigate()) return;
+    quickPlanPending = undefined;
     notice = ''; failed = false; run(); render();
   }
   function canNavigate() {
@@ -338,22 +339,23 @@ function createCalendar(panel, openChecklist) {
   }
   function tryQuickPlan() {
     if (!quickPlanPending || !panel.open || !account?.canWrite) return;
-    quickPlanPending = false;
+    const { time } = quickPlanPending;
+    quickPlanPending = undefined;
     if (customPlans.length >= model.maxCustomPlans) {
       el('event-limit').scrollIntoView({ block: 'center' });
       return;
     }
-    addCustomPlan();
+    addCustomPlan(time);
   }
-  function openNewPlan() {
+  function openNewPlan(day, time) {
     if (panel.open || !canNavigate()) return;
     fullDay = false;
     editingWeekly = false;
-    quickPlanPending = true;
-    open(model?.lisbonDay());
+    quickPlanPending = { day, time };
+    open(day);
     tryQuickPlan();
   }
-  panel.addEventListener('close', () => { if (!panel.open) quickPlanPending = false; });
+  panel.addEventListener('close', () => { if (!panel.open) quickPlanPending = undefined; });
   el('add-plan').addEventListener('click', () => addCustomPlan());
   el('full-day').addEventListener('click', () => {
     if (!model || panel.open || !canNavigate()) return;
@@ -407,8 +409,9 @@ function createCalendar(panel, openChecklist) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=quick-add-habits-1').then(module => {
-    model = module; selected = anchor = lastDay = model.lisbonDay();
+  import('./calendar-model.mjs?v=quick-add-plan-time-1').then(module => {
+    model = module; lastDay = model.lisbonDay();
+    selected = anchor = model.validDay(quickPlanPending?.day) ? quickPlanPending.day : lastDay;
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
       const check = node('input', ''); check.type = 'checkbox'; check.id = `calendar-plan-${plan.id}`; check.value = plan.id;
@@ -440,10 +443,13 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=quick-add-habits-1');
+    return import('./cloud-calendar.js?v=quick-add-plan-time-1');
   }).then(module => {
     const changed = () => {
-      if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }
+      if (account?.uid !== owner) {
+        owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false;
+        selected = anchor = model.validDay(quickPlanPending?.day) ? quickPlanPending.day : model.lisbonDay();
+      }
       if (!dirty() && !busy) loadDraft();
       render(); emit();
       tryQuickPlan();
