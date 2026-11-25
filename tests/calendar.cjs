@@ -89,7 +89,12 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       await first.page.getByRole('button', { name: 'Open Office Preparation', exact: true }).click();
       assert.equal(await first.page.locator('#routine-name').textContent(), 'Office Preparation');
       assert.equal(await first.page.locator('#calendar-dialog').isVisible(), false);
-      await second.page.getByRole('button', { name: 'Open Muay Thai Preparation', exact: true }).click();
+      await close(second.page);
+      await second.page.getByRole('button', { name: 'Today’s schedule', exact: true }).click();
+      const brief = second.page.locator('#calendar-today-brief');
+      assert.equal(await brief.locator('#calendar-next-plan').textContent(), '19:30 · Gym/Muay Thai');
+      await brief.getByText('Muay Thai Preparation · 1 item left', { exact: true }).waitFor();
+      await brief.getByRole('button', { name: 'Open Muay Thai Preparation', exact: true }).click();
       assert.equal(await second.page.locator('#routine-name').textContent(), 'Muay Thai Preparation');
       assert.equal(await second.page.locator('#calendar-dialog').isVisible(), false);
       await second.page.locator('#routine-plan-context:not([hidden])').waitFor();

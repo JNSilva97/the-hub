@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=calendar-home-schedule-1';
-import { readFitnessDay, adjustFitnessDay } from './fitness-model.mjs?v=calendar-home-schedule-1';
+import { cloudWorkspace } from './cloud.js?v=calendar-today-1';
+import { readFitnessDay, adjustFitnessDay } from './fitness-model.mjs?v=calendar-today-1';
 
 export function createFitnessAccount(onChange) {
   let uid, unsubscribe, generation = 0, ready = false, cached = true, pending = false, error = '';

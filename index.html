@@ -11,20 +11,20 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/shell.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/core.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/access.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/panels.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/routines.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/notes.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/health.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/library.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/calendar.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/fitness.css?v=calendar-home-schedule-1">
-  <link rel="stylesheet" href="styles/motion.css?v=calendar-home-schedule-1">
+  <link rel="stylesheet" href="styles/base.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/shell.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/core.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/access.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/panels.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/routines.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/notes.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/health.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/library.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=calendar-today-1">
+  <link rel="stylesheet" href="styles/motion.css?v=calendar-today-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -276,6 +276,10 @@
       <div id="calendar-week" class="calendar-week" role="group" aria-label="Week days"></div>
       <section class="calendar-schedule" aria-labelledby="calendar-schedule-title">
         <div class="calendar-schedule-header"><h3 id="calendar-schedule-title">Day schedule</h3><button id="calendar-hourly-toggle" type="button" aria-expanded="false" aria-controls="calendar-hourly">Show hours</button><button id="calendar-back-to-week" type="button" hidden>Back to week</button></div>
+        <section id="calendar-today-brief" class="calendar-today-brief" aria-labelledby="calendar-next-title" hidden>
+          <div><h4 id="calendar-next-title">Up next</h4><p id="calendar-next-plan"></p><p id="calendar-next-preparation" hidden></p><p id="calendar-next-feedback" role="status" hidden></p></div>
+          <button id="calendar-next-checklist" type="button" hidden>Open checklist</button>
+        </section>
         <div id="calendar-hourly" hidden>
           <div class="calendar-hour-jumps" role="group" aria-label="Jump to an hour">
             <button type="button" data-calendar-jump="00:00">00:00</button><button type="button" data-calendar-jump="06:00">06:00</button><button type="button" data-calendar-jump="12:00">12:00</button><button type="button" data-calendar-jump="18:00">18:00</button>
@@ -437,7 +441,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.25.6</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.25.7</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -596,18 +600,18 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=calendar-home-schedule-1"></script>
-  <script defer src="notes.js?v=calendar-home-schedule-1"></script>
-  <script defer src="checklist-picker.js?v=calendar-home-schedule-1"></script>
-  <script defer src="health.js?v=calendar-home-schedule-1"></script>
-  <script defer src="addiction.js?v=calendar-home-schedule-1"></script>
-  <script defer src="calendar.js?v=calendar-home-schedule-1"></script>
-  <script defer src="fitness.js?v=calendar-home-schedule-1"></script>
-  <script defer src="library.js?v=calendar-home-schedule-1"></script>
-  <script defer src="interface.js?v=calendar-home-schedule-1"></script>
-  <script defer src="interface-sound.js?v=calendar-home-schedule-1"></script>
-  <script defer src="pointer-effects.js?v=calendar-home-schedule-1"></script>
-  <script defer src="experience.js?v=calendar-home-schedule-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=calendar-home-schedule-1"></script>
+  <script defer src="core-progress.js?v=calendar-today-1"></script>
+  <script defer src="notes.js?v=calendar-today-1"></script>
+  <script defer src="checklist-picker.js?v=calendar-today-1"></script>
+  <script defer src="health.js?v=calendar-today-1"></script>
+  <script defer src="addiction.js?v=calendar-today-1"></script>
+  <script defer src="calendar.js?v=calendar-today-1"></script>
+  <script defer src="fitness.js?v=calendar-today-1"></script>
+  <script defer src="library.js?v=calendar-today-1"></script>
+  <script defer src="interface.js?v=calendar-today-1"></script>
+  <script defer src="interface-sound.js?v=calendar-today-1"></script>
+  <script defer src="pointer-effects.js?v=calendar-today-1"></script>
+  <script defer src="experience.js?v=calendar-today-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=calendar-today-1"></script>
 </body>
 </html>

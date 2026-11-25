@@ -28,6 +28,12 @@
 .calendar-schedule { margin-bottom: 24px; padding: 12px; border: 1px solid #345977; border-top-color: #70c9ed; border-radius: 4px; background: linear-gradient(120deg, #122c4385, #081321c9 62%); box-shadow: inset 0 1px #8fddff26; }
 .calendar-schedule-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .calendar-schedule-header h3 { font-size: 19px; }
+.calendar-today-brief { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 12px; padding: 14px; border: 1px solid #376987; border-left: 3px solid #78cbef; background: #10283ddd; overflow-wrap: anywhere; }
+.calendar-today-brief > div { min-width: 0; }
+.calendar-today-brief h4 { margin: 0; color: #bce6fa; font: 600 14px var(--font-interface); }
+.calendar-today-brief p { margin: 5px 0 0; }
+#calendar-next-plan { color: #eef8ff; font: 600 21px var(--font-interface); }
+#calendar-next-preparation, #calendar-next-feedback { color: #c2d9eb; font-size: 14px; }
 .calendar-hour-jumps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
 .calendar-dialog .calendar-hour-jumps button { padding-inline: 4px; color: #bce6fa; font-variant-numeric: tabular-nums; background: #0b1e30d6; }
 .calendar-hour-list { position: relative; max-height: min(19rem, 47dvh); overflow: auto; margin: 12px 0 0; padding: 0; list-style: none; border: 1px solid #294e68; border-radius: 4px; background: #081522b5; }

@@ -6,6 +6,8 @@ function createCalendar(panel, openChecklist) {
   let draft = [], details = {}, customPlans = [], baseline, revision = 0, lastDay;
   let hourly = false;
   let fullDay = false;
+  let checklistProgress = [], nextChecklist;
+  const lisbonTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   const snapshot = () => JSON.stringify([draft, model?.planTypes.map(({ id }) => details[id]) ?? [], customPlans]);
   const dirty = () => baseline !== undefined && snapshot() !== baseline;
   const id = () => editingWeekly ? `repeat-${model.weekday(selected)}` : selected;
@@ -56,6 +58,30 @@ function createCalendar(panel, openChecklist) {
         .map(plan => ({ id: plan.id, title: plan.name, ...details[plan.id] })),
       ...events
     ].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+  }
+  function renderToday() {
+    const brief = el('today-brief');
+    brief.hidden = !fullDay || selected !== model?.lisbonDay();
+    if (brief.hidden) return;
+    const ready = account?.uid && account.ready;
+    const plans = ready ? scheduledPlans(draft, details, customPlans) : [];
+    const now = lisbonTime.format(new Date());
+    const next = plans.find(plan => plan.time && plan.time >= now) ?? plans.find(plan => !plan.time);
+    const title = next?.time ? `${next.time} · ${next.title}` : next?.title;
+    el('next-plan').textContent = title ?? (!account?.uid ? 'Sign in to see your plans.' : !ready
+      ? 'Your plans are unavailable right now.' : plans.length ? 'No more plans today.' : 'No plans today.');
+    const checklist = next?.id && checklistProgress.find(item => model.routinePlan(item.name) === next.id);
+    const remaining = checklist ? Math.max(0, checklist.total - checklist.done) : 0;
+    const preparation = el('next-preparation');
+    preparation.hidden = !checklist;
+    preparation.textContent = checklist ? `${checklist.name} · ${remaining ? `${remaining} ${remaining === 1 ? 'item' : 'items'} left` : 'Ready'}` : '';
+    const planId = checklist ? next.id : undefined;
+    if (planId !== nextChecklist) el('next-feedback').hidden = true;
+    nextChecklist = planId;
+    const button = el('next-checklist');
+    button.hidden = !nextChecklist;
+    button.disabled = busy;
+    button.setAttribute('aria-label', checklist ? `Open ${checklist.name}` : 'Open checklist');
   }
   function renderHourly(ready, locked) {
     const list = el('hour-list');
@@ -216,6 +242,7 @@ function createCalendar(panel, openChecklist) {
     el('hourly-toggle').setAttribute('aria-expanded', String(hourly));
     el('hourly-toggle').textContent = hourly ? 'Hide hours' : 'Show hours';
     if (hourly || fullDay) renderHourly(ready, locked);
+    renderToday();
     el('mode-weekly').textContent = `Every ${format(selected, { weekday: 'long' })}`;
     const source = model.plansForDay(records(), selected).source;
     el('source').textContent = editingWeekly ? 'Repeat these plans on this weekday. Custom dates keep their own plans.'
@@ -313,6 +340,7 @@ function createCalendar(panel, openChecklist) {
     if (!model || panel.open || !canNavigate()) return;
     selected = anchor = model.lisbonDay();
     editingWeekly = false;
+    el('next-feedback').hidden = true;
     loadDraft();
     fullDay = true;
     open();
@@ -320,6 +348,23 @@ function createCalendar(panel, openChecklist) {
     el('back-to-week').focus({ preventScroll: true });
   });
   el('back-to-week').addEventListener('click', leaveFullDay);
+  el('next-checklist').addEventListener('click', () => {
+    if (!nextChecklist) return;
+    const plan = nextChecklist;
+    if (!canNavigate()) {
+      leaveFullDay();
+      el('save').focus();
+      return;
+    }
+    if (!openChecklist(plan, () => { leaveFullDay(); panel.close(); })) {
+      el('next-feedback').hidden = false;
+      el('next-feedback').textContent = 'This checklist is unavailable. Try opening Goals.';
+    }
+  });
+  document.addEventListener('hub:progress', event => {
+    checklistProgress = event.detail;
+    renderToday();
+  });
   el('hourly-toggle').addEventListener('click', () => {
     if (!model) return;
     hourly = !hourly;
@@ -339,10 +384,11 @@ function createCalendar(panel, openChecklist) {
     if (!model) return;
     const day = model.lisbonDay();
     if (lastDay !== day) { lastDay = day; render(); emit(); }
+    else if (fullDay) renderToday();
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=calendar-home-schedule-1').then(module => {
+  import('./calendar-model.mjs?v=calendar-today-1').then(module => {
     model = module; selected = anchor = lastDay = model.lisbonDay();
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
       const label = node('label', '', 'calendar-plan-option');
@@ -375,7 +421,7 @@ function createCalendar(panel, openChecklist) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=calendar-home-schedule-1');
+    return import('./cloud-calendar.js?v=calendar-today-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) { owner = account?.uid; draft = []; details = {}; customPlans = []; baseline = snapshot(); busy = false; notice = ''; failed = false; editingWeekly = false; selected = anchor = model.lisbonDay(); }
