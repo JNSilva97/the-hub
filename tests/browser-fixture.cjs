@@ -14,6 +14,7 @@ publicFiles.push('addiction.js', 'styles/addiction.css', 'habits-model.mjs', 'cl
 publicFiles.push('library-artwork.mjs', 'library.js', 'library-model.mjs', 'cloud-library.js', 'styles/library.css');
 publicFiles.push('fitness.js', 'fitness-model.mjs', 'cloud-fitness.js', 'styles/fitness.css');
 publicFiles.push('calendar.js', 'calendar-model.mjs', 'cloud-calendar.js', 'styles/calendar.css');
+publicFiles.push('finance.js', 'finance-model.mjs', 'cloud-finance.js', 'styles/finance.css');
 
 const localAudio = ['startup', 'open', 'close'].map(kind => 'assets/audio/mixkit-' + kind + '.mp3')
   .filter(filename => existsSync(path.join(root, filename)));
@@ -26,6 +27,7 @@ async function fixture(browser, options = {}) {
   if (options.firebase) await context.addInitScript(({ documents, signedIn, fromCache }) => {
     window.__hubFirebase = {
       docs: documents,
+      financeListeners: new Set(),
       user: signedIn ? { uid: 'account-a', email: 'test@example.invalid' } : null,
       writes: [], held: [], imports: 0, rejectWrites: false, holdWrites: false, fromCache, noteListeners: new Set(), healthListeners: new Set(), habitListeners: new Set(), libraryListeners: new Set(), fitnessListeners: new Set(), calendarListeners: new Set(), calendarWrites: [], habitWrites: [], healthWrites: [], noteWrites: [], heldNotes: [],
       publish() {
@@ -55,6 +57,10 @@ async function fixture(browser, options = {}) {
         for (const listener of this.calendarListeners) {
           if (this.calendarDenied) { listener.failed(new Error('Missing Calendar rules.')); continue; }
           const records = Object.entries(this.docs[listener.uid]?.calendar || {});
+          listener.next({ empty: !records.length, metadata: { fromCache: this.fromCache, hasPendingWrites: false }, docs: records.map(([id, data]) => ({ id, data: () => structuredClone(data) })) });
+        }
+        for (const listener of this.financeListeners) {
+          const records = Object.entries(this.docs[listener.uid]?.finance || {});
           listener.next({ empty: !records.length, metadata: { fromCache: this.fromCache, hasPendingWrites: false }, docs: records.map(([id, data]) => ({ id, data: () => structuredClone(data) })) });
         }
         for (const listener of this.noteListeners) {

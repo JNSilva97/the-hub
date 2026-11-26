@@ -1,0 +1,90 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { chromium } = require('playwright');
+const { fixture, ready, demo } = require('./browser-fixture.cjs');
+
+test('Finance records pending spending, processes it once, and exports the audit history', { timeout: 45000 }, async t => {
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  t.after(() => browser.close());
+  const data = { routines: JSON.parse(demo), progress: { checks: {}, optional: {} } };
+  const { context, page, errors } = await fixture(browser, {
+    width: 320, mobile: true, motion: 'reduce', firebase: true,
+    cloudDocuments: { 'account-a': data, 'account-b': data }
+  });
+  t.after(() => context.close());
+  await page.clock.setFixedTime(new Date('2026-11-25T19:30:00Z'));
+  await ready(page);
+  await page.locator('[data-icon="finance"]').click();
+  const panel = page.locator('#finance-dialog');
+  const editor = page.locator('#finance-editor');
+  const bank = panel.locator('.finance-metric').filter({ has: page.getByRole('heading', { name: 'Bank · Authorized balance', exact: true }) });
+  await bank.getByRole('button', { name: 'Confirm balance', exact: true }).click();
+  await editor.getByLabel('Book balance (€)', { exact: true }).fill('100');
+  await editor.getByLabel('Authorized balance (€)').fill('100');
+  await editor.getByRole('button', { name: 'Review difference' }).click();
+  await editor.getByRole('button', { name: 'Confirm balances', exact: true }).click();
+  await editor.waitFor({ state: 'hidden' });
+
+  await panel.getByRole('button', { name: 'Add movement' }).click();
+  await editor.getByLabel('Quick entry').fill('-3,57 Uber, Bank, pendente');
+  await editor.getByRole('button', { name: 'Review', exact: true }).click();
+  assert.equal(await editor.getByLabel('Status').inputValue(), 'pending');
+  await editor.getByRole('button', { name: 'Save movement' }).click();
+  await editor.waitFor({ state: 'hidden' });
+  assert.match(await bank.locator('strong').textContent(), /96,43/);
+  assert.match(await bank.getByText('Book balance', { exact: false }).textContent(), /100,00/);
+  await panel.getByRole('button', { name: 'Activity', exact: true }).click();
+  await panel.getByRole('button', { name: 'Process', exact: true }).click();
+  await editor.getByRole('button', { name: 'Process movement', exact: true }).click();
+  await editor.waitFor({ state: 'hidden' });
+  assert.equal(await panel.locator('.finance-row').filter({ hasText: 'Uber' }).count(), 1);
+  await panel.getByRole('button', { name: 'Overview' }).click();
+  assert.match(await bank.locator('strong').textContent(), /96,43/);
+  assert.match(await bank.getByText('Book balance', { exact: false }).textContent(), /96,43/);
+
+  await panel.getByRole('button', { name: 'Add movement' }).click();
+  await editor.getByLabel('Quick entry').fill('-30 Jantar, Bank, Bea deve-me 1/3');
+  await editor.getByRole('button', { name: 'Review', exact: true }).click();
+  await editor.getByRole('button', { name: 'Save movement' }).click();
+  await editor.waitFor({ state: 'hidden' });
+  await panel.getByRole('button', { name: 'To receive', exact: true }).click();
+  await panel.getByRole('button', { name: 'Record payment', exact: true }).click();
+  await editor.getByLabel('Amount received (€)').fill('4');
+  await editor.getByRole('button', { name: 'Save payment' }).click();
+  await editor.waitFor({ state: 'hidden' });
+  assert.match(await panel.locator('.finance-row').filter({ hasText: 'Bea' }).locator('.finance-row-value').textContent(), /6,00/);
+  await panel.getByRole('button', { name: 'Subscriptions', exact: true }).click();
+  await panel.getByRole('button', { name: 'Add subscription', exact: true }).click();
+  await editor.getByLabel('Name', { exact: true }).fill('Test subscription');
+  await editor.getByLabel('Amount (€)', { exact: true }).fill('3,57');
+  await editor.getByRole('button', { name: 'Save subscription', exact: true }).click();
+  await editor.waitFor({ state: 'hidden' });
+  await panel.getByRole('button', { name: 'Record charge', exact: true }).click();
+  const movementSelect = editor.getByLabel('Movement', { exact: true });
+  await movementSelect.selectOption({ label: '2026-11-25 · Uber' });
+  await editor.getByRole('button', { name: 'Save charge', exact: true }).click();
+  await editor.waitFor({ state: 'hidden' });
+  assert.match(await panel.locator('.finance-row').filter({ hasText: 'Test subscription' }).textContent(), /Next 2026-12-25/);
+  await panel.getByRole('button', { name: 'Payment history', exact: true }).click();
+  assert.match(await editor.getByText('Paid 2026-11-25', { exact: false }).textContent(), /3,57/);
+  await editor.getByRole('button', { name: 'Close history', exact: true }).click();
+  await panel.getByRole('button', { name: 'Activity', exact: true }).click();
+  assert.equal(await panel.locator('.finance-row').count(), 3);
+
+  const download = page.waitForEvent('download');
+  await panel.getByRole('button', { name: 'Export history' }).click();
+  const file = await download;
+  assert.equal(file.suggestedFilename(), 'the-hub-finance-2026-11-25.json');
+  const payload = await page.evaluate(() => JSON.parse(window.__hubFirebase.docs['account-a'].finance.ledger.payload));
+  const uber = payload.find(event => event.collection === 'movements' && event.value.description === 'Uber');
+  assert.deepEqual(payload.filter(event => event.id === uber.id).map(event => event.value.status), ['pending', 'processed']);
+  assert.equal(await panel.evaluate(el => el.scrollWidth > el.clientWidth), false);
+  await page.evaluate(() => {
+    const service = window.__hubFirebase;
+    service.user = { uid: 'account-b', email: 'other@example.invalid' };
+    service.authListener(service.user);
+  });
+  await bank.getByRole('button', { name: 'Confirm balance', exact: true }).waitFor();
+  assert.equal(await bank.locator('strong').textContent(), '—');
+  assert.deepEqual(errors, []);
+});

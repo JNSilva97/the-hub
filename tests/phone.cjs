@@ -32,14 +32,13 @@ test('Phone workflows', { timeout: 90000 }, async t => {
     } finally { await context.close(); }
   });
 
-  await t.test('phone home exposes working apps in thumb reach and folds unfinished spaces away', async () => {
+  await t.test('phone home exposes all modules in thumb reach', async () => {
     for (const width of [320, 390]) {
       const { context, page, errors } = await fixture(browser, { width, height: 640, motion: 'reduce' });
       try {
         await ready(page);
-        assert.equal(await page.locator('.apps > .app').count(), 9);
-        assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), false);
-        assert.equal(await page.locator('.future-grid .app').count(), 1);
+        assert.equal(await page.locator('.apps > .app').count(), 10);
+        assert.equal(await page.locator('#future-spaces').isVisible(), false);
         assert.equal(await page.locator('[data-icon="projects"]').count(), 0);
         assert.equal(await page.locator('.phone-actions').isVisible(), true);
         assert.equal(await page.locator('.phone-actions button').first().textContent(), 'Goals');
@@ -56,12 +55,9 @@ test('Phone workflows', { timeout: 90000 }, async t => {
         assert.equal(await page.locator('#routine-name').textContent(), 'Workday');
         assert.equal(await page.locator('.check-row input:checked').getAttribute('data-check'), checked);
         await page.getByRole('button', { name: 'Close Goals', exact: true }).click();
-        await page.locator('#future-spaces > summary').click();
-        assert.equal(await page.locator('#future-spaces').evaluate(el => el.open), true);
-        assert.equal(await page.locator('.future-grid .app-meta').first().textContent(), 'MODULE / 05 · COMING SOON');
         await page.locator('[data-icon="finance"]').click();
-        assert.match(await page.locator('#app-description').textContent(), /coming later/);
-        await page.locator('#app-dialog .close').click();
+        assert.equal(await page.locator('#finance-dialog').isVisible(), true);
+        await page.getByRole('button', { name: 'Close Finance' }).click();
         await page.locator('#phone-health').click();
         assert.equal(await page.locator('#health-content').isVisible(), true);
         await page.getByRole('button', { name: 'Close Health' }).click();
@@ -91,7 +87,7 @@ test('Phone workflows', { timeout: 90000 }, async t => {
       await page.locator('#command-search').fill('Projects');
       assert.equal(await page.locator('#command-results button').count(), 0);
       await page.locator('#command-search').fill('Finance'); await page.keyboard.press('Enter');
-      assert.match(await page.locator('#app-description').textContent(), /coming later/);
+      assert.equal(await page.locator('#finance-dialog').isVisible(), true);
       assert.equal(await page.locator('#interface-settings').isVisible(), false);
       assert.deepEqual(errors, []);
     } finally { await context.close(); }

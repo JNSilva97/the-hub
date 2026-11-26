@@ -51,7 +51,7 @@ test('Account Health', { timeout: 150000 }, async t => {
       await ready(page); await openRoutines(page);
       const dose = page.locator(`[data-dose="${firstId}"]`);
       await dose.waitFor();
-      assert.deepEqual(await page.locator('#routine-content .check-section:not([data-optional]) .check-row:visible > span').evaluateAll(spans => spans.map(span => span.querySelector('strong')?.textContent ?? span.textContent)), [
+      assert.deepEqual(await page.locator('#routine-content .check-section:not([data-optional]) :is(.check-row, .minoxidil-control):visible > span').evaluateAll(spans => spans.map(span => span.querySelector('strong')?.textContent ?? span.textContent)), [
         'Wash face', 'Minoxidil', 'Alarm', 'Charge phone', 'Charge watch', 'Take ValdispertNoite', 'Underwear', 'Socks', 'Pants', 'Shirt', 'Shoes'
       ]);
       assert.equal(await page.locator('#routine-progress-label').textContent(), '0 of 11 ready');

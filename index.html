@@ -11,20 +11,21 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/shell.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/core.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/access.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/panels.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/routines.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/notes.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/health.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/library.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/calendar.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/fitness.css?v=weekly-review-1">
-  <link rel="stylesheet" href="styles/motion.css?v=weekly-review-1">
+  <link rel="stylesheet" href="styles/base.css?v=finance-1">
+  <link rel="stylesheet" href="styles/shell.css?v=finance-1">
+  <link rel="stylesheet" href="styles/core.css?v=finance-1">
+  <link rel="stylesheet" href="styles/access.css?v=finance-1">
+  <link rel="stylesheet" href="styles/panels.css?v=finance-1">
+  <link rel="stylesheet" href="styles/routines.css?v=finance-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=finance-1">
+  <link rel="stylesheet" href="styles/notes.css?v=finance-1">
+  <link rel="stylesheet" href="styles/health.css?v=finance-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=finance-1">
+  <link rel="stylesheet" href="styles/library.css?v=finance-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=finance-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=finance-1">
+  <link rel="stylesheet" href="styles/finance.css?v=finance-1">
+  <link rel="stylesheet" href="styles/motion.css?v=finance-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -300,6 +301,28 @@
       <div class="calendar-feedback"><p id="calendar-status" role="status">Connecting to Calendar…</p><button id="calendar-retry" type="button" hidden>Retry</button></div>
     </div>
   </dialog>
+  <dialog id="finance-dialog" class="finance-dialog" aria-labelledby="finance-title">
+    <header class="finance-header"><div><div class="panel-eyebrow">THE HUB / MODULE 05</div><h2 id="finance-title">Finance</h2></div><form method="dialog"><button id="finance-close" type="submit" aria-label="Close Finance">×</button></form></header>
+    <div class="finance-body">
+      <p id="finance-status" class="finance-muted" role="status"></p>
+      <div class="finance-actions"><button id="finance-signin" type="button" hidden>Sign in</button><button id="finance-retry" type="button" hidden>Retry sync</button></div>
+      <div id="finance-content" hidden>
+        <div class="finance-actions finance-toolbar"><button type="button" id="finance-add" class="finance-primary">Add movement</button><button type="button" id="finance-transfer">Transfer</button><button type="button" id="finance-export">Export history</button></div>
+        <nav class="finance-actions finance-nav" aria-label="Finance views">
+          <button type="button" data-finance-view="overview">Overview</button><button type="button" data-finance-view="activity">Activity</button><button type="button" data-finance-view="receivables">To receive</button><button type="button" data-finance-view="subscriptions">Subscriptions</button>
+        </nav>
+        <div id="finance-view"></div>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="finance-editor" class="finance-dialog finance-editor" aria-labelledby="finance-editor-title">
+    <header class="finance-header"><h2 id="finance-editor-title"></h2><button id="finance-editor-close" type="button" aria-label="Close Finance editor">×</button></header>
+    <form id="finance-form" class="finance-body">
+      <div id="finance-fields" class="finance-fields"></div>
+      <p id="finance-form-status" role="status"></p>
+      <div class="finance-actions"><button id="finance-save" class="finance-primary" type="submit">Save</button><button id="finance-cancel" type="button">Cancel</button></div>
+    </form>
+  </dialog>
   <dialog id="weekly-review-dialog" class="calendar-dialog weekly-review" aria-labelledby="weekly-review-title">
     <div class="calendar-header"><div class="calendar-identity"><svg aria-hidden="true"><use href="#calendar"/></svg><h2 id="weekly-review-title">Weekly Review</h2></div><form method="dialog"><button class="routine-exit" aria-label="Close Weekly Review" autofocus>×</button></form></div>
     <div class="calendar-content">
@@ -455,7 +478,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.25.11</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.25.12</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -627,18 +650,19 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=weekly-review-1"></script>
-  <script defer src="notes.js?v=weekly-review-1"></script>
-  <script defer src="checklist-picker.js?v=weekly-review-1"></script>
-  <script defer src="health.js?v=weekly-review-1"></script>
-  <script defer src="addiction.js?v=weekly-review-1"></script>
-  <script defer src="calendar.js?v=weekly-review-1"></script>
-  <script defer src="fitness.js?v=weekly-review-1"></script>
-  <script defer src="library.js?v=weekly-review-1"></script>
-  <script defer src="interface.js?v=weekly-review-1"></script>
-  <script defer src="interface-sound.js?v=weekly-review-1"></script>
-  <script defer src="pointer-effects.js?v=weekly-review-1"></script>
-  <script defer src="experience.js?v=weekly-review-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=weekly-review-1"></script>
+  <script defer src="core-progress.js?v=finance-1"></script>
+  <script defer src="notes.js?v=finance-1"></script>
+  <script defer src="checklist-picker.js?v=finance-1"></script>
+  <script defer src="health.js?v=finance-1"></script>
+  <script defer src="addiction.js?v=finance-1"></script>
+  <script defer src="calendar.js?v=finance-1"></script>
+  <script defer src="fitness.js?v=finance-1"></script>
+  <script defer src="finance.js?v=finance-1"></script>
+  <script defer src="library.js?v=finance-1"></script>
+  <script defer src="interface.js?v=finance-1"></script>
+  <script defer src="interface-sound.js?v=finance-1"></script>
+  <script defer src="pointer-effects.js?v=finance-1"></script>
+  <script defer src="experience.js?v=finance-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=finance-1"></script>
 </body>
 </html>

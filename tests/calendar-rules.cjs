@@ -80,6 +80,17 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
     }));
     const concurrent = (await getDoc(fitness(a))).data();
     if (concurrent.pushups !== 60 || concurrent.revision !== 4) throw new Error('Concurrent Fitness sets were lost.');
+    const finance = (db, uid = 'account-a', id = 'ledger') => doc(db, 'users', uid, 'finance', id);
+    const ledger = { version: 1, revision: 1, payload: '[]' };
+    await assertSucceeds(setDoc(finance(a), ledger));
+    await assertFails(getDoc(finance(b)));
+    await assertFails(getDoc(finance(guest)));
+    await assertFails(setDoc(finance(b), { ...ledger, revision: 2 }));
+    await assertFails(setDoc(finance(a, 'account-a', 'other'), ledger));
+    await assertFails(setDoc(finance(a), ledger));
+    await assertFails(setDoc(finance(a), { ...ledger, revision: 2, payload: {} }));
+    await assertSucceeds(setDoc(finance(a), { ...ledger, revision: 2 }));
+    await assertFails(deleteDoc(finance(a)));
     const library = (db, uid = 'account-a') => doc(db, 'users', uid, 'library', 'entry-' + 'a'.repeat(32));
     const title = { version: 1, revision: 1, kind: 'series', title: 'Public fixture title', status: 'active', category: '', notes: '', platform: '', rating: 0, progress: 0, season: 1, episode: 2, updatedAt: 100 };
     await assertSucceeds(setDoc(library(a), title));

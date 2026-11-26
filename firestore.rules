@@ -75,6 +75,17 @@ service cloud.firestore {
       allow create: if owner(uid) && validEntry() && request.resource.data.revision == 1;
       allow update: if owner(uid) && validEntry() && request.resource.data.revision == resource.data.revision + 1;
     }
+    match /users/{uid}/finance/{id} {
+      function validFinance() {
+        let data = request.resource.data;
+        return id == 'ledger' && data.keys().hasOnly(['version', 'revision', 'payload'])
+          && data.version == 1 && data.revision is int && data.revision > 0 && data.revision <= 1000000000
+          && data.payload is string && data.payload.size() > 0 && data.payload.size() <= 450000;
+      }
+      allow read: if owner(uid);
+      allow create: if owner(uid) && validFinance() && request.resource.data.revision == 1;
+      allow update: if owner(uid) && validFinance() && request.resource.data.revision == resource.data.revision + 1;
+    }
     match /users/{uid}/fitness/{id} {
       function validFitness() {
         let data = request.resource.data;

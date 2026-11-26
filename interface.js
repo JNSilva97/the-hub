@@ -12,6 +12,7 @@ const calendar = typeof createCalendar === 'function'
     () => ({ habits: addiction?.reviewData(), fitness: fitness?.reviewData() }))
   : undefined;
 const fitness = typeof createFitness === 'function' ? createFitness(document.getElementById('fitness-dialog')) : undefined;
+const finance = typeof createFinance === 'function' ? createFinance(document.getElementById('finance-dialog')) : undefined;
 const mediaLibrary = typeof createMediaLibrary === 'function' ? createMediaLibrary() : undefined;
 const scriptUrl = new URL(document.currentScript.src);
 const routinesUrl = new URL('./routines.js', scriptUrl);
@@ -57,6 +58,7 @@ function openApp(button) {
   if (icon === 'goals' || icon === 'habits') return;
   if (icon === 'notes' && instantNotes) { instantNotes.open(); return; }
   if (icon === 'calendar' && calendar) { calendar.open(); return; }
+  if (icon === 'finance' && finance) { finance.open(); return; }
   if (icon === 'fitness' && fitness) { fitness.open(); return; }
   if (['games', 'entertainment'].includes(icon) && mediaLibrary) { mediaLibrary.open(icon); return; }
   const settings = icon === 'settings';
@@ -82,6 +84,7 @@ const appButtons = [...appGrid.querySelectorAll('.app')];
 const futureSpaces = document.getElementById('future-spaces');
 const futureGrid = futureSpaces.querySelector('.future-grid');
 const moduleKinds = new Map([['goals', 'Routines and checklists'], ['habits', 'Tobacco and coffee'], ['notes', 'Notebook'], ['settings', 'Interface'], ['health', 'Medication and stock'], ['calendar', 'Weekly plans'], ['fitness', 'Daily exercise goals'], ['games', 'Game library'], ['entertainment', 'Movies, series and anime']]);
+if (finance) moduleKinds.set('finance', 'Accounts, movements and subscriptions');
 const futureApps = appButtons.filter(button => !moduleKinds.has(button.dataset.icon));
 for (const button of futureApps) {
   const label = button.querySelector('.app-meta');
@@ -89,7 +92,7 @@ for (const button of futureApps) {
   label.removeAttribute('aria-hidden');
 }
 function arrangePhoneApps() {
-  futureSpaces.hidden = !phoneLayout.matches;
+  futureSpaces.hidden = !phoneLayout.matches || !futureApps.length;
   if (phoneLayout.matches) futureApps.forEach(button => futureGrid.append(button));
   else { appButtons.forEach(button => appGrid.append(button)); futureSpaces.open = false; }
 }
@@ -230,6 +233,7 @@ loadRoutines();
     if (health && !health.canNavigate()) return;
     if (calendar && !calendar.canNavigate()) return;
     if (fitness && !fitness.canNavigate()) return;
+    if (finance && !finance.canNavigate()) return;
     if (mediaLibrary && !mediaLibrary.canNavigate()) return;
     if (!document.getElementById('checklist-control').hidden || document.getElementById('backup-dialog').open) return;
     if (palette.open) { palette.close(); return; }

@@ -45,7 +45,7 @@ async function testHub() {
     app.focus();
     app.click();
     const notes = app.dataset.icon === 'notes';
-    const special = { notes: 'notes-dialog', goals: 'routines-dialog', habits: 'addiction-dialog', calendar: 'calendar-dialog', fitness: 'fitness-dialog', games: 'games-dialog', entertainment: 'entertainment-dialog' }[app.dataset.icon];
+    const special = { notes: 'notes-dialog', goals: 'routines-dialog', habits: 'addiction-dialog', calendar: 'calendar-dialog', finance: 'finance-dialog', fitness: 'fitness-dialog', games: 'games-dialog', entertainment: 'entertainment-dialog' }[app.dataset.icon];
     const active = special ? document.getElementById(special) : dialog;
     assert(active.open, 'App did not open.');
     assert(special || document.getElementById('app-title').textContent === app.querySelector('.app-name').textContent, 'Wrong app title.');

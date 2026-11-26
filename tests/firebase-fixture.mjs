@@ -34,6 +34,11 @@ export async function getDoc(reference) {
 }
 export function onSnapshot(reference, options, next, failed) {
   const listener = { uid: reference.path[1], next, failed };
+  if (reference.path[2] === 'finance') {
+    service.financeListeners.add(listener);
+    queueMicrotask(() => { if (service.financeListeners.has(listener)) service.publish(); });
+    return () => service.financeListeners.delete(listener);
+  }
   if (reference.path[2] === 'library') {
     service.libraryListeners.add(listener);
     queueMicrotask(() => { if (service.libraryListeners.has(listener)) service.publish(); });
