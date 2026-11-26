@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { balances, financeState, monthReport, nextCharge, parseQuick, prepareFinanceChanges, remainingDebt } from '../finance-model.mjs';
+import { balances, financeState, monthReport, nextCharge, parseQuick, prepareFinanceChanges, prepareFinanceRestore, previewFinanceMovements, remainingDebt } from '../finance-model.mjs';
 
 const change = (collection, id, value, before = null) => ({ collection, id, value, before });
 const add = (events, ...changes) => prepareFinanceChanges(events, changes, 1).events;
@@ -55,4 +55,23 @@ test('subscription payments can reuse an existing movement and recurrence preser
   assert.throws(() => add(events, change('subscriptions', 'duplicate', sub)), /Unlink/);
   assert.equal(nextCharge('2027-01-31', 'monthly', 31), '2027-02-28');
   assert.equal(nextCharge('2027-02-28', 'monthly', 31), '2027-03-31');
+});
+
+test('Finance restores an exact history without replacing a different ledger', () => {
+  const { draft } = parseQuick('-3.57 Uber, Bank, pending', today);
+  const initial = add([], change('movements', 'ride', draft));
+  const latest = add(initial, change('movements', 'ride', { ...draft, status: 'processed' }, draft));
+  const backup = { format: 'the-hub-finance', version: 1, currency: 'EUR', events: latest };
+  assert.deepEqual(prepareFinanceRestore(initial, backup).events, latest);
+  assert.equal(prepareFinanceRestore(latest, backup).added, 0);
+  assert.deepEqual(prepareFinanceRestore(latest, { ...backup, events: initial }).events, latest);
+  assert.throws(() => prepareFinanceRestore(add([], change('movements', 'another', draft)), backup), /different history/);
+  assert.throws(() => prepareFinanceRestore([], { ...backup, currency: 'USD' }), /Finance backup in EUR/);
+});
+
+test('Finance previews transfers and rejects invalid lines before importing', () => {
+  const text = '2026-11-25 | Gym reimbursement transfer | +45.00 | Coverflex Benefits -> Bank | Transfer | Processed | Internal Transfer';
+  const [entry] = previewFinanceMovements([], text, today).entries;
+  assert.deepEqual([entry.kind, entry.account, entry.destination, entry.cents], ['transfer', 'benefits', 'bank', 4500]);
+  assert.throws(() => previewFinanceMovements([], text.replace('2026-11-25', '2026-11-26'), today), /Line 1: Enter a date/);
 });

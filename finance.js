@@ -51,13 +51,14 @@ function createFinance(panel) {
     el('editor-title').textContent = title;
     el('save').textContent = saveLabel;
     el('save').hidden = readOnly;
-    el('cancel').textContent = readOnly ? 'Close history' : 'Cancel';
+    el('cancel').textContent = readOnly ? 'Close' : 'Cancel';
     el('form-status').textContent = '';
     el('fields').replaceChildren();
     action = submit;
     build();
     if (!editor.open) editor.showModal();
-    (el('fields').querySelector('input, select') ?? el('cancel')).focus();
+    editor.scrollTop = 0;
+    (el('fields').querySelector('input, select, textarea') ?? el('cancel')).focus();
   }
   function closeEditor() { if (!busy && editor.open) editor.close(); }
   function confirm(title, message, submit) {
@@ -429,13 +430,17 @@ function createFinance(panel) {
       el('fields').append(button('Unlink latest charge', () => confirm('Unlink latest charge', 'The expense stays in your movements. The scheduled charge becomes due again.',
         () => save([change('subscriptions', key, { ...sub, next: recent.cycle, payments: sub.payments.slice(0, -1) }, sub)]))));
     }, undefined, true);
+    el('cancel').textContent = 'Close history';
   }
-  async function save(changes, revision) {
+  function save(changes, revision) {
+    return saveFinance(() => account.save(changes, revision));
+  }
+  async function saveFinance(write, message = 'Saved.') {
     busy = true; notice = '';
     render();
     try {
-      await account.save(changes, revision);
-      notice = 'Saved.';
+      await write();
+      notice = message;
       busy = false;
       closeEditor();
     } finally { busy = false; render(); }
@@ -456,12 +461,80 @@ function createFinance(panel) {
   el('transfer').addEventListener('click', () => movementForm('transfer'));
   el('signin').addEventListener('click', () => { panel.close(); document.getElementById('account-launch').click(); });
   el('retry').addEventListener('click', () => { if (account) account.retry(); else location.reload(); });
-  el('export').addEventListener('click', () => {
+  function exportBackup() {
     if (!account?.ready) return;
     const url = URL.createObjectURL(new Blob([JSON.stringify({ format: 'the-hub-finance', version: 1, currency: 'EUR', events: account.events }, null, 2)], { type: 'application/json' }));
     const link = node('a'); link.href = url; link.download = `the-hub-finance-${today()}.json`; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  });
+  }
+  function backupMenu() {
+    openForm('Backup & import', '', () => {
+      explain('Download a private JSON backup of your Finance history, restore a backup, or paste several movements at once.');
+      el('fields').append(actions(button('Export backup', exportBackup), button('Import backup', restoreForm, true),
+        button('Import movements', () => movementsImportForm(), true)));
+    }, undefined, true);
+  }
+  function restoreForm() {
+    openForm('Import backup', 'Review backup', () => {
+      field('Finance backup file', 'backup', { type: 'file', accept: '.json,application/json', required: true });
+      explain('Restore a full backup into an empty ledger or recover newer records from the same history.');
+    }, async ({ backup: file }) => {
+      const uid = account.uid;
+      const formAction = action;
+      if (file.size > 2_000_000) throw new Error('Choose a Finance backup smaller than 2 MB.');
+      const text = await file.text();
+      if (uid !== account.uid || action !== formAction || !editor.open) return;
+      let backup;
+      try { backup = JSON.parse(text); }
+      catch { throw new Error('This file is not valid JSON. Choose an exported Finance backup.'); }
+      const revision = account.revision;
+      const preview = model.prepareFinanceRestore(account.events, backup);
+      if (!preview.added) throw new Error('This backup has no new history to restore.');
+      const { movements, confirmations, receivables, subscriptions } = preview.counts;
+      openForm('Review backup', 'Restore backup', () => {
+        explain('Backup contents');
+        const counts = node('ul', '', 'finance-totals');
+        for (const [label, count] of [['Movements', movements], ['Balance records', confirmations], ['Receivables', receivables], ['Subscriptions', subscriptions]]) {
+          counts.append(node('li', `${label}: ${count}`));
+        }
+        el('fields').append(counts);
+        explain(`${preview.added} history entries to restore, including corrections and links.`);
+      }, () => saveFinance(() => account.restore(backup, revision), 'Finance backup restored.'));
+    });
+  }
+  function movementsImportForm(source = '') {
+    openForm('Import movements', 'Review movements', () => {
+      const label = node('label', 'Movement list');
+      const input = node('textarea');
+      input.name = 'movements';
+      input.rows = 6;
+      input.maxLength = 100000;
+      input.required = true;
+      input.value = source;
+      label.append(input);
+      el('fields').append(label);
+      explain('Date | Description | Amount (EUR) | Account | Type | Status | Category');
+      explain('Use YYYY-MM-DD dates and a minus sign for expenses. For a transfer, use Source -> Destination in the Account column.');
+    }, ({ movements }) => {
+      const revision = account.revision;
+      const preview = model.previewFinanceMovements(account.events, movements, today());
+      const changes = preview.entries.map(entry => change('movements', id(), entry));
+      model.prepareFinanceChanges(account.events, changes);
+      openForm('Review movements', changes.length ? 'Import movements' : '', () => {
+        explain(`${changes.length} new movements · ${preview.duplicates} already in Finance · ${preview.undated.length} without a date`);
+        if (preview.undated.length) explain(`Skipped without a date: ${preview.undated.join(', ')}.`);
+        const list = node('div', '', 'finance-import-preview');
+        for (const entry of preview.entries) {
+          const detail = [entry.date, nameOf(entry.account), entry.destination && '→ ' + nameOf(entry.destination),
+            entry.status === 'pending' ? 'Pending' : 'Processed', entry.category].filter(Boolean).join(' · ');
+          list.append(listRow(entry.description, detail, money(entry.kind === 'expense' ? -entry.cents : entry.cents)));
+        }
+        if (changes.length) el('fields').append(list);
+        el('fields').append(button('Back to list', () => movementsImportForm(movements)));
+      }, () => saveFinance(() => account.importMovements(changes, revision), `${changes.length} movements imported.`), !changes.length);
+    });
+  }
+  el('backup').addEventListener('click', backupMenu);
   function changed() {
     if (owner !== account?.uid) {
       owner = account?.uid; view = 'overview'; month = undefined; query = ''; accountFilter = ''; categoryFilter = '';
@@ -472,9 +545,9 @@ function createFinance(panel) {
     }
     render();
   }
-  import('./finance-model.mjs?v=finance-english-1').then(module => {
+  import('./finance-model.mjs?v=finance-backup-1').then(module => {
     model = module;
-    return import('./cloud-finance.js?v=finance-english-1');
+    return import('./cloud-finance.js?v=finance-backup-1');
   }).then(module => {
     account = module.createFinanceAccount(changed);
     changed();

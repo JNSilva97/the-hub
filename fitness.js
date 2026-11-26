@@ -50,13 +50,13 @@ function createFitness(panel) {
   el('retry').addEventListener('click', () => { if (account) account.retry(); else location.reload(); });
   setInterval(render, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
-  import('./fitness-model.mjs?v=finance-english-1').then(module => {
+  import('./fitness-model.mjs?v=finance-backup-1').then(module => {
     model = module;
     for (const exercise of model.exercises) {
       const row = panel.querySelector(`[data-exercise="${exercise.id}"]`);
       for (const button of row.querySelectorAll('button')) button.addEventListener('click', () => adjust(exercise.id, Number(button.dataset.delta)));
     }
-    return import('./cloud-fitness.js?v=finance-english-1');
+    return import('./cloud-fitness.js?v=finance-backup-1');
   }).then(module => {
     const changed = () => {
       if (owner !== account?.uid) { owner = account?.uid; busy = false; message = ''; }

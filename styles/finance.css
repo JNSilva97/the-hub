@@ -9,7 +9,7 @@
 .finance-dialog .finance-primary, .finance-nav button[aria-pressed="true"] { background: #124263; border-color: #79c8ef; }
 .finance-dialog button:not(:disabled):hover { border-color: #a4e3ff; }
 .finance-dialog button:disabled { opacity: .48; cursor: default; }
-.finance-dialog :is(button, input, select, summary):focus-visible { outline: 2px solid #a7eaff; outline-offset: 2px; }
+.finance-dialog :is(button, input, select, textarea, summary):focus-visible { outline: 2px solid #a7eaff; outline-offset: 2px; }
 .finance-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .finance-nav { margin: 14px 0 18px; padding-bottom: 12px; border-bottom: 1px solid #315473; }
 .finance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 10px; margin-bottom: 12px; }
@@ -29,7 +29,9 @@
 .finance-filters { display: flex; flex-wrap: wrap; gap: 8px; }
 .finance-filter, .finance-fields > label { display: grid; gap: 5px; min-width: 0; color: #c0d9eb; font-size: 14px; }
 .finance-filter { flex: 1 1 130px; margin-bottom: 8px; }
-.finance-dialog :is(input, select) { width: 100%; min-width: 0; min-height: 44px; padding: 8px 10px; border: 1px solid #39688e; border-radius: 4px; background: #071624; color: #e5f5ff; color-scheme: dark; font-size: 16px; }
+.finance-dialog :is(input, select, textarea) { width: 100%; min-width: 0; min-height: 44px; padding: 8px 10px; border: 1px solid #39688e; border-radius: 4px; background: #071624; color: #e5f5ff; color-scheme: dark; font-size: 16px; }
+.finance-fields textarea { resize: vertical; font-family: inherit; }
+.finance-import-preview { max-height: 42vh; overflow: auto; }
 .finance-fields { display: grid; gap: 12px; margin-bottom: 16px; }
 .finance-fields p { margin: 0; }
 .finance-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 12px; margin-top: 8px; border-left: 2px solid #5394b7; background: #0b2031; overflow-wrap: anywhere; }

@@ -1,5 +1,5 @@
-import { lisbonDay } from './routine-model.mjs?v=finance-english-1';
-import { validDay } from './habits-model.mjs?v=finance-english-1';
+import { lisbonDay } from './routine-model.mjs?v=finance-backup-1';
+import { validDay } from './habits-model.mjs?v=finance-backup-1';
 
 export { lisbonDay };
 export const accounts = [
@@ -116,6 +116,83 @@ export function readFinance(data) {
   return events;
 }
 
+export function prepareFinanceRestore(events, backup) {
+  if (backup?.format !== 'the-hub-finance' || backup.version !== 1 || backup.currency !== 'EUR' || !Array.isArray(backup.events)) {
+    fail('Choose a Finance backup in EUR.');
+  }
+  const saved = JSON.stringify(backup.events);
+  if (new TextEncoder().encode(saved).length > financeLimit) fail('This backup exceeds the Finance storage limit.');
+  const state = financeState(backup.events);
+  validateLinks(state);
+  const shared = Math.min(events.length, backup.events.length);
+  for (let index = 0; index < shared; index++) {
+    if (JSON.stringify(events[index]) !== JSON.stringify(backup.events[index])) {
+      fail('This backup has a different history. Use an empty Finance ledger to restore it.');
+    }
+  }
+  const restored = backup.events.length > events.length;
+  return {
+    events: restored ? backup.events : events,
+    payload: restored ? saved : JSON.stringify(events),
+    added: Math.max(0, backup.events.length - events.length),
+    counts: Object.fromEntries(collections.map(name => [name, state[name].size]))
+  };
+}
+
+function movementSignature(entry) {
+  return JSON.stringify([entry.date, normalized(entry.description), entry.cents, entry.kind, entry.account, entry.destination || '']);
+}
+
+export function previewFinanceMovements(events, source, through = lisbonDay()) {
+  if (source.length > 100000) fail('Paste up to 100,000 characters at a time.');
+  const existing = new Map();
+  for (const entry of financeState(events).movements.values()) {
+    const signature = movementSignature(entry);
+    existing.set(signature, (existing.get(signature) || 0) + 1);
+  }
+  const entries = [], undated = [];
+  let duplicates = 0;
+  const lines = source.trim().split(/\r?\n/);
+  for (const [index, line] of lines.entries()) {
+    if (!line.trim() || index === 0 && /^Date\s*\|/i.test(line.trim())) continue;
+    const fields = line.split('|').map(part => part.trim());
+    if (fields.length !== 7) fail(`Line ${index + 1}: expected seven columns separated by |.`);
+    const [date, description, signedAmount, accountsText, type, statusText, categoryText] = fields;
+    if (date.toLowerCase() === 'unknown' || !date) {
+      undated.push(description.slice(0, 140) || `Line ${index + 1}`);
+      continue;
+    }
+    try {
+      if (!validDay(date) || date > through) fail('Enter a date on or before today.');
+      const [from, to, ...extra] = accountsText.split(/\s*(?:->|→)\s*/);
+      const accountId = name => accounts.find(item => item.aliases.includes(normalized(name)))?.id;
+      const account = accountId(from);
+      const destination = to && accountId(to);
+      const signed = parseMoney(signedAmount);
+      const typeKey = type.toLowerCase();
+      const status = statusText.toLowerCase();
+      if (!['expense', 'income', 'reimbursement', 'transfer', 'unknown'].includes(typeKey)
+        || typeKey === 'expense' && signed >= 0
+        || ['income', 'reimbursement'].includes(typeKey) && signed <= 0) fail('Check the movement type and amount sign.');
+      const kind = typeKey === 'transfer' ? 'transfer' : signed < 0 ? 'expense' : 'income';
+      if (extra.length || kind === 'transfer' && !destination || kind !== 'transfer' && to !== undefined) fail('Use source -> destination for transfers only.');
+      const category = !categoryText || categoryText.toLowerCase() === 'unknown' ? 'Unclassified' : categoryText;
+      const entry = { kind, cents: Math.abs(signed), description, category: typeKey === 'reimbursement' ? 'Reimbursement' : category, account, date, status };
+      if (destination) entry.destination = destination;
+      validateRecord('movements', entry);
+      const signature = movementSignature(entry);
+      const count = existing.get(signature) || 0;
+      if (count) {
+        existing.set(signature, count - 1);
+        duplicates++;
+      } else entries.push(entry);
+    } catch (error) {
+      fail(`Line ${index + 1}: ${error.message}`);
+    }
+  }
+  return { entries, duplicates, undated };
+}
+
 export function balances(state, through = '9999-12-31') {
   const result = new Map(accounts.map(({ id }) => [id, { book: 0, available: 0, confirmed: null, pending: 0 }]));
   for (const confirmation of state.confirmations.values()) {
@@ -158,20 +235,7 @@ export function nextCharge(date, frequency, billingDay) {
   return from.toISOString().slice(0, 10);
 }
 
-export function prepareFinanceChanges(events, changes, at = Date.now()) {
-  const state = financeState(events);
-  const next = [...events];
-  for (const change of changes) {
-    const { collection, id, value } = change;
-    if (!collections.includes(collection) || typeof id !== 'string' || !key.test(id)) fail('Invalid Finance change.');
-    const list = state[collection];
-    const existing = JSON.stringify(list.get(id) ?? null);
-    if (existing === JSON.stringify(value)) continue;
-    if (existing !== JSON.stringify(change.before ?? null)) fail('This record changed on another device. Reopen it and try again.');
-    if (value === null) list.delete(id);
-    else { validateRecord(collection, value); list.set(id, value); }
-    next.push({ collection, id, value, at });
-  }
+function validateLinks(state) {
   for (const [id, debt] of state.receivables) {
     const expense = debt.movement && state.movements.get(debt.movement);
     if (debt.movement && (expense?.kind !== 'expense' || expense.cents < debt.cents)) fail('Update or unlink the associated debt before changing this expense.');
@@ -194,6 +258,23 @@ export function prepareFinanceChanges(events, changes, at = Date.now()) {
     }
     linked.add(payment.movement);
   }
+}
+
+export function prepareFinanceChanges(events, changes, at = Date.now()) {
+  const state = financeState(events);
+  const next = [...events];
+  for (const change of changes) {
+    const { collection, id, value } = change;
+    if (!collections.includes(collection) || typeof id !== 'string' || !key.test(id)) fail('Invalid Finance change.');
+    const list = state[collection];
+    const existing = JSON.stringify(list.get(id) ?? null);
+    if (existing === JSON.stringify(value)) continue;
+    if (existing !== JSON.stringify(change.before ?? null)) fail('This record changed on another device. Reopen it and try again.');
+    if (value === null) list.delete(id);
+    else { validateRecord(collection, value); list.set(id, value); }
+    next.push({ collection, id, value, at });
+  }
+  validateLinks(state);
   const payload = JSON.stringify(next);
   if (new TextEncoder().encode(payload).length > financeLimit) fail('The ledger is full. You can still view and export your history.');
   return { events: next, payload };

@@ -83,8 +83,27 @@ test('Finance records pending spending, processes it once, and exports the audit
   await panel.getByRole('button', { name: 'Activity', exact: true }).click();
   assert.equal(await panel.locator('.finance-row').count(), 3);
 
+  const backupMenu = panel.getByRole('button', { name: 'Backup & import', exact: true });
+  const bulkText = [
+    'Date | Description | Amount (EUR) | Account | Type | Status | Category',
+    '2026-11-25 | Uber | -3.57 | Bank | Expense | Pending | Transport',
+    '2026-11-25 | Beer | -5.00 | Bank | Expense | Processed | Drinks',
+    '2026-11-25 | Beer | -5.00 | Bank | Expense | Processed | Drinks',
+    'Unknown | Tobacco | -10.80 | Cash | Expense | Processed | Tobacco'
+  ].join('\n');
+  await backupMenu.click();
+  await editor.getByRole('button', { name: 'Import movements', exact: true }).click();
+  await editor.getByLabel('Movement list').fill(bulkText);
+  await editor.getByRole('button', { name: 'Review movements' }).click();
+  await editor.getByText('2 new movements · 1 already in Finance · 1 without a date', { exact: true }).waitFor();
+  assert.equal(await panel.locator('.finance-row').count(), 3);
+  await editor.getByRole('button', { name: 'Import movements', exact: true }).click();
+  await editor.waitFor({ state: 'hidden' });
+  assert.equal(await panel.locator('.finance-row').filter({ hasText: 'Beer' }).count(), 2);
+
+  await backupMenu.click();
   const download = page.waitForEvent('download');
-  await panel.getByRole('button', { name: 'Export history' }).click();
+  await editor.getByRole('button', { name: 'Export backup' }).click();
   const file = await download;
   assert.equal(file.suggestedFilename(), 'the-hub-finance-2026-11-25.json');
   const payload = await page.evaluate(() => JSON.parse(window.__hubFirebase.docs['account-a'].finance.ledger.payload));
@@ -98,5 +117,16 @@ test('Finance records pending spending, processes it once, and exports the audit
   });
   await bank.getByRole('button', { name: 'Confirm balance', exact: true }).waitFor();
   assert.equal(await bank.locator('strong').textContent(), '—');
+  await backupMenu.click();
+  await editor.getByRole('button', { name: 'Import backup', exact: true }).click();
+  await editor.getByLabel('Finance backup file').setInputFiles(await file.path());
+  await editor.getByRole('button', { name: 'Review backup', exact: true }).click();
+  await editor.getByText('Movements: 5', { exact: true }).waitFor();
+  assert.equal(await bank.locator('strong').textContent(), '—');
+  await editor.getByRole('button', { name: 'Restore backup' }).click();
+  await editor.waitFor({ state: 'hidden' });
+  await page.getByText('Finance backup restored.', { exact: true }).waitFor();
+  const restored = await page.evaluate(() => JSON.parse(window.__hubFirebase.docs['account-b'].finance.ledger.payload));
+  assert.deepEqual(restored, payload);
   assert.deepEqual(errors, []);
 });

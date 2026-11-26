@@ -1,5 +1,5 @@
-import { lisbonDay } from './routine-model.mjs?v=finance-english-1';
-import { validDay } from './habits-model.mjs?v=finance-english-1';
+import { lisbonDay } from './routine-model.mjs?v=finance-backup-1';
+import { validDay } from './habits-model.mjs?v=finance-backup-1';
 export { lisbonDay };
 export const exercises = [
   { id: 'pushups', name: 'Push-ups', goal: 50 },

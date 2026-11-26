@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=finance-english-1';
-import { readFinance, prepareFinanceChanges } from './finance-model.mjs?v=finance-english-1';
+import { cloudWorkspace } from './cloud.js?v=finance-backup-1';
+import { readFinance, prepareFinanceChanges, prepareFinanceRestore } from './finance-model.mjs?v=finance-backup-1';
 
 export function createFinanceAccount(onChange) {
   let uid, stop, generation = 0, ready = false, cached = true, pending = false, error = '';
@@ -37,7 +37,19 @@ export function createFinanceAccount(onChange) {
     get events() { return events; }, get revision() { return revision; },
     get canWrite() { return Boolean(uid && ready && !cached && !pending && navigator.onLine && !error); },
     retry: watch,
-    async save(changes, expectedRevision) {
+    save(changes, expectedRevision) {
+      return this.write(events => prepareFinanceChanges(events, changes), expectedRevision,
+        'Balances changed. Reopen the confirmation to compare again.');
+    },
+    restore(backup, expectedRevision) {
+      return this.write(events => prepareFinanceRestore(events, backup), expectedRevision,
+        'Finance changed. Open the backup again to review the latest history.');
+    },
+    importMovements(changes, expectedRevision) {
+      return this.write(events => prepareFinanceChanges(events, changes), expectedRevision,
+        'Finance changed. Review the movement list again.');
+    },
+    async write(prepare, expectedRevision, conflictMessage) {
       if (!this.canWrite) throw new Error('Connect and wait for Finance to sync before saving.');
       const current = generation;
       const { sdk, database } = cloudWorkspace.connection;
@@ -48,9 +60,9 @@ export function createFinanceAccount(onChange) {
           if (current !== generation) throw new Error('Your account changed. Open Finance again.');
           const data = snapshot.exists() ? snapshot.data() : undefined;
           const actual = data?.revision ?? 0;
-          if (expectedRevision !== undefined && actual !== expectedRevision) throw new Error('Balances changed. Reopen the confirmation to compare again.');
+          if (expectedRevision !== undefined && actual !== expectedRevision) throw new Error(conflictMessage);
           const now = data ? readFinance(data) : [];
-          const next = prepareFinanceChanges(now, changes);
+          const next = prepare(now);
           if (next.events.length === now.length) return { events: now, revision: actual };
           transaction.set(ref, { version: 1, revision: actual + 1, payload: next.payload });
           return { events: next.events, revision: actual + 1 };
