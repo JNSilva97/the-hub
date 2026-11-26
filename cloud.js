@@ -1,6 +1,6 @@
-import { firebaseConfig } from './firebase-config.mjs?v=finance-dashboard-1';
-import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, setMinoxidilLater, lisbonDay } from './routine-model.mjs?v=finance-dashboard-1';
-import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=finance-dashboard-1';
+import { firebaseConfig } from './firebase-config.mjs?v=module-glass-1';
+import { validateRoutines, parseProgress, getProgressPatch, setSkinCareChoice, setMinoxidilLater, lisbonDay } from './routine-model.mjs?v=module-glass-1';
+import { cleanRoutines, keepProgress, readWorkspace } from './workspace-model.mjs?v=module-glass-1';
 
 const panel = document.getElementById('account-dialog');
 const loginButton = document.getElementById('account-login');

@@ -109,10 +109,10 @@ test('Phone workflows', { timeout: 90000 }, async t => {
       await browseNotes(page); await page.locator('#note-list button').filter({ hasText: 'Quick capture' }).click();
       assert.equal(await page.locator('#note-text').inputValue(), 'Quick capture\nKeep this note.');
       await page.setViewportSize({ width: 1440, height: 900 });
-      await page.waitForFunction(() => document.getElementById('note-new').parentElement.className === 'notes-actions');
+      await page.waitForFunction(() => document.getElementById('note-new').parentElement.matches('.module-header .module-actions'));
       assert.equal(await page.locator('.apps > .app').count(), 10);
       assert.equal(await page.locator('#future-spaces').isVisible(), false);
-      assert.equal(await page.locator('#note-new').evaluate(el => el.parentElement.className), 'notes-actions');
+      assert.equal(await page.locator('.module-header .module-actions #note-new').count(), 1);
       assert.equal(await page.locator('#notes-library').evaluate(el => el.open), true);
       await page.setViewportSize({ width: 390, height: 640 });
       await page.waitForFunction(() => document.getElementById('note-new').parentElement.id === 'notes-phone-actions');

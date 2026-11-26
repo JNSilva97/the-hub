@@ -1,11 +1,13 @@
 #addiction-dialog {
   width: min(760px, calc(100% - 24px));
   max-height: calc(100dvh - 24px);
-  padding: clamp(14px, 4vw, 26px);
+  --habits-inset: clamp(14px, 4vw, 26px);
+  padding: 0 var(--habits-inset) var(--habits-inset);
   text-align: left;
 }
 
-.addiction-header,
+#addiction-dialog > .module-header { margin-inline: calc(-1 * var(--habits-inset)); }
+
 .addiction-date {
   display: flex;
   align-items: center;
@@ -13,7 +15,6 @@
   gap: 12px;
 }
 
-.addiction-header h2 { font-size: clamp(20px, 5vw, 25px); }
 .addiction-date { margin: 12px 0; color: #9ebdd5; font-size: 13px; }
 .addiction-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .addiction-card {

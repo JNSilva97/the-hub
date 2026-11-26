@@ -9,30 +9,13 @@
   padding: 0 var(--health-inset) var(--health-inset);
   overflow: auto;
   overscroll-behavior: contain;
-  scroll-padding-top: 94px;
+  scroll-padding-top: 162px;
   scrollbar-color: #3c6689 #061121;
   text-align: left;
 }
-#app-dialog[data-app="health"] .app-heading {
-  position: sticky;
-  display: flex;
-  flex-direction: row-reverse;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  z-index: 5;
-  top: 0;
-  margin-inline: calc(-1 * var(--health-inset));
-  padding: 16px var(--health-inset);
-  border-bottom: 1px solid var(--health-edge);
-  background: var(--panel-header);
-}
-#app-dialog[data-app="health"] #app-icon { display: none; }
-#app-dialog[data-app="health"] .panel-eyebrow,
+#app-dialog[data-app="health"] > .module-header { margin-inline: calc(-1 * var(--health-inset)); z-index: 5; }
 #app-dialog[data-app="health"]:has(#health-content:not([hidden])) #app-description { display: none; }
-#app-dialog[data-app="health"] #app-title { min-height: 44px; display: flex; align-items: center; }
 #app-dialog[data-app="health"] > form { margin-top: 20px; }
-#health-close { border-radius: 6px; background: #0b2038; }
 #health-content[hidden], #health-close[hidden], .routine-medications[hidden], #health-content [hidden] { display: none; }
 .health-account-badge { display: inline-block; color: #8eb9d7; font: 600 11px var(--font-interface); letter-spacing: .11em; }
 .health-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 0; }
@@ -44,7 +27,7 @@
 .health-tabs {
   position: sticky;
   z-index: 4;
-  top: 76px;
+  top: 107px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
@@ -219,7 +202,6 @@
 .medication-row:focus-within { outline: 2px solid #91caff; outline-offset: 2px; }
 @media (max-width: 700px) {
   #health-medications { grid-template-columns: minmax(0, 1fr); }
-  #app-dialog[data-app="health"] h2 { font-size: 23px; }
   .apps > [data-icon="settings"] { grid-column: 1 / -1; }
 }
 
@@ -274,4 +256,9 @@
 @keyframes health-line {
   from { transform: scaleX(.25); opacity: .5; }
   to { transform: scaleX(1); opacity: 1; }
+}
+
+@media (max-width: 700px) {
+  #app-dialog[data-app="health"] { scroll-padding-top: 124px; }
+  .health-tabs { top: 69px; }
 }

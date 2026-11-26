@@ -350,7 +350,7 @@ function createFinance(panel) {
     el('status').textContent = unavailable || account?.error || (busy ? 'Saving…' : notice || (!account?.uid
       ? 'Sign in to open your private Finance ledger.' : !account.ready ? 'Loading Finance…'
       : account.canWrite ? '' : 'Read-only copy. Connect to save changes.'));
-    el('view').hidden = el('content').hidden = !model || !account?.ready;
+    el('view').hidden = el('content').hidden = el('backup').hidden = !model || !account?.ready;
     el('add').disabled = el('transfer').disabled = !writable();
     el('close').disabled = busy;
     for (const name of ['save', 'cancel', 'editor-close']) el(name).disabled = busy || name === 'save' && !writable();
@@ -640,9 +640,9 @@ function createFinance(panel) {
     }
     render();
   }
-  import('./finance-model.mjs?v=finance-dashboard-1').then(module => {
+  import('./finance-model.mjs?v=module-glass-1').then(module => {
     model = module;
-    return import('./cloud-finance.js?v=finance-dashboard-1');
+    return import('./cloud-finance.js?v=module-glass-1');
   }).then(module => {
     account = module.createFinanceAccount(changed);
     changed();

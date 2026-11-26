@@ -63,7 +63,7 @@ test('Calendar workflows', { timeout: 150000 }, async t => {
       }));
       assert.deepEqual(home.order, ['goals', 'habits', 'health', 'calendar', 'finance', 'fitness', 'games', 'entertainment', 'notes', 'settings']);
       assert.equal(home.calendar, '04'); assert.equal(home.notes, '09');
-      assert.match(await page.locator('.calendar-header .panel-eyebrow').textContent(), /MODULE 04/);
+      assert.match(await page.locator('#calendar-dialog .module-header .panel-eyebrow').textContent(), /MODULE 04/);
       await page.locator('#calendar-mode-weekly').click();
       await plan(page, 'office').check(); await plan(page, 'training').check();
       await page.locator('#calendar-save').click();

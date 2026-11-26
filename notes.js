@@ -18,7 +18,7 @@ function createInstantNotes(panel) {
   const mobile = matchMedia('(max-width: 700px)');
   const browse = document.getElementById('notes-browse');
   const newButton = document.getElementById('note-new');
-  const headingActions = panel.querySelector('.notes-actions');
+  const headingActions = panel.querySelector('.module-header .module-actions');
   const phoneActions = document.getElementById('notes-phone-actions');
   function updateBrowse() {
     library.querySelector('summary').textContent = library.open && mobile.matches ? 'Back to note' : 'Browse notes';
@@ -400,7 +400,7 @@ function createInstantNotes(panel) {
     refreshCloud();
   });
   importDialog.addEventListener('close', () => { copying = undefined; });
-  import('./cloud-notes.js?v=finance-dashboard-1').then(module => { cloud = module.createCloudNotes(refreshCloud); refreshCloud(); }).catch(() => {
+  import('./cloud-notes.js?v=module-glass-1').then(module => { cloud = module.createCloudNotes(refreshCloud); refreshCloud(); }).catch(() => {
     if (panel.open) tell('Account sync could not load. Local notes still work; reopen online to retry.', true);
   });
 

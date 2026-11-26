@@ -11,21 +11,21 @@
   <link rel="apple-touch-icon" href="assets/icons/hub-180.png">
   <title>The Hub</title>
   <link rel="preload" href="assets/fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/base.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/shell.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/core.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/access.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/panels.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/routines.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/routine-tools.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/notes.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/health.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/addiction.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/library.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/calendar.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/fitness.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/finance.css?v=finance-dashboard-1">
-  <link rel="stylesheet" href="styles/motion.css?v=finance-dashboard-1">
+  <link rel="stylesheet" href="styles/base.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/shell.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/core.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/access.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/panels.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/routines.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/routine-tools.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/notes.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/health.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/addiction.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/library.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/calendar.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/fitness.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/finance.css?v=module-glass-1">
+  <link rel="stylesheet" href="styles/motion.css?v=module-glass-1">
 </head>
 <body>
   <div id="startup-cover" aria-hidden="true"></div>
@@ -250,7 +250,7 @@
     <button id="phone-settings" type="button" aria-haspopup="dialog"><svg aria-hidden="true"><use href="#settings"/></svg><span>Settings</span></button>
   </nav>
   <dialog id="games-dialog" class="library-dialog" data-library="games" aria-labelledby="games-title">
-    <header class="library-header"><div class="library-identity"><svg aria-hidden="true"><use href="#games"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 07</div><h2 id="games-title">Games</h2></div></div><form method="dialog" class="library-close-form"><button data-part="close" type="button" aria-label="Close Games">×</button></form></header>
+    <header class="module-header module-header-sticky"><div class="module-identity"><svg class="module-mark" aria-hidden="true" viewBox="0 0 24 24"><use href="#games"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 07</div><h2 id="games-title">Games</h2></div></div><form method="dialog" class="library-close-form"><button data-part="close" type="button" class="module-close" aria-label="Close Games">×</button></form></header>
     <div class="library-content"><section class="library-hero"><span class="library-kicker">PRESS PLAY / YOUR WAY</span><h3 data-part="subtitle"></h3><p data-part="stats"></p><div class="library-hero-actions" data-part="hero-actions"><button type="button" class="library-primary" data-part="add" data-write>Add game</button><button type="button" data-part="pick">Pick for me <span aria-hidden="true">↗</span></button><button type="button" data-part="import" data-write>Import list</button><button type="button" data-part="signin">Sign in</button><input data-part="file" type="file" accept=".txt,.json,text/plain,application/json" hidden aria-label="Import Games list"></div></section>
       <section data-part="collection" aria-label="Games library"><div class="library-toolbar"><label class="library-search"><span>Find a title</span><input type="search" data-part="search" placeholder="Search titles, collections, notes…" autocomplete="off"></label><label hidden>Type<select data-part="type"><option value="all">All types</option><option value="game">Game</option></select></label><label>Collection<select data-part="category"><option value="">All collections</option></select></label></div>
         <div class="library-filters" role="group" aria-label="Filter by status"><button type="button" data-filter="all" aria-pressed="true">All</button><button type="button" data-filter="planned" aria-pressed="false">Up next</button><button type="button" data-filter="active" aria-pressed="false">In progress</button><button type="button" data-filter="completed" aria-pressed="false">Finished</button><button type="button" data-filter="paused" aria-pressed="false">On hold</button><button type="button" data-filter="dropped" aria-pressed="false">Dropped</button></div><p class="library-count" data-part="count" role="status"></p><div class="library-cards" data-part="cards"></div><div class="library-empty" data-part="empty"><svg aria-hidden="true"><use href="#games"/></svg><h3 data-part="empty-title"></h3><p data-part="empty-copy"></p></div></section>
@@ -259,7 +259,7 @@
     </div>
   </dialog>
   <dialog id="entertainment-dialog" class="library-dialog" data-library="entertainment" aria-labelledby="entertainment-title">
-    <header class="library-header"><div class="library-identity"><svg aria-hidden="true"><use href="#entertainment"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 08</div><h2 id="entertainment-title">Entertainment</h2></div></div><form method="dialog" class="library-close-form"><button data-part="close" type="button" aria-label="Close Entertainment">×</button></form></header>
+    <header class="module-header module-header-sticky"><div class="module-identity"><svg class="module-mark" aria-hidden="true" viewBox="0 0 24 24"><use href="#entertainment"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 08</div><h2 id="entertainment-title">Entertainment</h2></div></div><form method="dialog" class="library-close-form"><button data-part="close" type="button" class="module-close" aria-label="Close Entertainment">×</button></form></header>
     <div class="library-content"><section class="library-hero"><span class="library-kicker">THE EVENING IS YOURS</span><h3 data-part="subtitle"></h3><p data-part="stats"></p><div class="library-hero-actions" data-part="hero-actions"><button type="button" class="library-primary" data-part="add" data-write>Add title</button><button type="button" data-part="pick">Pick for me <span aria-hidden="true">↗</span></button><button type="button" data-part="import" data-write>Import list</button><button type="button" data-part="signin">Sign in</button><input data-part="file" type="file" accept=".txt,.json,text/plain,application/json" hidden aria-label="Import Entertainment list"></div></section>
       <section data-part="collection" aria-label="Entertainment library"><div class="library-toolbar"><label class="library-search"><span>Find a title</span><input type="search" data-part="search" placeholder="Search titles, collections, notes…" autocomplete="off"></label><label >Type<select data-part="type"><option value="all">All types</option><option value="movie">Movie</option><option value="series">Series</option><option value="anime">Anime</option><option value="video">Video</option><option value="special">Special</option><option value="other">Unsorted</option></select></label><label>Universe<select data-part="category"><option value="">All universes</option></select></label></div>
         <div class="library-filters" role="group" aria-label="Filter by status"><button type="button" data-filter="all" aria-pressed="true">All</button><button type="button" data-filter="planned" aria-pressed="false">Up next</button><button type="button" data-filter="active" aria-pressed="false">In progress</button><button type="button" data-filter="completed" aria-pressed="false">Finished</button><button type="button" data-filter="paused" aria-pressed="false">On hold</button><button type="button" data-filter="dropped" aria-pressed="false">Dropped</button></div><p class="library-count" data-part="count" role="status"></p><div class="library-cards" data-part="cards"></div><div class="library-empty" data-part="empty"><svg aria-hidden="true"><use href="#entertainment"/></svg><h3 data-part="empty-title"></h3><p data-part="empty-copy"></p></div></section>
@@ -269,14 +269,14 @@
   </dialog>
   <dialog id="library-import-dialog" class="library-import-dialog" aria-labelledby="library-import-title"><div class="library-content"><h2 id="library-import-title">Bring your list along</h2><p id="library-import-summary"></p><div id="library-import-list"></div><p id="library-import-status" role="status"></p><div class="library-editor-actions"><button type="button" id="library-import-save" class="library-primary">Import selected</button><button type="button" id="library-import-cancel">Cancel</button></div></div></dialog>
   <dialog id="fitness-dialog" class="fitness-dialog" aria-labelledby="fitness-title">
-    <div class="fitness-header"><div><div class="panel-eyebrow">THE HUB / MODULE 06</div><h2 id="fitness-title">Fitness</h2></div><form method="dialog"><button id="fitness-close" type="button" aria-label="Close Fitness">×</button></form></div>
+    <div class="module-header"><div class="module-identity"><svg class="module-mark" aria-hidden="true" viewBox="0 0 24 24"><use href="#fitness"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 06</div><h2 id="fitness-title">Fitness</h2></div></div><form method="dialog"><button id="fitness-close" type="button" class="module-close" aria-label="Close Fitness">×</button></form></div>
     <div class="fitness-content"><div class="fitness-intro"><div><h3 id="fitness-date">Today</h3><p id="fitness-summary" role="status" aria-live="polite">0 of 2 daily goals complete</p></div><button id="fitness-signin" type="button">Sign in</button></div>
       <div class="fitness-exercises"><section class="fitness-exercise" data-exercise="pushups" aria-labelledby="fitness-pushups-title"><h3 id="fitness-pushups-title">Push-ups</h3><p class="fitness-count"><output aria-label="Push-ups reps">0</output> / 50</p><progress max="50" value="0" aria-label="Push-ups daily goal"></progress><p class="fitness-result">50 reps to go</p><div class="fitness-controls" role="group" aria-label="Record push-ups"><button type="button" data-delta="-1" aria-label="Remove 1 push-ups reps" disabled>-1</button><button type="button" data-delta="1" aria-label="Add 1 push-ups reps" disabled>+1</button><button type="button" data-delta="5" aria-label="Add 5 push-ups reps" disabled>+5</button><button type="button" data-delta="10" aria-label="Add 10 push-ups reps" disabled>+10</button></div></section><section class="fitness-exercise" data-exercise="abs" aria-labelledby="fitness-abs-title"><h3 id="fitness-abs-title">Abs</h3><p class="fitness-count"><output aria-label="Abs reps">0</output> / 50</p><progress max="50" value="0" aria-label="Abs daily goal"></progress><p class="fitness-result">50 reps to go</p><div class="fitness-controls" role="group" aria-label="Record abs"><button type="button" data-delta="-1" aria-label="Remove 1 abs reps" disabled>-1</button><button type="button" data-delta="1" aria-label="Add 1 abs reps" disabled>+1</button><button type="button" data-delta="5" aria-label="Add 5 abs reps" disabled>+5</button><button type="button" data-delta="10" aria-label="Add 10 abs reps" disabled>+10</button></div></section></div>
       <div class="fitness-feedback"><p id="fitness-status" role="status">Connecting to Fitness…</p><button id="fitness-retry" type="button" hidden>Retry</button></div>
     </div>
   </dialog>
   <dialog id="calendar-dialog" class="calendar-dialog" aria-labelledby="calendar-title">
-    <div class="calendar-header"><div class="calendar-identity"><svg aria-hidden="true"><use href="#calendar"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 04</div><h2 id="calendar-title">Calendar</h2></div></div><form method="dialog"><button id="calendar-close" class="routine-exit" type="button" aria-label="Close Calendar">×</button></form></div>
+    <div class="module-header module-header-sticky"><div class="module-identity"><svg class="module-mark" aria-hidden="true" viewBox="0 0 24 24"><use href="#calendar"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 04</div><h2 id="calendar-title">Calendar</h2></div></div><form method="dialog"><button id="calendar-close" class="routine-exit module-close" type="button" aria-label="Close Calendar">×</button></form></div>
     <div class="calendar-content">
       <div class="calendar-intro"><h3>Plan your week</h3><div class="calendar-intro-actions"><button id="calendar-review-launch" type="button" aria-haspopup="dialog" aria-controls="weekly-review-dialog" disabled>Weekly Review</button><button id="calendar-signin" type="button">Sign in to plan</button></div></div>
       <div class="calendar-navigation"><button id="calendar-previous" type="button" aria-label="Previous week">←</button><h3 id="calendar-week-title">This week</h3><button id="calendar-next" type="button" aria-label="Next week">→</button><button id="calendar-today" type="button">Today</button></div>
@@ -307,16 +307,16 @@
     </div>
   </dialog>
   <dialog id="finance-dialog" class="finance-dialog" aria-labelledby="finance-title">
-    <header class="finance-header">
-      <div class="finance-identity"><svg class="finance-account-icon" aria-hidden="true" viewBox="0 0 24 24"><use href="#finance"/></svg><h2 id="finance-title">Finance</h2></div>
-      <form method="dialog"><button id="finance-close" type="submit" aria-label="Close Finance">×</button></form>
+    <header class="module-header">
+      <div class="module-identity"><svg class="module-mark" aria-hidden="true" viewBox="0 0 24 24"><use href="#finance"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 05</div><h2 id="finance-title">Finance</h2></div></div>
+      <div class="module-actions"><button type="button" id="finance-backup" class="module-action" hidden aria-label="Backup &amp; Import">Backup<span class="finance-backup-long"> &amp; Import</span></button><form method="dialog"><button id="finance-close" class="module-close" type="submit" aria-label="Close Finance">×</button></form></div>
     </header>
     <div id="finance-content" hidden>
       <nav class="finance-nav" aria-label="Finance views">
         <button type="button" data-finance-view="overview">Overview</button><button type="button" data-finance-view="activity">Activity</button><button type="button" data-finance-view="receivables">To receive</button><button type="button" data-finance-view="subscriptions">Subscriptions</button>
       </nav>
-      <div class="finance-actions finance-toolbar" aria-label="Finance actions" role="group">
-        <button type="button" id="finance-add" class="finance-primary">Add movement</button><button type="button" id="finance-transfer">Transfer</button><button type="button" id="finance-backup">Backup &amp; Import</button>
+      <div class="finance-actions finance-toolbar" aria-label="Movement actions" role="group">
+        <button type="button" id="finance-add" class="finance-primary">Add movement</button><button type="button" id="finance-transfer">Transfer</button>
       </div>
     </div>
     <div class="finance-feedback">
@@ -347,9 +347,9 @@
     </div>
   </dialog>
   <dialog id="addiction-dialog" aria-labelledby="addiction-title">
-    <header class="addiction-header">
-      <div><div class="panel-eyebrow">THE HUB / MODULE 02</div><h2 id="addiction-title">Habits</h2></div>
-      <form method="dialog"><button class="routine-exit" aria-label="Close Habits">×</button></form>
+    <header class="module-header">
+      <div class="module-identity"><svg class="module-mark" aria-hidden="true" viewBox="0 0 24 24"><use href="#habits"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 02</div><h2 id="addiction-title">Habits</h2></div></div>
+      <form method="dialog"><button class="routine-exit module-close" aria-label="Close Habits">×</button></form>
     </header>
     <div class="addiction-date"><time id="addiction-date"></time><span>Lisbon time</span></div>
     <section class="addiction-card addiction-quit" id="addiction-quit" aria-labelledby="addiction-quit-title">
@@ -431,11 +431,10 @@
     <p id="addiction-status" role="status"></p>
   </dialog>
   <dialog id="app-dialog" aria-labelledby="app-title" aria-describedby="app-description">
-    <header class="app-heading">
-      <button id="health-close" class="routine-exit" type="button" aria-label="Close Health" hidden>×</button>
-      <div class="panel-eyebrow" aria-hidden="true">THE HUB / MODULE INTERFACE</div>
-      <div id="app-icon" aria-hidden="true"></div>
-      <h2 id="app-title"></h2>
+    <header class="module-header module-header-sticky">
+      <div class="module-identity"><svg id="app-icon" class="module-mark" aria-hidden="true" viewBox="0 0 24 24"><use/></svg><div><div class="panel-eyebrow">THE HUB / MODULE INTERFACE</div><h2 id="app-title"></h2></div></div>
+      <button id="health-close" class="module-close" type="button" aria-label="Close Health" hidden>×</button>
+      <form id="app-header-close" method="dialog" hidden><button class="module-close" type="submit" aria-label="Close module">×</button></form>
     </header>
     <p id="app-description">This app is yet to be built.</p>
     <section id="health-content" hidden aria-label="Medication tracking">
@@ -488,7 +487,7 @@
       <div class="setting-row"><div><strong>Ambient motion</strong><small id="settings-motion-note">Optical rings and interface transitions.</small></div><button id="settings-motion" type="button" aria-label="Ambient motion" aria-describedby="settings-motion-note" aria-pressed="true">On</button></div>
       <div class="setting-row"><div><strong>Interface sound</strong><small>Distinct startup, panel and selection sounds.</small></div><button id="settings-sound" type="button" aria-label="Interface sound" aria-pressed="false">Off</button></div>
       <div class="setting-row"><div><strong>Install The Hub</strong><small id="install-note">Open your workspace from your home screen.</small></div><button id="install-app" type="button" aria-describedby="install-note">Install</button></div>
-      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.26.5</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
+      <div class="setting-row"><div><strong>App updates</strong><small id="app-version">Version 2026.11.26.6</small></div><button id="check-updates" type="button" aria-label="Check for app updates" disabled>Check</button></div>
       <p id="install-help" class="settings-note" role="status" hidden></p>
       <p id="offline-status" class="settings-note" role="status">Preparing offline access…</p>
       <p class="settings-note">These controls apply to this visit. Your device’s reduced-motion preference takes priority.</p>
@@ -528,9 +527,9 @@
     <form method="dialog" class="restart-actions"><button class="restart-keep" type="submit" autofocus>Keep editing</button><button id="medication-discard-confirm" class="restart-confirm" type="button">Discard changes</button></form>
   </dialog>
   <dialog id="notes-dialog" class="notes-dialog" aria-labelledby="notes-title">
-    <div class="notes-heading">
-      <div><div class="panel-eyebrow">THE HUB / MODULE 09</div><h2 id="notes-title">NOTES</h2></div>
-      <div class="notes-actions"><button id="note-new" type="button">+ New note</button><form method="dialog"><button class="routine-exit" type="submit" aria-label="Close notes">×</button></form></div>
+    <div class="module-header">
+      <div class="module-identity"><svg class="module-mark" aria-hidden="true" viewBox="0 0 24 24"><use href="#notes"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 09</div><h2 id="notes-title">NOTES</h2></div></div>
+      <div class="module-actions"><button id="note-new" type="button">+ New note</button><form method="dialog"><button class="routine-exit module-close" type="submit" aria-label="Close notes">×</button></form></div>
     </div>
     <div class="notes-source"><span id="notes-source"></span><p id="notes-data-note">Local notes stay in this browser.</p><div class="notes-account-actions"><button id="notes-account" type="button">Private access</button><button id="notes-local" type="button" hidden>Local notes</button><button id="notes-import" type="button" hidden>Copy local notes</button><button id="notes-retry" type="button" hidden>Try sync again</button></div></div>
     <div class="notes-layout">
@@ -563,14 +562,11 @@
     <form method="dialog" class="restart-actions"><button class="restart-keep" type="submit" autofocus>Keep note</button><button id="note-delete-confirm" class="restart-confirm" type="button">Delete note</button></form>
   </dialog>
   <dialog id="routines-dialog" class="routines-dialog" aria-labelledby="routines-title">
-    <div class="routines-header">
-      <div class="routines-identity">
-        <svg class="goals-mark" aria-hidden="true"><use href="#goals"/></svg>
-        <div><div class="panel-eyebrow">THE HUB / MODULE 01</div><h2 id="routines-title">GOALS</h2></div>
-      </div>
-      <div class="routines-header-actions">
+    <div class="module-header module-header-sticky">
+      <div class="module-identity"><svg class="module-mark" aria-hidden="true" viewBox="0 0 24 24"><use href="#goals"/></svg><div><div class="panel-eyebrow">THE HUB / MODULE 01</div><h2 id="routines-title">GOALS</h2></div></div>
+      <div class="module-actions">
         <button id="backup-launch" type="button" aria-haspopup="dialog" aria-controls="backup-dialog">Backup</button>
-        <form method="dialog"><button class="routine-exit" type="submit" aria-label="Close Goals" autofocus>×</button></form>
+        <form method="dialog"><button class="routine-exit module-close" type="submit" aria-label="Close Goals" autofocus>×</button></form>
       </div>
     </div>
     <div class="routines-meta"><span id="routine-source" class="routine-source">LOADING</span><p id="routine-data-note">Loading your checklists…</p></div>
@@ -660,19 +656,19 @@
     <p id="command-empty" hidden>No matches. Try “Goals” or “Workday”.</p>
     <p class="command-help">↑ ↓ to navigate · Enter to open · Esc to close</p>
   </dialog>
-  <script defer src="core-progress.js?v=finance-dashboard-1"></script>
-  <script defer src="notes.js?v=finance-dashboard-1"></script>
-  <script defer src="checklist-picker.js?v=finance-dashboard-1"></script>
-  <script defer src="health.js?v=finance-dashboard-1"></script>
-  <script defer src="addiction.js?v=finance-dashboard-1"></script>
-  <script defer src="calendar.js?v=finance-dashboard-1"></script>
-  <script defer src="fitness.js?v=finance-dashboard-1"></script>
-  <script defer src="finance.js?v=finance-dashboard-1"></script>
-  <script defer src="library.js?v=finance-dashboard-1"></script>
-  <script defer src="interface.js?v=finance-dashboard-1"></script>
-  <script defer src="interface-sound.js?v=finance-dashboard-1"></script>
-  <script defer src="pointer-effects.js?v=finance-dashboard-1"></script>
-  <script defer src="experience.js?v=finance-dashboard-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
-  <script defer src="install.js?v=finance-dashboard-1"></script>
+  <script defer src="core-progress.js?v=module-glass-1"></script>
+  <script defer src="notes.js?v=module-glass-1"></script>
+  <script defer src="checklist-picker.js?v=module-glass-1"></script>
+  <script defer src="health.js?v=module-glass-1"></script>
+  <script defer src="addiction.js?v=module-glass-1"></script>
+  <script defer src="calendar.js?v=module-glass-1"></script>
+  <script defer src="fitness.js?v=module-glass-1"></script>
+  <script defer src="finance.js?v=module-glass-1"></script>
+  <script defer src="library.js?v=module-glass-1"></script>
+  <script defer src="interface.js?v=module-glass-1"></script>
+  <script defer src="interface-sound.js?v=module-glass-1"></script>
+  <script defer src="pointer-effects.js?v=module-glass-1"></script>
+  <script defer src="experience.js?v=module-glass-1" onerror="document.getElementById('startup-cover')?.remove()"></script>
+  <script defer src="install.js?v=module-glass-1"></script>
 </body>
 </html>

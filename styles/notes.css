@@ -19,30 +19,6 @@
   display: none;
 }
 
-.notes-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 24px 26px;
-  border-bottom: 1px solid #204467;
-  background: var(--panel-header);
-}
-
-.notes-heading .panel-eyebrow {
-  margin-bottom: 8px;
-}
-
-.notes-heading h2 {
-  font-size: 25px;
-}
-
-.notes-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 #note-new {
   min-height: 44px;
   padding: 10px 16px;
@@ -323,19 +299,6 @@
     max-height: calc(100dvh - 20px);
   }
 
-  .notes-heading {
-    padding: 16px;
-    gap: 10px;
-  }
-
-  .notes-heading h2 {
-    font-size: 20px;
-  }
-
-  .notes-actions {
-    gap: 8px;
-  }
-
   #note-new {
     padding: 10px;
     font-size: 15px;
@@ -460,7 +423,6 @@
 }
 
 @media (max-width: 700px) and (max-height: 600px) {
-  .notes-heading { padding: 10px 16px; }
   .notes-source { padding: 6px 16px; }
   .notes-source p { display: none; }
   .notes-account-actions { margin-left: auto; }

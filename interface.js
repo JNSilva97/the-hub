@@ -66,10 +66,11 @@ function openApp(button) {
   dialog.dataset.app = icon;
   document.getElementById('health-content').hidden = !healthOpen;
   document.getElementById('health-close').hidden = !healthOpen;
+  document.getElementById('app-header-close').hidden = healthOpen;
   dialog.querySelector('form .close').textContent = healthOpen && routinesDialog.open ? 'Back to Goals' : 'Back to the Hub';
   document.getElementById('app-title').textContent = button.querySelector('.app-name').textContent;
   dialog.querySelector('.panel-eyebrow').textContent = `THE HUB / MODULE ${button.querySelector('.module-number').textContent}`;
-  document.getElementById('app-icon').replaceChildren(button.querySelector('.tile').cloneNode(true));
+  document.querySelector('#app-icon use').setAttribute('href', '#' + icon);
   document.getElementById('interface-settings').hidden = !settings;
   document.getElementById('app-description').textContent = settings ? 'Set the atmosphere of your terminal.' : healthOpen ? 'Track today’s doses and see what is left.' : icon === 'health' ? 'Health couldn’t load. Reload the page to try again.' : icon === 'notes' ? 'Notes couldn’t load. Reload the page to try again. Your saved notes have not been changed.' : 'This module is coming later. Your checklists are ready in Goals.';
   if (healthOpen) health.refresh();

@@ -116,6 +116,7 @@
   .weekly-review-metrics { grid-template-columns: minmax(0, 1fr); }
   .apps:has(> .app[data-icon="calendar"]) > [data-icon="settings"] { grid-column: auto; }
   .calendar-header { padding: 14px; }
+  #calendar-dialog { scroll-padding-top: 78px; }
   .calendar-intro { align-items: flex-start; flex-direction: column; }
   .calendar-week { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
   .calendar-dialog .calendar-day { min-height: 108px; padding: 8px; }

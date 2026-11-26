@@ -1,7 +1,5 @@
 .fitness-dialog { width: min(740px, calc(100% - 24px)); max-height: calc(100dvh - 24px); padding: 0; overflow: auto; text-align: left; background: linear-gradient(#030a12a6, #030a12a6), var(--panel-glass); }
 .fitness-dialog [hidden] { display: none; }
-.fitness-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 24px; border-bottom: 1px solid #284e6a; background: #081521f5; }
-.fitness-header h2 { margin: 6px 0 0; font: 500 25px var(--font-display); }
 .fitness-content { padding: clamp(16px, 3vw, 24px); }
 .fitness-intro { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 22px; }
 .fitness-intro h3 { margin: 0; font: 600 22px var(--font-interface); }
@@ -24,7 +22,6 @@
 #fitness-status { margin: 0; color: #b9d6e7; font-size: 14px; }
 @media (max-width: 700px) {
   .fitness-exercises { grid-template-columns: minmax(0, 1fr); }
-  .fitness-header { padding: 16px; }
   .fitness-intro { align-items: flex-start; flex-direction: column; }
   .apps:has(> .app[data-icon="fitness"]) > [data-icon="fitness"] { grid-column: 1 / -1; }
 }

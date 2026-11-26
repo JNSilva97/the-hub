@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=finance-dashboard-1';
-import { validateCloudNote, visibleNotes } from './notes-model.mjs?v=finance-dashboard-1';
+import { cloudWorkspace } from './cloud.js?v=module-glass-1';
+import { validateCloudNote, visibleNotes } from './notes-model.mjs?v=module-glass-1';
 
 // Each submitted version is immutable. Concurrent offline edits create separate versions, never overwrite text.
 export function createCloudNotes(changed) {
