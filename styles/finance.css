@@ -15,6 +15,8 @@
 .finance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 10px; margin-bottom: 12px; }
 .finance-metric { display: grid; justify-items: start; align-content: start; gap: 6px; min-width: 0; padding: 14px; border: 1px solid #2d5270; border-top-color: #70badc; border-radius: 4px; background: #10273ad9; overflow-wrap: anywhere; }
 .finance-metric h4, .finance-section h4 { margin: 0; color: #c0d9eb; font: 600 16px var(--font-interface); }
+.finance-metric h4:has(.finance-account-icon) { display: flex; align-items: center; gap: 8px; }
+.finance-account-icon { flex: 0 0 22px; width: 22px; height: 22px; fill: none; stroke: #91dcff; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .finance-metric strong { font: 600 clamp(20px, 3vw, 27px) var(--font-interface); font-variant-numeric: tabular-nums; }
 .finance-metric small, .finance-row small, .finance-muted { color: #b0c9de; line-height: 1.5; }
 .finance-muted:empty, #finance-form-status:empty, .finance-body > .finance-actions:not(:has(button:not([hidden]))) { display: none; }
@@ -22,6 +24,8 @@
 .finance-section { margin-top: 20px; }
 .finance-section h3 { margin: 0 0 12px; font: 600 23px var(--font-interface); }
 .finance-section h4:not(.finance-metric h4) { margin-top: 14px; }
+.finance-month { display: flex; flex: 1 1 230px; gap: 8px; max-width: 340px; }
+.finance-month .finance-filter:last-child { flex: 0 1 95px; }
 .finance-filters { display: flex; flex-wrap: wrap; gap: 8px; }
 .finance-filter, .finance-fields > label { display: grid; gap: 5px; min-width: 0; color: #c0d9eb; font-size: 14px; }
 .finance-filter { flex: 1 1 130px; margin-bottom: 8px; }

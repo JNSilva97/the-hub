@@ -1,13 +1,13 @@
-import { lisbonDay } from './routine-model.mjs?v=finance-1';
-import { validDay } from './habits-model.mjs?v=finance-1';
+import { lisbonDay } from './routine-model.mjs?v=finance-english-1';
+import { validDay } from './habits-model.mjs?v=finance-english-1';
 
 export { lisbonDay };
 export const accounts = [
   { id: 'bank', name: 'Bank', aliases: ['bank'] },
   { id: 'revolut', name: 'Revolut', aliases: ['revolut'] },
-  { id: 'food', name: 'Coverflex Alimentação', aliases: ['alimentacao', 'coverflex alimentacao'] },
-  { id: 'benefits', name: 'Coverflex Benefícios', aliases: ['beneficios', 'coverflex beneficios'] },
-  { id: 'cash', name: 'Dinheiro físico', aliases: ['dinheiro', 'dinheiro fisico', 'cash'] }
+  { id: 'food', name: 'Coverflex Meal Allowance', aliases: ['alimentacao', 'coverflex alimentacao', 'coverflex meal allowance', 'meal allowance'] },
+  { id: 'benefits', name: 'Coverflex Benefits', aliases: ['beneficios', 'coverflex beneficios', 'coverflex benefits', 'benefits'] },
+  { id: 'cash', name: 'Cash', aliases: ['dinheiro', 'dinheiro fisico', 'cash'] }
 ];
 export const financeLimit = 450000;
 const collections = ['movements', 'confirmations', 'receivables', 'subscriptions'];
@@ -22,6 +22,7 @@ const fail = message => { throw new Error(message); };
 export function parseMoney(input) {
   let value = String(input).trim().replace(/^€\s*|\s*€$/g, '').replace(/\s/g, '');
   if (/^[+-]?\d{1,3}(?:\.\d{3})+,\d{1,2}$/.test(value)) value = value.replaceAll('.', '');
+  if (/^[+-]?\d{1,3}(?:,\d{3})+\.\d{1,2}$/.test(value)) value = value.replaceAll(',', '');
   const match = /^([+-]?)(\d{1,9})(?:[.,](\d{1,2}))?$/.exec(value);
   if (!match) fail('Enter a valid amount with up to two decimal places.');
   return (match[1] === '-' ? -1 : 1) * (Number(match[2]) * 100 + Number((match[3] || '').padEnd(2, '0')));
@@ -43,7 +44,7 @@ export function splitAmount(total, value) {
 
 export function parseQuick(input, date = lisbonDay()) {
   const match = /^([+-][\d.,]+)\s+(.+)$/.exec(input.trim());
-  if (!match) fail('Start with a signed amount, for example -3,57 Uber, Bank.');
+  if (!match) fail('Start with a signed amount, for example -3.57 Uber, Bank.');
   const value = parseMoney(match[1]);
   const parts = match[2].split(',').map(part => part.trim());
   const description = parts.shift();
@@ -57,10 +58,10 @@ export function parseQuick(input, date = lisbonDay()) {
     const part = parts[i];
     if (/^(pending|pendente)$/i.test(part)) draft.status = 'pending';
     else if (/^(processed|processad[oa])$/i.test(part)) draft.status = 'processed';
-    else if (/^categoria\s*:/i.test(part)) draft.category = part.slice(part.indexOf(':') + 1).trim();
+    else if (/^(?:category|categoria)\s*:/i.test(part)) draft.category = part.slice(part.indexOf(':') + 1).trim();
     else {
       const owed = /^(.+?)\s+(?:deve[- ]me|owes me)\s+(.+)$/i.exec(part);
-      if (!owed || debt || draft.kind !== 'expense') fail('Unrecognised detail. Use “pendente”, “categoria: W” or “Bea deve-me 1/3”.');
+      if (!owed || debt || draft.kind !== 'expense') fail('Unrecognised detail. Use “pending”, “category: W” or “Bea owes me 1/3”.');
       const share = /^\d+$/.test(owed[2]) && /^\d{1,2}(?:\s*€)?$/.test(parts[i + 1] || '') ? `${owed[2]},${parts[++i]}` : owed[2];
       debt = { person: owed[1].trim(), cents: splitAmount(draft.cents, share) };
       if (!positive(debt.cents) || debt.cents > draft.cents) fail('The share must be positive and cannot exceed the expense.');

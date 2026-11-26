@@ -8,7 +8,7 @@ test('Finance records pending spending, processes it once, and exports the audit
   t.after(() => browser.close());
   const data = { routines: JSON.parse(demo), progress: { checks: {}, optional: {} } };
   const { context, page, errors } = await fixture(browser, {
-    width: 320, mobile: true, motion: 'reduce', firebase: true,
+    width: 320, mobile: true, locale: 'pt-PT', motion: 'reduce', firebase: true,
     cloudDocuments: { 'account-a': data, 'account-b': data }
   });
   t.after(() => context.close());
@@ -17,6 +17,18 @@ test('Finance records pending spending, processes it once, and exports the audit
   await page.locator('[data-icon="finance"]').click();
   const panel = page.locator('#finance-dialog');
   const editor = page.locator('#finance-editor');
+  const month = panel.getByRole('combobox', { name: 'Month', exact: true });
+  const year = panel.getByRole('combobox', { name: 'Year', exact: true });
+  assert.equal(await month.locator('option:checked').textContent(), 'November');
+  assert.equal(await year.inputValue(), '2026');
+  await month.selectOption({ label: 'October' });
+  assert.equal(await month.inputValue(), '10');
+  await month.selectOption({ label: 'November' });
+  assert.deepEqual(await panel.locator('.finance-account-icon use').evaluateAll(icons => icons.map(icon => icon.getAttribute('href'))),
+    ['#finance-account-bank', '#finance-account-revolut', '#finance-account-food', '#finance-account-benefits', '#finance-account-cash']);
+  for (const name of ['Coverflex Meal Allowance', 'Coverflex Benefits', 'Cash']) {
+    assert.equal(await panel.getByRole('heading', { name, exact: true }).count(), 1);
+  }
   const bank = panel.locator('.finance-metric').filter({ has: page.getByRole('heading', { name: 'Bank · Authorized balance', exact: true }) });
   await bank.getByRole('button', { name: 'Confirm balance', exact: true }).click();
   await editor.getByLabel('Book balance (€)', { exact: true }).fill('100');
@@ -31,16 +43,16 @@ test('Finance records pending spending, processes it once, and exports the audit
   assert.equal(await editor.getByLabel('Status').inputValue(), 'pending');
   await editor.getByRole('button', { name: 'Save movement' }).click();
   await editor.waitFor({ state: 'hidden' });
-  assert.match(await bank.locator('strong').textContent(), /96,43/);
-  assert.match(await bank.getByText('Book balance', { exact: false }).textContent(), /100,00/);
+  assert.match(await bank.locator('strong').textContent(), /96\.43/);
+  assert.match(await bank.getByText('Book balance', { exact: false }).textContent(), /100\.00/);
   await panel.getByRole('button', { name: 'Activity', exact: true }).click();
   await panel.getByRole('button', { name: 'Process', exact: true }).click();
   await editor.getByRole('button', { name: 'Process movement', exact: true }).click();
   await editor.waitFor({ state: 'hidden' });
   assert.equal(await panel.locator('.finance-row').filter({ hasText: 'Uber' }).count(), 1);
   await panel.getByRole('button', { name: 'Overview' }).click();
-  assert.match(await bank.locator('strong').textContent(), /96,43/);
-  assert.match(await bank.getByText('Book balance', { exact: false }).textContent(), /96,43/);
+  assert.match(await bank.locator('strong').textContent(), /96\.43/);
+  assert.match(await bank.getByText('Book balance', { exact: false }).textContent(), /96\.43/);
 
   await panel.getByRole('button', { name: 'Add movement' }).click();
   await editor.getByLabel('Quick entry').fill('-30 Jantar, Bank, Bea deve-me 1/3');
@@ -52,7 +64,7 @@ test('Finance records pending spending, processes it once, and exports the audit
   await editor.getByLabel('Amount received (€)').fill('4');
   await editor.getByRole('button', { name: 'Save payment' }).click();
   await editor.waitFor({ state: 'hidden' });
-  assert.match(await panel.locator('.finance-row').filter({ hasText: 'Bea' }).locator('.finance-row-value').textContent(), /6,00/);
+  assert.match(await panel.locator('.finance-row').filter({ hasText: 'Bea' }).locator('.finance-row-value').textContent(), /6\.00/);
   await panel.getByRole('button', { name: 'Subscriptions', exact: true }).click();
   await panel.getByRole('button', { name: 'Add subscription', exact: true }).click();
   await editor.getByLabel('Name', { exact: true }).fill('Test subscription');
@@ -66,7 +78,7 @@ test('Finance records pending spending, processes it once, and exports the audit
   await editor.waitFor({ state: 'hidden' });
   assert.match(await panel.locator('.finance-row').filter({ hasText: 'Test subscription' }).textContent(), /Next 2026-12-25/);
   await panel.getByRole('button', { name: 'Payment history', exact: true }).click();
-  assert.match(await editor.getByText('Paid 2026-11-25', { exact: false }).textContent(), /3,57/);
+  assert.match(await editor.getByText('Paid 2026-11-25', { exact: false }).textContent(), /3\.57/);
   await editor.getByRole('button', { name: 'Close history', exact: true }).click();
   await panel.getByRole('button', { name: 'Activity', exact: true }).click();
   assert.equal(await panel.locator('.finance-row').count(), 3);

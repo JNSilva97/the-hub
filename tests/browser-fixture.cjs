@@ -20,7 +20,7 @@ const localAudio = ['startup', 'open', 'close'].map(kind => 'assets/audio/mixkit
   .filter(filename => existsSync(path.join(root, filename)));
 
 async function fixture(browser, options = {}) {
-  const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: options.width || 1024, height: options.height || 900 }, hasTouch: Boolean(options.mobile), isMobile: Boolean(options.mobile), reducedMotion: options.motion || 'no-preference' });
+  const context = await browser.newContext({ serviceWorkers: 'block', locale: options.locale, viewport: { width: options.width || 1024, height: options.height || 900 }, hasTouch: Boolean(options.mobile), isMobile: Boolean(options.mobile), reducedMotion: options.motion || 'no-preference' });
   const requests = [];
   const errors = [];
   const failures = { data: false, module: false, dependency: false, sdk: Boolean(options.sdkFailure) };

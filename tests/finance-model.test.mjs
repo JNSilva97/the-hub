@@ -28,6 +28,8 @@ test('transfers and repayments affect balances without inflating income or expen
   assert.equal(debt.cents, 1000);
   assert.equal(parseQuick('+1111,74 Ordenado, Bank', today).draft.cents, 111174);
   assert.equal(parseQuick('-20 Supermercado, Alimentação, categoria: W', today).draft.category, 'W');
+  const english = parseQuick('-1,234.56 Groceries, Coverflex Meal Allowance, category: Food', today).draft;
+  assert.deepEqual([english.account, english.cents, english.category], ['food', 123456, 'Food']);
   const transfer = { ...draft, kind: 'transfer', cents: 2000, destination: 'revolut' };
   const payment = { ...draft, kind: 'repayment', cents: 400, receivable: 'bea' };
   const changes = [change('movements', 'dinner', draft), change('movements', 'transfer', transfer),

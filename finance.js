@@ -1,7 +1,9 @@
 function createFinance(panel) {
   const el = id => document.getElementById(`finance-${id}`);
   const editor = el('editor');
-  const currency = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' });
+  const currency = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' });
+  const monthFormat = new Intl.DateTimeFormat('en-GB', { month: 'long', timeZone: 'UTC' });
+  const reportMonthFormat = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
   const money = cents => currency.format(cents / 100);
   let model, account, owner, view = 'overview', month, query = '', accountFilter = '', categoryFilter = '';
   let state, busy = false, action, notice = '', unavailable = '';
@@ -16,7 +18,7 @@ function createFinance(panel) {
   const id = () => crypto.randomUUID();
   const today = () => model.lisbonDay();
   const dateField = date => ({ type: 'date', value: date || today(), required: true, max: today() });
-  const amountField = value => ({ value: value === undefined ? '' : (value / 100).toFixed(2).replace('.', ','), inputMode: 'decimal', required: true, maxLength: 24 });
+  const amountField = value => ({ value: value === undefined ? '' : (value / 100).toFixed(2), inputMode: 'decimal', required: true, maxLength: 24 });
   const fieldText = (value, limit, required = true) => ({ value: value || '', maxLength: limit, required });
   const accountOptions = () => model.accounts.map(({ id, name }) => [id, name]);
   const change = (collection, id, value, before = null) => ({ collection, id, value, before });
@@ -81,18 +83,41 @@ function createFinance(panel) {
     return row;
   }
   function monthInput(container) {
-    const label = node('label', 'Month', 'finance-filter');
-    const input = node('input');
-    input.type = 'month'; input.value = month; input.max = today().slice(0, 7);
-    input.addEventListener('change', () => {
-      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(input.value) || input.value > input.max || input.value < '1900-01') {
-        input.value = month; return;
-      }
-      month = input.value;
-      render();
-      el('view').querySelector('input[type="month"]')?.focus();
-    });
-    label.append(input); container.append(label);
+    const [year, number] = month.split('-').map(Number);
+    const [currentYear, currentMonth] = today().slice(0, 7).split('-').map(Number);
+    const controls = node('div', '', 'finance-month');
+    const addSelect = (caption, values, selected, update) => {
+      const label = node('label', caption, 'finance-filter');
+      const select = node('select');
+      select.setAttribute('aria-label', caption);
+      for (const [value, text] of values) select.add(new Option(text, value));
+      select.value = selected;
+      select.addEventListener('change', () => {
+        const [nextYear, nextMonth] = update(Number(select.value));
+        month = nextYear + '-' + String(nextMonth).padStart(2, '0');
+        render();
+        el('view').querySelector(`[aria-label="${caption}"]`)?.focus();
+      });
+      label.append(select);
+      controls.append(label);
+    };
+    addSelect('Month', Array.from({ length: year === currentYear ? currentMonth : 12 }, (_, index) =>
+      [index + 1, monthFormat.format(new Date(Date.UTC(2000, index, 1)))]), number, value => [year, value]);
+    addSelect('Year', Array.from({ length: currentYear - 1899 }, (_, index) =>
+      [currentYear - index, String(currentYear - index)]), year,
+    value => [value, value === currentYear ? Math.min(number, currentMonth) : number]);
+    container.append(controls);
+  }
+  function accountIcon(accountId) {
+    const namespace = 'http://www.w3.org/2000/svg';
+    const icon = document.createElementNS(namespace, 'svg');
+    const symbol = document.createElementNS(namespace, 'use');
+    icon.setAttribute('class', 'finance-account-icon');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.setAttribute('viewBox', '0 0 24 24');
+    symbol.setAttribute('href', `#finance-account-${accountId}`);
+    icon.append(symbol);
+    return icon;
   }
   function previousMonth(value) {
     const [year, number] = value.split('-').map(Number);
@@ -114,10 +139,11 @@ function createFinance(panel) {
     const cards = node('div', '', 'finance-grid');
     for (const { id, name } of model.accounts) {
       const row = balances.get(id);
-      const item = summary(name, row.confirmed || row.available ? money(row.available) : '—', row.confirmed
+      const title = id === 'bank' ? 'Bank · Authorized balance' : name;
+      const item = summary(title, row.confirmed || row.available ? money(row.available) : '—', row.confirmed
         ? `Calculated · confirmed ${row.confirmed.date} at ${money(row.confirmed.available)}` : 'Opening balance not confirmed');
       if (id === 'bank' || row.book !== row.available) item.append(node('small', `Book balance ${row.confirmed || row.book ? money(row.book) : '—'}`));
-      if (id === 'bank') item.querySelector('h4').textContent = 'Bank · Authorized balance';
+      item.querySelector('h4').prepend(accountIcon(id));
       item.append(button(row.confirmed ? 'Reconcile' : 'Confirm balance', () => reconcile(id), true));
       cards.append(item);
     }
@@ -140,7 +166,7 @@ function createFinance(panel) {
       const balance = [...model.balances(state, `${period}-${period === currentMonth ? current.slice(-2) : '31'}`).values()];
       if (balance.every(row => !row.confirmed && !row.available && !row.book)) continue;
       const estimate = balance.reduce((sum, row) => sum + row.available, 0);
-      evolution.prepend(node('li', `${period} · ${money(estimate)}`));
+      evolution.prepend(node('li', `${reportMonthFormat.format(new Date(period + '-01T00:00:00Z'))} · ${money(estimate)}`));
     }
     report.append(figures, node('h4', 'Expenses by category'), categories.children.length ? categories : node('p', 'No processed expenses this month.', 'finance-muted'),
       node('h4', 'Available balance over time'), evolution.children.length ? evolution : node('p', 'Confirm a balance to start tracking it.', 'finance-muted'));
@@ -261,8 +287,8 @@ function createFinance(panel) {
 
   function movementPreview() {
     openForm('Add movement', 'Review', () => {
-      field('Quick entry', 'line', { placeholder: '-3,57 Uber, Bank, pendente', required: true, maxLength: 270 });
-      explain('Start with + or −. Add the description and account, separated by commas. You can add “pendente”, “categoria: W” or “Bea deve-me 1/3”.');
+      field('Quick entry', 'line', { placeholder: '-3.57 Uber, Bank, pending', required: true, maxLength: 270 });
+      explain('Start with + or −. Add the description and account, separated by commas. You can add “pending”, “category: W” or “Bea owes me 1/3”.');
       el('fields').append(button('Enter manually', () => movementForm('expense')));
     }, values => {
       const { draft, debt } = model.parseQuick(values.line.replace(/^−/, '-'));
@@ -446,9 +472,9 @@ function createFinance(panel) {
     }
     render();
   }
-  import('./finance-model.mjs?v=finance-1').then(module => {
+  import('./finance-model.mjs?v=finance-english-1').then(module => {
     model = module;
-    return import('./cloud-finance.js?v=finance-1');
+    return import('./cloud-finance.js?v=finance-english-1');
   }).then(module => {
     account = module.createFinanceAccount(changed);
     changed();
