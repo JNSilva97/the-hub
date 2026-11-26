@@ -251,18 +251,21 @@ function createFinance(panel) {
   function drawSubscriptions(container) {
     const block = section('Subscriptions');
     const active = [...state.subscriptions.values()].filter(item => item.active);
-    const annual = active.reduce((sum, item) => sum + item.cents * (item.frequency === 'monthly' ? 12 : 1), 0);
+    const annual = active.reduce((sum, item) => sum + item.cents * (item.frequency === 'monthly' ? 12 : item.frequency === 'annual' ? 1 : 0), 0);
     const monthEnd = today().slice(0, 7) + '-31';
-    const due = active.filter(item => item.next <= monthEnd).reduce((sum, item) => sum + item.cents, 0);
+    const due = active.filter(item => item.next && item.next <= monthEnd).reduce((sum, item) => sum + item.cents, 0);
     const totals = node('div', '', 'finance-grid');
-    totals.append(summary('Monthly equivalent', money(Math.round(annual / 12))), summary('Annual equivalent', money(annual)), summary('Upcoming through month end', money(due), 'Includes overdue next charges'));
+    totals.append(summary('Monthly equivalent', money(Math.round(annual / 12))), summary('Annual equivalent', money(annual)), summary('Upcoming through month end', money(due), 'Includes overdue charges with a known date'));
     block.append(totals, button('Add subscription', () => subscriptionForm(), true));
     for (const [key, sub] of state.subscriptions) {
       const controls = [button('Edit', () => subscriptionForm(key, sub), true)];
-      if (sub.active) controls.unshift(button('Record charge', () => chargeForm(key, sub), true));
+      if (sub.active && sub.account) controls.unshift(button('Record charge', () => chargeForm(key, sub), true));
       if (sub.payments.length) controls.push(button('Payment history', () => paymentHistory(key, sub)));
-      block.append(listRow(sub.name, `${sub.frequency === 'monthly' ? 'Monthly' : 'Annual'} · ${nameOf(sub.account)} · ${sub.active ? 'Next ' + sub.next : 'Cancelled'}`,
-        money(sub.cents), ...controls));
+      const frequency = { monthly: 'Monthly', annual: 'Annual' }[sub.frequency] || 'Frequency unknown';
+      const schedule = sub.active ? sub.next ? 'Next ' + sub.next : 'Next charge unknown' : 'Cancelled';
+      const details = [frequency, sub.account ? nameOf(sub.account) : 'Payment account unknown',
+        sub.prepaidThrough && 'Prepaid through ' + sub.prepaidThrough, schedule, sub.note].filter(Boolean);
+      block.append(listRow(sub.name, details.join(' · '), money(sub.cents), ...controls));
     }
     if (!state.subscriptions.size) block.append(node('p', 'No subscriptions yet.', 'finance-muted'));
     container.append(block);
@@ -388,12 +391,17 @@ function createFinance(panel) {
     openForm(key ? 'Edit subscription' : 'Add subscription', 'Save subscription', () => {
       field('Name', 'name', fieldText(entry.name, 70));
       field('Amount (€)', 'amount', amountField(entry.cents));
-      field('Paid from', 'account', { value: entry.account || 'bank' }, accountOptions());
-      field('Frequency', 'frequency', { value: entry.frequency || 'monthly' }, [['monthly', 'Monthly'], ['annual', 'Annual']]);
-      field('Next charge', 'next', { type: 'date', value: entry.next || today(), required: true });
+      field('Paid from', 'account', { value: entry.account ?? '' }, [['', 'Unknown'], ...accountOptions()]);
+      field('Frequency', 'frequency', { value: entry.frequency ?? '' }, [['', 'Unknown'], ['monthly', 'Monthly'], ['annual', 'Annual']]);
+      field('Next charge', 'next', { type: 'date', value: entry.next || '' });
+      explain('Leave the next charge blank if the date is unknown. A scheduled charge needs a frequency.');
+      field('Prepaid through', 'prepaid', { type: 'date', value: entry.prepaidThrough || '' });
+      field('Notes', 'note', fieldText(entry.note, 240, false));
       field('Status', 'active', { value: String(entry.active ?? true) }, [['true', 'Active'], ['false', 'Cancelled']]);
-    }, values => save([change('subscriptions', subscriptionId, { name: values.name.trim(), cents: model.parseMoney(values.amount), account: values.account,
-      frequency: values.frequency, next: values.next, billingDay: values.next === entry.next ? entry.billingDay : Number(values.next.slice(-2)),
+    }, values => save([change('subscriptions', subscriptionId, { name: values.name.trim(), cents: model.parseMoney(values.amount), account: values.account || null,
+      frequency: values.frequency || null, next: values.next || null,
+      billingDay: values.next ? values.next === entry.next ? entry.billingDay : Number(values.next.slice(-2)) : null,
+      prepaidThrough: values.prepaid || null, note: values.note.trim() || null,
       active: values.active === 'true', payments: entry.payments || [] }, key ? entry : null)]));
   }
   function chargeForm(key, sub) {
@@ -403,7 +411,8 @@ function createFinance(panel) {
       && item.kind === 'expense' && item.status === 'processed').map(([id, item]) => [id, `${item.date} · ${item.description}`]);
     const options = [...(existing.length ? [['', 'Choose how to record it']] : []), ['new', 'Create a new movement'], ...existing];
     openForm(`Record ${sub.name} charge`, 'Save charge', () => {
-      explain(`Scheduled for ${sub.next} · ${money(sub.cents)} from ${nameOf(sub.account)}. Link an existing expense if it was already logged.`);
+      const schedule = sub.next ? `Scheduled for ${sub.next} · ` : '';
+      explain(`${schedule}${money(sub.cents)} from ${nameOf(sub.account)}. Link an existing expense if it was already logged.`);
       const match = field('Movement', 'existing', { value: existing.length ? '' : 'new', required: true }, options);
       const date = field('Payment date', 'date', dateField());
       const update = () => { date.disabled = match.value !== 'new'; };
@@ -413,9 +422,11 @@ function createFinance(panel) {
       const movement = create ? movementId : values.existing;
       const changes = create ? [change('movements', movement, { kind: 'expense', description: sub.name,
         category: 'Subscriptions', cents: sub.cents, account: sub.account, date: values.date, status: 'processed' })] : [];
-      if (sub.payments.some(payment => payment.cycle === sub.next)) throw new Error('This charge is already linked to a movement.');
-      changes.push(change('subscriptions', key, { ...sub, next: model.nextCharge(sub.next, sub.frequency, sub.billingDay),
-        payments: [...sub.payments, { cycle: sub.next, movement }] }, sub));
+      const cycle = sub.next || (create ? values.date : state.movements.get(movement)?.date);
+      if (sub.payments.some(payment => payment.cycle === cycle)) throw new Error('This charge is already linked to a movement.');
+      const payment = sub.next ? { cycle, movement } : { cycle, movement, unscheduled: true };
+      const next = sub.next && model.nextCharge(sub.next, sub.frequency, sub.billingDay);
+      changes.push(change('subscriptions', key, { ...sub, next, payments: [...sub.payments, payment] }, sub));
       return save(changes);
     });
   }
@@ -427,8 +438,12 @@ function createFinance(panel) {
       }
       if (!writable()) return;
       const recent = sub.payments.at(-1);
-      el('fields').append(button('Unlink latest charge', () => confirm('Unlink latest charge', 'The expense stays in your movements. The scheduled charge becomes due again.',
-        () => save([change('subscriptions', key, { ...sub, next: recent.cycle, payments: sub.payments.slice(0, -1) }, sub)]))));
+      const restoreSchedule = !recent.unscheduled && sub.frequency;
+      el('fields').append(button('Unlink latest charge', () => confirm('Unlink latest charge',
+        restoreSchedule ? 'The expense stays in your movements. The scheduled charge becomes due again.' : 'The expense stays in your movements.',
+        () => save([change('subscriptions', key, { ...sub, next: restoreSchedule ? recent.cycle : sub.next,
+          billingDay: restoreSchedule ? sub.billingDay ?? Number(recent.cycle.slice(-2)) : sub.billingDay,
+          payments: sub.payments.slice(0, -1) }, sub)]))));
     }, undefined, true);
     el('cancel').textContent = 'Close history';
   }
@@ -545,9 +560,9 @@ function createFinance(panel) {
     }
     render();
   }
-  import('./finance-model.mjs?v=finance-backup-2').then(module => {
+  import('./finance-model.mjs?v=finance-subscriptions-1').then(module => {
     model = module;
-    return import('./cloud-finance.js?v=finance-backup-2');
+    return import('./cloud-finance.js?v=finance-subscriptions-1');
   }).then(module => {
     account = module.createFinanceAccount(changed);
     changed();

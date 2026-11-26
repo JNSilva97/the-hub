@@ -1,5 +1,5 @@
-import { lisbonDay } from './routine-model.mjs?v=finance-backup-2';
-import { validDay } from './habits-model.mjs?v=finance-backup-2';
+import { lisbonDay } from './routine-model.mjs?v=finance-subscriptions-1';
+import { validDay } from './habits-model.mjs?v=finance-subscriptions-1';
 
 export { lisbonDay };
 export const accounts = [
@@ -88,10 +88,15 @@ function validateRecord(collection, value) {
     if (!text(value.person, 70) || !text(value.description, 140) || !positive(value.cents) || !validDay(value.date)
       || value.movement && !key.test(value.movement)) fail('Enter a person, a description and a valid amount.');
   } else if (collection === 'subscriptions') {
-    if (!text(value.name, 70) || !positive(value.cents) || !knownAccount(value.account) || !validDay(value.next)
-      || !['monthly', 'annual'].includes(value.frequency) || typeof value.active !== 'boolean'
-      || !Number.isInteger(value.billingDay) || value.billingDay < 1 || value.billingDay > 31
-      || !Array.isArray(value.payments) || value.payments.some(payment => !validDay(payment.cycle) || !key.test(payment.movement || ''))) fail('Check the subscription details.');
+    const hasValidSchedule = value.next === null ? value.billingDay === null
+      : validDay(value.next) && ['monthly', 'annual'].includes(value.frequency)
+        && Number.isInteger(value.billingDay) && value.billingDay >= 1 && value.billingDay <= 31;
+    if (!text(value.name, 70) || !positive(value.cents) || value.account !== null && !knownAccount(value.account)
+      || !hasValidSchedule || ![null, 'monthly', 'annual'].includes(value.frequency) || typeof value.active !== 'boolean'
+      || value.prepaidThrough != null && !validDay(value.prepaidThrough)
+      || value.note != null && !text(value.note, 240)
+      || !Array.isArray(value.payments) || value.payments.some(payment => !payment || !validDay(payment.cycle) || !key.test(payment.movement || '')
+        || payment.unscheduled !== undefined && payment.unscheduled !== true)) fail('Check the subscription details.');
   } else fail('Unknown Finance record.');
 }
 

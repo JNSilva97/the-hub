@@ -69,6 +69,9 @@ test('Finance records pending spending, processes it once, and exports the audit
   await panel.getByRole('button', { name: 'Add subscription', exact: true }).click();
   await editor.getByLabel('Name', { exact: true }).fill('Test subscription');
   await editor.getByLabel('Amount (€)', { exact: true }).fill('3,57');
+  await editor.getByLabel('Paid from').selectOption('bank');
+  await editor.getByLabel('Frequency').selectOption('monthly');
+  await editor.getByLabel('Next charge').fill('2026-11-25');
   await editor.getByRole('button', { name: 'Save subscription', exact: true }).click();
   await editor.waitFor({ state: 'hidden' });
   await panel.getByRole('button', { name: 'Record charge', exact: true }).click();
@@ -80,6 +83,16 @@ test('Finance records pending spending, processes it once, and exports the audit
   await panel.getByRole('button', { name: 'Payment history', exact: true }).click();
   assert.match(await editor.getByText('Paid 2026-11-25', { exact: false }).textContent(), /3\.57/);
   await editor.getByRole('button', { name: 'Close history', exact: true }).click();
+  await panel.getByRole('button', { name: 'Add subscription', exact: true }).click();
+  await editor.getByLabel('Name', { exact: true }).fill('Prepaid service');
+  await editor.getByLabel('Amount (€)', { exact: true }).fill('20');
+  await editor.getByLabel('Frequency').selectOption('annual');
+  await editor.getByLabel('Prepaid through').fill('2027-10-10');
+  await editor.getByRole('button', { name: 'Save subscription', exact: true }).click();
+  await editor.waitFor({ state: 'hidden' });
+  const prepaid = panel.locator('.finance-row').filter({ hasText: 'Prepaid service' });
+  assert.match(await prepaid.textContent(), /Payment account unknown · Prepaid through 2027-10-10 · Next charge unknown/);
+  assert.equal(await prepaid.getByRole('button', { name: 'Record charge' }).count(), 0);
   await panel.getByRole('button', { name: 'Activity', exact: true }).click();
   assert.equal(await panel.locator('.finance-row').count(), 3);
 

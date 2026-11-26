@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=finance-backup-2';
-import { readEntry } from './library-model.mjs?v=finance-backup-2';
+import { cloudWorkspace } from './cloud.js?v=finance-subscriptions-1';
+import { readEntry } from './library-model.mjs?v=finance-subscriptions-1';
 export function createLibraryAccount(onChange) {
   let uid, unsubscribe, generation = 0, ready = false, cached = true, pending = false, error = '';
   let entries = new Map();

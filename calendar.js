@@ -480,7 +480,7 @@ function createCalendar(panel, openChecklist, readActivity) {
   }
   setInterval(refreshDay, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
-  import('./calendar-model.mjs?v=finance-backup-2').then(module => {
+  import('./calendar-model.mjs?v=finance-subscriptions-1').then(module => {
     model = module; lastDay = model.lisbonDay();
     selected = anchor = model.validDay(quickPlanPending?.day) ? quickPlanPending.day : lastDay;
     el('plan-options').replaceChildren(...model.planTypes.map(plan => {
@@ -514,7 +514,7 @@ function createCalendar(panel, openChecklist, readActivity) {
       option.append(label, fields); return option;
     }));
     render();
-    return import('./cloud-calendar.js?v=finance-backup-2');
+    return import('./cloud-calendar.js?v=finance-subscriptions-1');
   }).then(module => {
     const changed = () => {
       if (account?.uid !== owner) {
