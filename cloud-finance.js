@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=finance-backup-1';
-import { readFinance, prepareFinanceChanges, prepareFinanceRestore } from './finance-model.mjs?v=finance-backup-1';
+import { cloudWorkspace } from './cloud.js?v=finance-backup-2';
+import { readFinance, prepareFinanceChanges, prepareFinanceRestore } from './finance-model.mjs?v=finance-backup-2';
 
 export function createFinanceAccount(onChange) {
   let uid, stop, generation = 0, ready = false, cached = true, pending = false, error = '';

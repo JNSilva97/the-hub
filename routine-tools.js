@@ -1,4 +1,4 @@
-import { cleanRoutines, createBackup, parseBackup, countItems, removedItems, MAX_BACKUP_BYTES } from './workspace-model.mjs?v=finance-backup-1';
+import { cleanRoutines, createBackup, parseBackup, countItems, removedItems, MAX_BACKUP_BYTES } from './workspace-model.mjs?v=finance-backup-2';
 
 // Drafts own their IDs; text edits and moves never change saved tick identities.
 export function createRoutineTools(workspace) {

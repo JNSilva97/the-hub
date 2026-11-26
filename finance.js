@@ -468,7 +468,7 @@ function createFinance(panel) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   function backupMenu() {
-    openForm('Backup & import', '', () => {
+    openForm('Backup & Import', '', () => {
       explain('Download a private JSON backup of your Finance history, restore a backup, or paste several movements at once.');
       el('fields').append(actions(button('Export backup', exportBackup), button('Import backup', restoreForm, true),
         button('Import movements', () => movementsImportForm(), true)));
@@ -545,9 +545,9 @@ function createFinance(panel) {
     }
     render();
   }
-  import('./finance-model.mjs?v=finance-backup-1').then(module => {
+  import('./finance-model.mjs?v=finance-backup-2').then(module => {
     model = module;
-    return import('./cloud-finance.js?v=finance-backup-1');
+    return import('./cloud-finance.js?v=finance-backup-2');
   }).then(module => {
     account = module.createFinanceAccount(changed);
     changed();

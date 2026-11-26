@@ -83,7 +83,7 @@ test('Finance records pending spending, processes it once, and exports the audit
   await panel.getByRole('button', { name: 'Activity', exact: true }).click();
   assert.equal(await panel.locator('.finance-row').count(), 3);
 
-  const backupMenu = panel.getByRole('button', { name: 'Backup & import', exact: true });
+  const backupMenu = panel.getByRole('button', { name: 'Backup & Import', exact: true });
   const bulkText = [
     'Date | Description | Amount (EUR) | Account | Type | Status | Category',
     '2026-11-25 | Uber | -3.57 | Bank | Expense | Pending | Transport',

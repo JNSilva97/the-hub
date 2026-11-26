@@ -1,7 +1,7 @@
-import { addDays, validDay } from './habits-model.mjs?v=finance-backup-1';
+import { addDays, validDay } from './habits-model.mjs?v=finance-backup-2';
 export { addDays, validDay };
-export { lisbonDay } from './routine-model.mjs?v=finance-backup-1';
-export { routinePlan, routineRelevant } from './routine-model.mjs?v=finance-backup-1';
+export { lisbonDay } from './routine-model.mjs?v=finance-backup-2';
+export { routinePlan, routineRelevant } from './routine-model.mjs?v=finance-backup-2';
 
 export const planTypes = [
   { id: 'office', name: 'Office', icon: 'notes', description: 'Work and office preparation' },
