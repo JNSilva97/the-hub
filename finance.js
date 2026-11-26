@@ -97,7 +97,7 @@ function createFinance(panel) {
         const [nextYear, nextMonth] = update(Number(select.value));
         month = nextYear + '-' + String(nextMonth).padStart(2, '0');
         render();
-        el('view').querySelector(`[aria-label="${caption}"]`)?.focus();
+        el('view').querySelector(`[aria-label="${caption}"]`)?.focus({ preventScroll: true });
       });
       label.append(select);
       controls.append(label);
@@ -132,46 +132,113 @@ function createFinance(panel) {
     const confirmedCount = [...balances.values()].filter(row => row.confirmed).length;
     const owing = [...state.receivables.keys()].reduce((sum, key) => sum + model.remainingDebt(state, key), 0);
     const pending = [...balances.values()].reduce((sum, row) => sum + row.pending, 0);
-    const stats = node('div', '', 'finance-grid');
-    stats.append(summary('Available across accounts', confirmedCount || total ? money(total) : '—', `${confirmedCount} of 5 balances confirmed · includes Coverflex`),
-      summary('Pending expenses', money(pending)), summary('To receive', money(owing), 'Outside available balances'));
+    const stats = node('section', '', 'finance-overview-balances');
+    stats.setAttribute('aria-label', 'Balance summary');
+    const available = summary('Available across accounts', confirmedCount || total ? money(total) : '—',
+      `${confirmedCount} of ${model.accounts.length} balances confirmed · includes Coverflex`);
+    available.classList.add('finance-available');
+    const secondary = node('div', '', 'finance-overview-secondary');
+    secondary.append(summary('Pending expenses', money(pending)),
+      summary('To receive', money(owing), 'Outside available balances'));
+    stats.append(available, secondary);
     container.append(stats);
+
+    const dashboard = node('div', '', 'finance-dashboard');
     const accountBlock = section('Accounts');
-    const cards = node('div', '', 'finance-grid');
+    const cards = node('div', '', 'finance-account-list');
     for (const { id, name } of model.accounts) {
       const row = balances.get(id);
       const title = id === 'bank' ? 'Bank · Authorized balance' : name;
       const item = summary(title, row.confirmed || row.available ? money(row.available) : '—', row.confirmed
-        ? `Calculated · confirmed ${row.confirmed.date} at ${money(row.confirmed.available)}` : 'Opening balance not confirmed');
+        ? `Confirmed ${row.confirmed.date} at ${money(row.confirmed.available)}` : 'Opening balance not confirmed');
       if (id === 'bank' || row.book !== row.available) item.append(node('small', `Book balance ${row.confirmed || row.book ? money(row.book) : '—'}`));
       item.querySelector('h4').prepend(accountIcon(id));
       item.append(button(row.confirmed ? 'Reconcile' : 'Confirm balance', () => reconcile(id), true));
       cards.append(item);
     }
     accountBlock.append(cards);
-    container.append(accountBlock);
 
     const report = section('Monthly report');
-    monthInput(report);
+    const reportTitle = report.firstElementChild;
+    reportTitle.tabIndex = -1;
+    const reportShortcut = button('Jump to monthly report', () => {
+      const viewport = el('view');
+      viewport.scrollTop += report.getBoundingClientRect().top - viewport.getBoundingClientRect().top - 12;
+      reportTitle.focus({ preventScroll: true });
+    });
+    reportShortcut.className = 'finance-report-shortcut';
+    available.append(reportShortcut);
+    const reportHeader = node('div', '', 'finance-section-header');
+    reportHeader.append(reportTitle);
+    monthInput(reportHeader);
+    report.append(reportHeader);
     const totals = model.monthReport(state, month, current);
     const previous = model.monthReport(state, previousMonth(month), current);
-    const figures = node('div', '', 'finance-grid');
+    const figures = node('div', '', 'finance-report-figures');
     const delta = totals.expenses - previous.expenses;
-    figures.append(summary('Income', money(totals.income)), summary('Processed expenses', money(totals.expenses), `${delta > 0 ? '+' : ''}${money(delta)} vs previous month`),
-      summary('Average per day', money(totals.average)), summary('Pending in month', money(totals.pending)), summary('Repayments received', money(totals.repayments)));
-    const categories = node('ul', '', 'finance-totals');
-    for (const [category, value] of [...totals.categories].sort((a, b) => b[1] - a[1])) categories.append(node('li', `${category} · ${money(value)}`));
-    const evolution = node('ul', '', 'finance-totals');
+    figures.append(summary('Income', money(totals.income)),
+      summary('Processed expenses', money(totals.expenses), previous.expenses ? `${delta > 0 ? '+' : ''}${money(delta)} vs previous month` : undefined),
+      summary('Average per day', money(totals.average)), summary('Pending in month', money(totals.pending)),
+      summary('Repayments received', money(totals.repayments)));
+    report.append(figures, spendingBreakdown(totals));
+
+    const history = node('section', '', 'finance-insight');
+    history.append(node('h4', 'Available balance over time'));
+    const evolution = node('ul', '', 'finance-balance-history');
     let period = currentMonth;
     for (let i = 0; i < 6; i++, period = previousMonth(period)) {
       const balance = [...model.balances(state, `${period}-${period === currentMonth ? current.slice(-2) : '31'}`).values()];
       if (balance.every(row => !row.confirmed && !row.available && !row.book)) continue;
       const estimate = balance.reduce((sum, row) => sum + row.available, 0);
-      evolution.prepend(node('li', `${reportMonthFormat.format(new Date(period + '-01T00:00:00Z'))} · ${money(estimate)}`));
+      const entry = node('li');
+      entry.append(node('span', reportMonthFormat.format(new Date(period + '-01T00:00:00Z'))), node('strong', money(estimate)));
+      evolution.prepend(entry);
     }
-    report.append(figures, node('h4', 'Expenses by category'), categories.children.length ? categories : node('p', 'No processed expenses this month.', 'finance-muted'),
-      node('h4', 'Available balance over time'), evolution.children.length ? evolution : node('p', 'Confirm a balance to start tracking it.', 'finance-muted'));
-    container.append(report);
+    history.append(evolution.children.length ? evolution : node('p', 'Confirm a balance to start tracking it.', 'finance-muted'));
+    report.append(history);
+    dashboard.append(accountBlock, report);
+    container.append(dashboard);
+  }
+  function spendingBreakdown(totals) {
+    const block = node('section', '', 'finance-insight');
+    block.append(node('h4', 'Expenses by category'));
+    const categories = [...totals.categories].sort((a, b) => b[1] - a[1]);
+    if (!categories.length) {
+      block.append(node('p', 'No processed expenses this month.', 'finance-muted'));
+      return block;
+    }
+    const top = node('ul', '', 'finance-category-list');
+    const rest = node('ul', '', 'finance-category-list');
+    for (const [index, [category, cents]] of categories.entries()) {
+      const row = node('li');
+      const bar = button('', () => {
+        query = '';
+        accountFilter = '';
+        categoryFilter = category;
+        showView('activity');
+        el('view').querySelector('[aria-label="Category"]')?.focus({ preventScroll: true });
+      });
+      bar.className = 'finance-category';
+      bar.setAttribute('aria-label', `View ${category} movements, ${money(cents)} in processed expenses`);
+      const track = node('span', '', 'finance-category-track');
+      track.setAttribute('aria-hidden', 'true');
+      const fill = node('span');
+      fill.style.width = `${cents / categories[0][1] * 100}%`;
+      track.append(fill);
+      bar.append(node('span', category), node('strong', money(cents)), track);
+      row.append(bar);
+      (index < 5 ? top : rest).append(row);
+    }
+    block.append(top);
+    if (rest.children.length) {
+      const more = node('details', '', 'finance-more-categories');
+      const label = `Show ${rest.children.length} more categories`;
+      const disclosure = node('summary', label);
+      more.addEventListener('toggle', () => { disclosure.textContent = more.open ? 'Show fewer categories' : label; });
+      more.append(disclosure, rest);
+      block.append(more);
+    }
+    return block;
   }
   function drawActivity(container) {
     const block = section('Movement history');
@@ -184,6 +251,7 @@ function createFinance(panel) {
     ]) {
       const label = node('label', caption, 'finance-filter');
       const input = node('select');
+      input.setAttribute('aria-label', caption);
       for (const [key, text] of options) input.add(new Option(text, key));
       input.value = options.some(([key]) => key === value) ? value : '';
       input.addEventListener('change', () => { update(input.value); populate(); });
@@ -208,7 +276,9 @@ function createFinance(panel) {
         if (entry.status === 'pending') manage.unshift(button('Process', () => processMovement(key, entry), true));
         manage.push(button('Delete', () => confirm('Delete movement', `Remove “${entry.description}” from balances and reports? Its corrections stay in the history export.`,
           () => save([change('movements', key, null, entry)])), true));
-        return listRow(entry.description, detail, sign + money(entry.cents), ...manage);
+        const row = listRow(entry.description, detail, sign + money(entry.cents), ...manage);
+        if (entry.status === 'pending') row.classList.add('finance-row-pending');
+        return row;
       }));
       if (!entries.length) list.append(node('p', 'No movements match these filters.', 'finance-muted'));
     }
@@ -234,7 +304,9 @@ function createFinance(panel) {
 
   function drawReceivables(container) {
     const block = section('Money to receive');
-    block.append(button('Add amount owed', () => debtForm(), true));
+    const heading = node('div', '', 'finance-section-header');
+    heading.append(block.firstElementChild, button('Add amount owed', () => debtForm(), true));
+    block.append(heading);
     for (const [key, debt] of state.receivables) {
       const remaining = model.remainingDebt(state, key);
       const linked = debt.movement && state.movements.get(debt.movement);
@@ -256,7 +328,9 @@ function createFinance(panel) {
     const due = active.filter(item => item.next && item.next <= monthEnd).reduce((sum, item) => sum + item.cents, 0);
     const totals = node('div', '', 'finance-grid');
     totals.append(summary('Monthly equivalent', money(Math.round(annual / 12))), summary('Annual equivalent', money(annual)), summary('Upcoming through month end', money(due), 'Includes overdue charges with a known date'));
-    block.append(totals, button('Add subscription', () => subscriptionForm(), true));
+    const heading = node('div', '', 'finance-section-header');
+    heading.append(block.firstElementChild, button('Add subscription', () => subscriptionForm(), true));
+    block.append(heading, totals);
     for (const [key, sub] of state.subscriptions) {
       const controls = [button('Edit', () => subscriptionForm(key, sub), true)];
       if (sub.active && sub.account) controls.unshift(button('Record charge', () => chargeForm(key, sub), true));
@@ -276,7 +350,7 @@ function createFinance(panel) {
     el('status').textContent = unavailable || account?.error || (busy ? 'Saving…' : notice || (!account?.uid
       ? 'Sign in to open your private Finance ledger.' : !account.ready ? 'Loading Finance…'
       : account.canWrite ? '' : 'Read-only copy. Connect to save changes.'));
-    el('content').hidden = !model || !account?.ready;
+    el('view').hidden = el('content').hidden = !model || !account?.ready;
     el('add').disabled = el('transfer').disabled = !writable();
     el('close').disabled = busy;
     for (const name of ['save', 'cancel', 'editor-close']) el(name).disabled = busy || name === 'save' && !writable();
@@ -471,7 +545,13 @@ function createFinance(panel) {
   editor.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
   editor.addEventListener('close', () => { if (!editor.open) { action = undefined; el('fields').replaceChildren(); render(); } });
   panel.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
-  for (const tab of panel.querySelectorAll('[data-finance-view]')) tab.addEventListener('click', () => { view = tab.dataset.financeView; render(); });
+  function showView(nextView) {
+    if (view === nextView) return;
+    view = nextView;
+    render();
+    el('view').scrollTop = 0;
+  }
+  for (const tab of panel.querySelectorAll('[data-finance-view]')) tab.addEventListener('click', () => showView(tab.dataset.financeView));
   el('add').addEventListener('click', movementPreview);
   el('transfer').addEventListener('click', () => movementForm('transfer'));
   el('signin').addEventListener('click', () => { panel.close(); document.getElementById('account-launch').click(); });
@@ -560,9 +640,9 @@ function createFinance(panel) {
     }
     render();
   }
-  import('./finance-model.mjs?v=finance-subscriptions-1').then(module => {
+  import('./finance-model.mjs?v=finance-dashboard-1').then(module => {
     model = module;
-    return import('./cloud-finance.js?v=finance-subscriptions-1');
+    return import('./cloud-finance.js?v=finance-dashboard-1');
   }).then(module => {
     account = module.createFinanceAccount(changed);
     changed();

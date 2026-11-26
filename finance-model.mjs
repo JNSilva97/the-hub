@@ -1,5 +1,5 @@
-import { lisbonDay } from './routine-model.mjs?v=finance-subscriptions-1';
-import { validDay } from './habits-model.mjs?v=finance-subscriptions-1';
+import { lisbonDay } from './routine-model.mjs?v=finance-dashboard-1';
+import { validDay } from './habits-model.mjs?v=finance-dashboard-1';
 
 export { lisbonDay };
 export const accounts = [

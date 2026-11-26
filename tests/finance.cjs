@@ -21,10 +21,12 @@ test('Finance records pending spending, processes it once, and exports the audit
   const year = panel.getByRole('combobox', { name: 'Year', exact: true });
   assert.equal(await month.locator('option:checked').textContent(), 'November');
   assert.equal(await year.inputValue(), '2026');
+  await panel.getByRole('button', { name: 'Jump to monthly report' }).click();
+  assert.equal(await panel.getByRole('heading', { name: 'Monthly report' }).evaluate(heading => heading === document.activeElement), true);
   await month.selectOption({ label: 'October' });
   assert.equal(await month.inputValue(), '10');
   await month.selectOption({ label: 'November' });
-  assert.deepEqual(await panel.locator('.finance-account-icon use').evaluateAll(icons => icons.map(icon => icon.getAttribute('href'))),
+  assert.deepEqual(await panel.locator('.finance-account-list .finance-account-icon use').evaluateAll(icons => icons.map(icon => icon.getAttribute('href'))),
     ['#finance-account-bank', '#finance-account-revolut', '#finance-account-food', '#finance-account-benefits', '#finance-account-cash']);
   for (const name of ['Coverflex Meal Allowance', 'Coverflex Benefits', 'Cash']) {
     assert.equal(await panel.getByRole('heading', { name, exact: true }).count(), 1);
@@ -53,6 +55,11 @@ test('Finance records pending spending, processes it once, and exports the audit
   await panel.getByRole('button', { name: 'Overview' }).click();
   assert.match(await bank.locator('strong').textContent(), /96\.43/);
   assert.match(await bank.getByText('Book balance', { exact: false }).textContent(), /96\.43/);
+  await panel.getByRole('button', { name: 'View Other movements, €3.57 in processed expenses', exact: true }).click();
+  assert.equal(await panel.getByRole('combobox', { name: 'Category', exact: true }).inputValue(), 'Other');
+  assert.equal(await panel.locator('.finance-row').filter({ hasText: 'Uber' }).count(), 1);
+  await panel.getByRole('combobox', { name: 'Category', exact: true }).selectOption('');
+  await panel.getByRole('button', { name: 'Overview', exact: true }).click();
 
   await panel.getByRole('button', { name: 'Add movement' }).click();
   await editor.getByLabel('Quick entry').fill('-30 Jantar, Bank, Bea deve-me 1/3');

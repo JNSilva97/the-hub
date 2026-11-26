@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=finance-subscriptions-1';
-import { readCalendarRecord } from './calendar-model.mjs?v=finance-subscriptions-1';
+import { cloudWorkspace } from './cloud.js?v=finance-dashboard-1';
+import { readCalendarRecord } from './calendar-model.mjs?v=finance-dashboard-1';
 
 export function createCalendarAccount(onChange) {
   let uid, unsubscribe, generation = 0, ready = false, fromCache = true, pending = false, error = '';
