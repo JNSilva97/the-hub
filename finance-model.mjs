@@ -1,5 +1,5 @@
-import { lisbonDay } from './routine-model.mjs?v=module-glass-1';
-import { validDay } from './habits-model.mjs?v=module-glass-1';
+import { lisbonDay } from './routine-model.mjs?v=finance-categories-1';
+import { validDay } from './habits-model.mjs?v=finance-categories-1';
 
 export { lisbonDay };
 export const accounts = [
@@ -18,6 +18,18 @@ const positive = value => amount(value) && value > 0;
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.length <= max;
 const normalized = value => value.trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 const fail = message => { throw new Error(message); };
+
+const categoryAliases = new Map([
+  ['tobacco', 'Tobacco and Drinks'],
+  ['tabacco', 'Tobacco and Drinks'],
+  ['tobacco and drinks', 'Tobacco and Drinks'],
+  ['fuel', 'Fuel'],
+  ['fuel and miscellaneous', 'Fuel']
+]);
+
+export function financeCategory(value) {
+  return categoryAliases.get(normalized(value)) ?? value;
+}
 
 export function parseMoney(input) {
   let value = String(input).trim().replace(/^€\s*|\s*€$/g, '').replace(/\s/g, '');
@@ -58,7 +70,7 @@ export function parseQuick(input, date = lisbonDay()) {
     const part = parts[i];
     if (/^(pending|pendente)$/i.test(part)) draft.status = 'pending';
     else if (/^(processed|processad[oa])$/i.test(part)) draft.status = 'processed';
-    else if (/^(?:category|categoria)\s*:/i.test(part)) draft.category = part.slice(part.indexOf(':') + 1).trim();
+    else if (/^(?:category|categoria)\s*:/i.test(part)) draft.category = financeCategory(part.slice(part.indexOf(':') + 1).trim());
     else {
       const owed = /^(.+?)\s+(?:deve[- ]me|owes me)\s+(.+)$/i.exec(part);
       if (!owed || debt || draft.kind !== 'expense') fail('Unrecognised detail. Use “pending”, “category: W” or “Bea owes me 1/3”.');
@@ -182,7 +194,7 @@ export function previewFinanceMovements(events, source, through = lisbonDay()) {
       const kind = typeKey === 'transfer' ? 'transfer' : signed < 0 ? 'expense' : 'income';
       if (extra.length || kind === 'transfer' && !destination || kind !== 'transfer' && to !== undefined) fail('Use source -> destination for transfers only.');
       const category = !categoryText || categoryText.toLowerCase() === 'unknown' ? 'Unclassified' : categoryText;
-      const entry = { kind, cents: Math.abs(signed), description, category: typeKey === 'reimbursement' ? 'Reimbursement' : category, account, date, status };
+      const entry = { kind, cents: Math.abs(signed), description, category: typeKey === 'reimbursement' ? 'Reimbursement' : financeCategory(category), account, date, status };
       if (destination) entry.destination = destination;
       validateRecord('movements', entry);
       const signature = movementSignature(entry);
@@ -300,7 +312,8 @@ export function monthReport(state, month, today = lisbonDay()) {
       if (item.status === 'pending') pending += item.cents;
       else {
         expenses += item.cents;
-        categories.set(item.category, (categories.get(item.category) || 0) + item.cents);
+        const category = financeCategory(item.category);
+        categories.set(category, (categories.get(category) || 0) + item.cents);
       }
     }
   }

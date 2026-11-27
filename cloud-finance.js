@@ -1,5 +1,5 @@
-import { cloudWorkspace } from './cloud.js?v=module-glass-1';
-import { readFinance, prepareFinanceChanges, prepareFinanceRestore } from './finance-model.mjs?v=module-glass-1';
+import { cloudWorkspace } from './cloud.js?v=finance-categories-1';
+import { readFinance, prepareFinanceChanges, prepareFinanceRestore } from './finance-model.mjs?v=finance-categories-1';
 
 export function createFinanceAccount(onChange) {
   let uid, stop, generation = 0, ready = false, cached = true, pending = false, error = '';

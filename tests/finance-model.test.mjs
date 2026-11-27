@@ -75,3 +75,13 @@ test('Finance previews transfers and rejects invalid lines before importing', ()
   assert.deepEqual([entry.kind, entry.account, entry.destination, entry.cents], ['transfer', 'benefits', 'bank', 4500]);
   assert.throws(() => previewFinanceMovements([], text.replace('2026-11-25', '2026-11-26'), today), /Line 1: Enter a date/);
 });
+
+test('legacy expense labels are grouped under the current Finance categories', () => {
+  const categories = [['Tobacco', 1080], ['Tobacco and Drinks', 2649], ['Fuel and Miscellaneous', 3160], ['Fuel', 3135], ['Drinks', 800]];
+  const changes = categories.map(([category, cents], index) => change('movements', 'row-' + index, {
+    kind: 'expense', account: 'bank', date: today, status: 'processed', description: category, category, cents
+  }));
+  const report = monthReport(financeState(add([], ...changes)), '2026-11', today);
+  assert.deepEqual([...report.categories], [['Tobacco and Drinks', 3729], ['Fuel', 6295], ['Drinks', 800]]);
+  assert.equal(parseQuick('-10 Fuel, Bank, category: Fuel and Miscellaneous', today).draft.category, 'Fuel');
+});

@@ -244,7 +244,7 @@ function createFinance(panel) {
     const block = section('Movement history');
     const filters = node('div', '', 'finance-filters');
     monthInput(filters);
-    const choices = [...new Set([...state.movements.values()].map(item => item.category))].sort();
+    const choices = [...new Set([...state.movements.values()].map(item => model.financeCategory(item.category)))].sort();
     for (const [caption, options, value, update] of [
       ['Account', [['', 'All accounts'], ...accountOptions()], accountFilter, next => { accountFilter = next; }],
       ['Category', [['', 'All categories'], ...choices.map(item => [item, item])], categoryFilter, next => { categoryFilter = next; }]
@@ -265,11 +265,11 @@ function createFinance(panel) {
     function populate() {
       const entries = [...state.movements.entries()].filter(([, item]) => (item.date.startsWith(month) || item.postedOn?.startsWith(month))
         && (!accountFilter || item.account === accountFilter || item.destination === accountFilter)
-        && (!categoryFilter || item.category === categoryFilter)
-        && `${item.description} ${item.category}`.toLowerCase().includes(query.trim().toLowerCase()))
+        && (!categoryFilter || model.financeCategory(item.category) === categoryFilter)
+        && `${item.description} ${item.category} ${model.financeCategory(item.category)}`.toLowerCase().includes(query.trim().toLowerCase()))
         .sort((a, b) => b[1].date.localeCompare(a[1].date));
       list.replaceChildren(...entries.map(([key, entry]) => {
-        const detail = [entry.date, nameOf(entry.account), entry.destination && `→ ${nameOf(entry.destination)}`, entry.category,
+        const detail = [entry.date, nameOf(entry.account), entry.destination && `→ ${nameOf(entry.destination)}`, model.financeCategory(entry.category),
           entry.status === 'pending' && 'Pending', entry.postedOn && `Posted ${entry.postedOn}`].filter(Boolean).join(' · ');
         const sign = entry.kind === 'transfer' ? '' : entry.kind === 'expense' ? '−' : '+';
         const manage = [button('Edit', () => movementForm(entry.kind, key, entry), true)];
@@ -386,7 +386,7 @@ function createFinance(panel) {
       if (transfer) field('To account', 'destination', { value: entry.destination || 'revolut' }, accountOptions());
       field('Description', 'description', { ...fieldText(entry.description || (transfer ? 'Transfer' : ''), 140) });
       if (!transfer && !repayment) {
-        field('Category', 'category', fieldText(entry.category || 'Other', 50));
+        field('Category', 'category', fieldText(model.financeCategory(entry.category || 'Other'), 50));
         const status = field('Status', 'status', { value: entry.status || 'processed' }, [['processed', 'Processed'], ['pending', 'Pending']]);
         const type = el('form').elements.kind;
         const updateType = () => {
@@ -399,7 +399,7 @@ function createFinance(panel) {
       if (debt) explain(`${debt.person} owes you ${money(debt.cents)}. The amount owed will be saved with this movement.`);
     }, values => {
       const value = { kind: values.kind || kind, cents: model.parseMoney(values.amount), account: values.account, date: values.date,
-        description: values.description.trim(), category: values.category?.trim() || (transfer ? 'Transfer' : 'Repayment'), status: values.status || 'processed' };
+        description: values.description.trim(), category: model.financeCategory(values.category?.trim() || (transfer ? 'Transfer' : 'Repayment')), status: values.status || 'processed' };
       if (transfer) value.destination = values.destination;
       if (repayment) value.receivable = entry.receivable;
       if (value.kind === 'expense' && value.status === 'processed') {
@@ -640,9 +640,9 @@ function createFinance(panel) {
     }
     render();
   }
-  import('./finance-model.mjs?v=module-glass-1').then(module => {
+  import('./finance-model.mjs?v=finance-categories-1').then(module => {
     model = module;
-    return import('./cloud-finance.js?v=module-glass-1');
+    return import('./cloud-finance.js?v=finance-categories-1');
   }).then(module => {
     account = module.createFinanceAccount(changed);
     changed();
