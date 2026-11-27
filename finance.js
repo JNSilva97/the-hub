@@ -240,14 +240,18 @@ function createFinance(panel) {
     }
     return block;
   }
+  function categoryOptions(extra = []) {
+    const categories = [...state.movements.values()].map(item => model.financeCategory(item.category));
+    return [...new Set([...categories, ...extra])].sort((a, b) => a.localeCompare(b))
+      .map(category => [category, category]);
+  }
   function drawActivity(container) {
     const block = section('Movement history');
     const filters = node('div', '', 'finance-filters');
     monthInput(filters);
-    const choices = [...new Set([...state.movements.values()].map(item => model.financeCategory(item.category)))].sort();
     for (const [caption, options, value, update] of [
       ['Account', [['', 'All accounts'], ...accountOptions()], accountFilter, next => { accountFilter = next; }],
-      ['Category', [['', 'All categories'], ...choices.map(item => [item, item])], categoryFilter, next => { categoryFilter = next; }]
+      ['Category', [['', 'All categories'], ...categoryOptions()], categoryFilter, next => { categoryFilter = next; }]
     ]) {
       const label = node('label', caption, 'finance-filter');
       const input = node('select');
@@ -386,7 +390,15 @@ function createFinance(panel) {
       if (transfer) field('To account', 'destination', { value: entry.destination || 'revolut' }, accountOptions());
       field('Description', 'description', { ...fieldText(entry.description || (transfer ? 'Transfer' : ''), 140) });
       if (!transfer && !repayment) {
-        field('Category', 'category', fieldText(model.financeCategory(entry.category || 'Other'), 50));
+        const selected = model.financeCategory(entry.category || (kind === 'income' ? 'Income' : 'Other'));
+        const category = field('Category', 'category', { value: selected }, [...categoryOptions(['Other', 'Income', selected]), ['', '+ New category']]);
+        const customCategory = field('New category', 'newCategory', fieldText('', 50));
+        const customLabel = customCategory.closest('label');
+        customLabel.hidden = customCategory.disabled = true;
+        category.addEventListener('change', () => {
+          customLabel.hidden = customCategory.disabled = category.value !== '';
+          if (!customCategory.disabled) customCategory.focus();
+        });
         const status = field('Status', 'status', { value: entry.status || 'processed' }, [['processed', 'Processed'], ['pending', 'Pending']]);
         const type = el('form').elements.kind;
         const updateType = () => {
@@ -398,8 +410,10 @@ function createFinance(panel) {
       field('Date', 'date', dateField(entry.date));
       if (debt) explain(`${debt.person} owes you ${money(debt.cents)}. The amount owed will be saved with this movement.`);
     }, values => {
+      const category = transfer ? 'Transfer' : repayment ? 'Repayment' : (values.category || values.newCategory?.trim());
+      if (!category) throw new Error('Enter a category name.');
       const value = { kind: values.kind || kind, cents: model.parseMoney(values.amount), account: values.account, date: values.date,
-        description: values.description.trim(), category: model.financeCategory(values.category?.trim() || (transfer ? 'Transfer' : 'Repayment')), status: values.status || 'processed' };
+        description: values.description.trim(), category: model.financeCategory(category), status: values.status || 'processed' };
       if (transfer) value.destination = values.destination;
       if (repayment) value.receivable = entry.receivable;
       if (value.kind === 'expense' && value.status === 'processed') {
@@ -640,9 +654,9 @@ function createFinance(panel) {
     }
     render();
   }
-  import('./finance-model.mjs?v=finance-categories-1').then(module => {
+  import('./finance-model.mjs?v=finance-category-picker-1').then(module => {
     model = module;
-    return import('./cloud-finance.js?v=finance-categories-1');
+    return import('./cloud-finance.js?v=finance-category-picker-1');
   }).then(module => {
     account = module.createFinanceAccount(changed);
     changed();

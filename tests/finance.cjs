@@ -64,8 +64,17 @@ test('Finance records pending spending, processes it once, and exports the audit
   await panel.getByRole('button', { name: 'Add movement' }).click();
   await editor.getByLabel('Quick entry').fill('-30 Jantar, Bank, Bea deve-me 1/3');
   await editor.getByRole('button', { name: 'Review', exact: true }).click();
+  const categoryPicker = editor.getByRole('combobox', { name: 'Category', exact: true });
+  await categoryPicker.selectOption({ label: '+ New category' });
+  await editor.getByLabel('New category', { exact: true }).fill('Restaurants');
   await editor.getByRole('button', { name: 'Save movement' }).click();
   await editor.waitFor({ state: 'hidden' });
+  await panel.getByRole('button', { name: 'Add movement' }).click();
+  await editor.getByRole('button', { name: 'Enter manually' }).click();
+  await categoryPicker.selectOption('Restaurants');
+  assert.equal(await categoryPicker.inputValue(), 'Restaurants');
+  assert.equal(await editor.getByLabel('New category', { exact: true }).isVisible(), false);
+  await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
   await panel.getByRole('button', { name: 'To receive', exact: true }).click();
   await panel.getByRole('button', { name: 'Record payment', exact: true }).click();
   await editor.getByLabel('Amount received (€)').fill('4');
